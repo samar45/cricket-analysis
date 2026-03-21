@@ -3,6 +3,12 @@
 Run with: streamlit run dashboard/app.py
 """
 
+import sys
+from pathlib import Path
+
+# Ensure project root is on sys.path regardless of where streamlit is launched from
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import streamlit as st
 
 st.set_page_config(page_title="Cricket Analytics", page_icon="🏏", layout="wide")

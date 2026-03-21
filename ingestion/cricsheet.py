@@ -193,12 +193,7 @@ def load_cricsheet_to_db(format_key: str, data_dir: Path | None = None) -> int:
             deliveries["fielder"] = df.get("fielders", df.get("fielder"))
             deliveries["source"] = "cricsheet"
 
-            # Insert deliveries
-            con.execute("""
-                INSERT INTO deliveries
-                SELECT * FROM deliveries_df
-            """)
-            # Use register + insert instead
+            # Register DataFrame and upsert (delete + insert for idempotency)
             con.register("_tmp_deliveries", deliveries)
             con.execute("DELETE FROM deliveries WHERE match_id = ?", [match_id])
             con.execute("""
