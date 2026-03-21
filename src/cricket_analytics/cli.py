@@ -33,12 +33,21 @@ def setup():
 
 @cli.command()
 @click.option("--format", "fmt", default=None, help="Format: ipl, t20s, odis, tests")
-@click.option("--download/--no-download", default=True, help="Download fresh data")
-def ingest(fmt: str | None, download: bool):
+@click.option("--redownload", is_flag=True, default=False, help="Force re-download even if data exists")
+@click.option("--no-download", "skip_download", is_flag=True, default=False, help="Skip download, load existing files only")
+def ingest(fmt: str | None, redownload: bool, skip_download: bool):
     """Ingest Cricsheet data into DuckDB."""
-    from ingestion.cricsheet import ingest as run_ingest
+    from ingestion.cricsheet import ingest as run_ingest, download_cricsheet, get_path
     formats = [fmt] if fmt else None
-    results = run_ingest(formats=formats, download=download)
+
+    if redownload and fmt:
+        import shutil
+        raw_dir = get_path("raw") / "cricsheet" / fmt
+        if raw_dir.exists():
+            shutil.rmtree(raw_dir)
+            click.echo(f"Cleared {raw_dir}")
+
+    results = run_ingest(formats=formats, download=not skip_download)
     for f, count in results.items():
         click.echo(f"{f}: {count:,} deliveries loaded")
 
