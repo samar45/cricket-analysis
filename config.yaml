@@ -1,0 +1,60 @@
+# Cricket Analytics Platform — Configuration
+# All parameters centralised here. Modules read from this file.
+
+project:
+  name: "Cricket Analytics Platform"
+  version: "0.1.0"
+
+# --- Data paths ---
+paths:
+  raw: "data/raw"
+  clean: "data/clean"
+  gold: "data/gold"
+  database: "data/cricket_analytics.duckdb"
+
+# --- Data sources ---
+sources:
+  cricsheet:
+    base_url: "https://cricsheet.org/downloads/"
+    formats:
+      - "ipl"           # IPL ball-by-ball
+      - "t20s"          # All T20Is
+      - "odis"          # All ODIs
+      - "tests"         # All Tests
+    file_type: "csv"    # csv or json
+
+  kaggle:
+    datasets:
+      - "patrickb1912/ipl-complete-dataset-20082020"
+      - "ramjidoolla/ipl-data-set"
+
+# --- Filters (default values for modules) ---
+defaults:
+  format: "T20"          # T20 | ODI | Test
+  season: null           # null = all seasons
+  team: null
+  player: null
+
+# --- Analysis module settings ---
+modules:
+  impact_score_weights:
+    runs: 1.0
+    strike_rate: 0.5
+    wickets: 25.0
+    economy: -5.0
+  form_tracker:
+    rolling_window: 10   # last N innings
+    consistency_threshold: 20  # minimum runs to count as "contribution"
+
+# --- Dashboard ---
+dashboard:
+  title: "Cricket Analytics Platform"
+  theme: "dark"
+  port: 8501
+
+# --- Scraping ---
+scraping:
+  rate_limit_seconds: 2
+  max_retries: 3
+  user_agent: "CricketAnalyticsPlatform/0.1 (research project)"
+  cache_dir: "data/raw/.cache"
