@@ -1,0 +1,7 @@
+# ML dependencies (Phase 3+)
+-r requirements.txt
+
+scikit-learn>=1.4
+xgboost>=2.0
+lightgbm>=4.0
+statsmodels>=0.14
