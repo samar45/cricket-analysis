@@ -108,6 +108,26 @@ VENUE_ALIASES: dict[str, str] = {
     # ── UAE ─────────────────────────────────────────────────────────────────
     "Sheikh Zayed Stadium, Abu Dhabi":       "Sheikh Zayed Stadium",
     "Dubai International Cricket Stadium, Dubai": "Dubai International Cricket Stadium",
+
+    # ── West Indies (additional) ─────────────────────────────────────────────
+    "Kensington Oval, Bridgetown, Barbados": "Kensington Oval, Bridgetown",
+    "Kensington Oval, Barbados":             "Kensington Oval, Bridgetown",
+
+    # ── Australia (additional) ───────────────────────────────────────────────
+    "Docklands Stadium, Melbourne":          "Docklands Stadium",
+
+    # ── India (additional) ──────────────────────────────────────────────────
+    "Rajiv Gandhi International Stadium, Uppal, Hyderabad": "Rajiv Gandhi International Stadium, Uppal",
+    "Sardar Patel (Gujarat) Stadium, Motera": "Narendra Modi Stadium, Ahmedabad",
+    "JSCA International Stadium Complex, Ranchi": "JSCA International Stadium Complex",
+    "Greenfield International Stadium, Thiruvananthapuram": "Greenfield International Stadium",
+    "Shaheed Veer Narayan Singh International Stadium, Raipur": "Shaheed Veer Narayan Singh International Stadium",
+
+    # ── England ──────────────────────────────────────────────────────────────
+    "County Ground, New Road, Worcester":    "County Ground, New Road",
+
+    # ── Bangladesh (additional) ─────────────────────────────────────────────
+    "Bangabandhu National Stadium, Dhaka":   "Bangabandhu National Stadium",
 }
 
 # ── Normalisation function ────────────────────────────────────────────────────
