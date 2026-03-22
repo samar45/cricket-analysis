@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Streamlit Dashboard",
+      "runtimeExecutable": "streamlit",
+      "runtimeArgs": [
+        "run",
+        "dashboard/app.py",
+        "--server.port", "8501",
+        "--server.headless", "true"
+      ],
+      "port": 8501
+    },
+    {
+      "name": "Cricket CLI (interactive)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "src.cricket_analytics.cli",
+        "--help"
+      ],
+      "port": 0
+    }
+  ]
+}

@@ -15,6 +15,7 @@ class BattingStats(BaseModule):
     module_id = "B1"
     module_name = "Batting Scorecard & Career Stats"
     category = "basic"
+    supported_filters = frozenset({"format", "player", "team", "season", "venue"})
 
     def run(self, params: ModuleParams) -> pd.DataFrame:
         where, values = self._build_where_clauses(params, "m")

@@ -27,7 +27,7 @@ _FORMAT_URLS = {
 }
 
 _FORMAT_LABELS = {
-    "ipl":   "T20",
+    "ipl":   "IPL",   # IPL is its own format — not mixed with T20
     "t20s":  "T20",
     "odis":  "ODI",
     "tests": "Test",

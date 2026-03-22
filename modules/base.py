@@ -14,15 +14,16 @@ import pandas as pd
 @dataclass
 class ModuleParams:
     """Standard filter parameters accepted by every module."""
-    player: str | None = None
+    player: str | None = None       # batter / player 1 (H2H)
+    player2: str | None = None      # bowler / player 2 (H2H)
     team: str | None = None
     season: int | list[int] | None = None
-    format: str = "T20"            # T20 | ODI | Test
+    format: str | None = None       # None/"All"=no filter | "IPL" | "T20" | "ODI" | "Test"
     venue: str | None = None
     opposition: str | None = None
-    date_range: tuple[str, str] | None = None  # ("2023-01-01", "2023-12-31")
-    phase: str | None = None       # powerplay | middle | death
-    output: str = "dataframe"      # dataframe | plot | report
+    date_range: tuple[str, str] | None = None   # ("2023-01-01", "2023-12-31")
+    phase: str | None = None        # powerplay | middle | death
+    output: str = "dataframe"       # dataframe | plot | report
     extra: dict = field(default_factory=dict)
 
 
@@ -30,14 +31,28 @@ class BaseModule(ABC):
     """Abstract base class for all analysis modules."""
 
     # Subclasses must set these
-    module_id: str = ""        # e.g. "B1", "I3", "A1"
+    module_id: str = ""        # e.g. "B1", "I3"
     module_name: str = ""      # e.g. "Batting Scorecard & Career Stats"
     category: str = ""         # basic | intermediate | advanced
+
+    # Declare which sidebar filters this module uses.
+    # Dashboard renders only these, keeping UI clean per module.
+    supported_filters: set[str] = frozenset({
+        "format", "player", "team", "season", "venue", "phase"
+    })
 
     @abstractmethod
     def run(self, params: ModuleParams) -> pd.DataFrame:
         """Execute the analysis and return a DataFrame of results."""
         ...
+
+    def run_tabs(self, params: ModuleParams) -> dict[str, pd.DataFrame] | None:
+        """Optional: return multiple named DataFrames rendered as dashboard tabs.
+
+        Returns None if the module doesn't support tabbed views (most modules).
+        Override in modules that produce multi-section results (e.g. B6 Venue).
+        """
+        return None
 
     def plot(self, df: pd.DataFrame, params: ModuleParams) -> Any:
         """Generate a visualisation from the results. Override in subclasses."""
@@ -56,12 +71,14 @@ class BaseModule(ABC):
         values = []
         p = f"{table_prefix}." if table_prefix else ""
 
-        if params.format:
+        fmt = params.format
+        if fmt and fmt.lower() not in ("all", ""):
             clauses.append(f"{p}format = ?")
-            values.append(params.format)
+            values.append(fmt)
+
         if params.team:
-            clauses.append(f"({p}team1 = ? OR {p}team2 = ?)")
-            values.extend([params.team, params.team])
+            clauses.append(f"({p}team1 ILIKE ? OR {p}team2 ILIKE ?)")
+            values.extend([f"%{params.team}%", f"%{params.team}%"])
         if params.season:
             if isinstance(params.season, list):
                 placeholders = ", ".join("?" for _ in params.season)
@@ -79,6 +96,17 @@ class BaseModule(ABC):
 
         where_sql = " AND ".join(clauses) if clauses else "1=1"
         return where_sql, values
+
+    def _phase_clause(self, params: ModuleParams, table_prefix: str = "d") -> str:
+        """Return a SQL AND clause for the phase filter, or empty string."""
+        p = f"{table_prefix}." if table_prefix else ""
+        if params.phase == "powerplay":
+            return f"AND {p}over_num BETWEEN 0 AND 5"
+        if params.phase == "middle":
+            return f"AND {p}over_num BETWEEN 6 AND 14"
+        if params.phase == "death":
+            return f"AND {p}over_num BETWEEN 15 AND 19"
+        return ""
 
     def __repr__(self):
         return f"<Module {self.module_id}: {self.module_name}>"

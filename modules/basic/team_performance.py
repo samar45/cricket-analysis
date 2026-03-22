@@ -15,6 +15,7 @@ class TeamPerformance(BaseModule):
     module_id = "B3"
     module_name = "Team Performance Summary"
     category = "basic"
+    supported_filters = frozenset({"format", "team", "season", "venue"})
 
     def run(self, params: ModuleParams) -> pd.DataFrame:
         where, values = self._build_where_clauses(params, "m")
