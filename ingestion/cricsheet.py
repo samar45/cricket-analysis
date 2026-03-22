@@ -19,26 +19,11 @@ from src.cricket_analytics.db import get_connection, init_schema
 
 logger = logging.getLogger(__name__)
 
-_FORMAT_URLS = {
-    "ipl":   "https://cricsheet.org/downloads/ipl_csv2.zip",
-    "t20s":  "https://cricsheet.org/downloads/t20s_csv2.zip",
-    "odis":  "https://cricsheet.org/downloads/odis_csv2.zip",
-    "tests": "https://cricsheet.org/downloads/tests_csv2.zip",
-}
-
-_FORMAT_LABELS = {
-    "ipl":   "IPL",   # IPL is its own format — not mixed with T20
-    "t20s":  "T20",
-    "odis":  "ODI",
-    "tests": "Test",
-}
-
-_TOURNAMENT_LABELS = {
-    "ipl":   "IPL",
-    "t20s":  "T20I",
-    "odis":  "ODI",
-    "tests": "Test",
-}
+from src.cricket_analytics.leagues import (
+    CRICSHEET_URLS      as _FORMAT_URLS,
+    CRICSHEET_FORMAT_LABELS  as _FORMAT_LABELS,
+    CRICSHEET_TOURNAMENT_LABELS as _TOURNAMENT_LABELS,
+)
 
 
 # ── Download ──────────────────────────────────────────────────────────────────

@@ -6,7 +6,6 @@ Run with:  streamlit run dashboard/app.py
 import sys
 from pathlib import Path
 
-# Ensure project root is on sys.path regardless of where streamlit is launched from
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st
@@ -19,111 +18,178 @@ st.set_page_config(
 )
 
 # Register all modules
-import modules.basic           # noqa: F401
-import modules.intermediate    # noqa: F401
+import modules.basic        # noqa: F401
+import modules.intermediate # noqa: F401
 
 from modules.base import list_modules, get_module, ModuleParams
 from src.cricket_analytics.db import query
+from src.cricket_analytics.leagues import COMPETITIONS, get_sql_filter
 
 
-# ── Cached lookups ────────────────────────────────────────────────────────────
+# ── Competition-aware cached lookups ──────────────────────────────────────────
 
-@st.cache_data(ttl=300, show_spinner=False)
-def _all_players() -> list[str]:
+@st.cache_data(ttl=600, show_spinner=False)
+def _players_for(competition: str) -> list[str]:
+    """All player names for the given competition (batter + bowler combined)."""
     try:
-        df = query("""
-            SELECT DISTINCT batter AS name FROM deliveries WHERE batter IS NOT NULL
+        league_sql, league_vals = get_sql_filter(competition, "m")
+        where = f"WHERE {league_sql}" if league_sql != "1=1" else ""
+        sql = f"""
+            SELECT DISTINCT batter AS name
+            FROM deliveries d
+            JOIN matches m ON d.match_id = m.match_id
+            {where} AND d.batter IS NOT NULL
             UNION
-            SELECT DISTINCT bowler AS name FROM deliveries WHERE bowler IS NOT NULL
+            SELECT DISTINCT bowler AS name
+            FROM deliveries d
+            JOIN matches m ON d.match_id = m.match_id
+            {where} AND d.bowler IS NOT NULL
             ORDER BY name
-        """)
+        """
+        # values used twice (batter + bowler union)
+        df = query(sql, league_vals + league_vals if league_vals else None)
         return df["name"].dropna().tolist()
     except Exception:
         return []
 
 
-@st.cache_data(ttl=300, show_spinner=False)
-def _all_venues() -> list[str]:
+@st.cache_data(ttl=600, show_spinner=False)
+def _venues_for(competition: str) -> list[str]:
     try:
-        df = query("SELECT DISTINCT venue FROM matches WHERE venue IS NOT NULL ORDER BY venue")
+        league_sql, league_vals = get_sql_filter(competition, "m")
+        where = f"WHERE {league_sql}" if league_sql != "1=1" else ""
+        sql = f"""
+            SELECT DISTINCT venue FROM matches m
+            {where} AND venue IS NOT NULL
+            ORDER BY venue
+        """
+        df = query(sql, league_vals or None)
         return df["venue"].dropna().tolist()
     except Exception:
         return []
 
 
-@st.cache_data(ttl=300, show_spinner=False)
-def _all_teams() -> list[str]:
+@st.cache_data(ttl=600, show_spinner=False)
+def _teams_for(competition: str) -> list[str]:
     try:
-        df = query("""
-            SELECT DISTINCT team1 AS team FROM matches WHERE team1 IS NOT NULL
+        league_sql, league_vals = get_sql_filter(competition, "m")
+        where = f"WHERE {league_sql}" if league_sql != "1=1" else ""
+        sql = f"""
+            SELECT DISTINCT team1 AS team FROM matches m {where}
             UNION
-            SELECT DISTINCT team2 AS team FROM matches WHERE team2 IS NOT NULL
+            SELECT DISTINCT team2 AS team FROM matches m {where}
             ORDER BY team
-        """)
+        """
+        df = query(sql, (league_vals + league_vals) if league_vals else None)
         return df["team"].dropna().tolist()
     except Exception:
         return []
 
 
-@st.cache_data(ttl=300, show_spinner=False)
-def _all_seasons() -> list[str]:
+@st.cache_data(ttl=600, show_spinner=False)
+def _seasons_for(competition: str) -> list[str]:
     try:
-        df = query("SELECT DISTINCT season FROM matches WHERE season IS NOT NULL ORDER BY season DESC")
+        league_sql, league_vals = get_sql_filter(competition, "m")
+        where = f"WHERE {league_sql}" if league_sql != "1=1" else ""
+        sql = f"SELECT DISTINCT season FROM matches m {where} AND season IS NOT NULL ORDER BY season DESC"
+        df = query(sql, league_vals or None)
         return df["season"].dropna().tolist()
     except Exception:
         return []
 
 
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=600, show_spinner=False)
 def _db_overview() -> dict:
     try:
-        matches   = query("SELECT COUNT(*) AS n FROM matches")["n"].iloc[0]
-        delivs    = query("SELECT COUNT(*) AS n FROM deliveries")["n"].iloc[0]
-        players   = query("SELECT COUNT(DISTINCT batter) AS n FROM deliveries")["n"].iloc[0]
-        formats   = query("SELECT DISTINCT format FROM matches WHERE format IS NOT NULL ORDER BY format")
+        matches  = query("SELECT COUNT(*) AS n FROM matches")["n"].iloc[0]
+        delivs   = query("SELECT COUNT(*) AS n FROM deliveries")["n"].iloc[0]
+        players  = query("SELECT COUNT(DISTINCT batter) AS n FROM deliveries")["n"].iloc[0]
+        fmts_df  = query(
+            "SELECT format, COUNT(*) AS n FROM matches WHERE format IS NOT NULL "
+            "GROUP BY format ORDER BY n DESC"
+        )
         return {
-            "matches": int(matches),
+            "matches":    int(matches),
             "deliveries": int(delivs),
-            "players": int(players),
-            "formats": formats["format"].tolist(),
+            "players":    int(players),
+            "formats":    fmts_df.set_index("format")["n"].to_dict(),
         }
     except Exception:
-        return {"matches": 0, "deliveries": 0, "players": 0, "formats": []}
+        return {"matches": 0, "deliveries": 0, "players": 0, "formats": {}}
 
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# ── Search-filtered selectbox helper ──────────────────────────────────────────
 
-def _render_sidebar(modules_by_cat: dict) -> tuple[str, ModuleParams, dict]:
-    """Render sidebar and return (selected_module_id, params, extra_opts)."""
+def _search_select(label: str, options: list[str], key: str,
+                   all_label: str = "— All —", max_shown: int = 150) -> str | None:
+    """Show a text-search box + selectbox combo.
 
+    The search box narrows the dropdown to matching items so users never
+    have to scroll through thousands of names.
+    Returns the selected value, or None if '— All —' is chosen.
+    """
+    search = st.sidebar.text_input(f"🔍 Search {label.lower()}…", key=f"search_{key}")
+    if search:
+        filtered = [o for o in options if search.lower() in o.lower()]
+    else:
+        filtered = options
+
+    shown = filtered[:max_shown]
+    suffix = f" (showing {max_shown} of {len(filtered)})" if len(filtered) > max_shown else ""
+    display_opts = [all_label] + shown
+
+    sel = st.sidebar.selectbox(
+        f"{label}{suffix}",
+        display_opts,
+        key=f"sel_{key}",
+    )
+    return None if sel == all_label else sel
+
+
+# ── Sidebar renderer ──────────────────────────────────────────────────────────
+
+def _render_sidebar() -> tuple[str, ModuleParams, bool]:
     st.sidebar.markdown("## 🏏 Cricket Analytics")
     st.sidebar.divider()
 
-    # Module selector grouped by category
-    category_labels = {"basic": "📊 Basic", "intermediate": "⚡ Intermediate", "advanced": "🤖 Advanced"}
-    all_modules = list_modules()
+    # ── Competition (formerly Format) ─────────────────────────────────────────
+    comp_labels = [c.label for c in COMPETITIONS]
+    comp_emojis = {c.label: c.emoji for c in COMPETITIONS}
+    comp_descs  = {c.label: c.description for c in COMPETITIONS}
 
-    options = []
-    for cat, label in category_labels.items():
-        cat_modules = [m for m in all_modules if m["category"] == cat]
-        if cat_modules:
-            options.append(f"── {label} ──")
-            for m in cat_modules:
+    selected_comp = st.sidebar.selectbox(
+        "Competition",
+        comp_labels,
+        format_func=lambda x: f"{comp_emojis[x]} {x}",
+        key="competition",
+    )
+    st.sidebar.caption(comp_descs.get(selected_comp, ""))
+
+    # ── Module selector ───────────────────────────────────────────────────────
+    st.sidebar.divider()
+    all_mods = list_modules()
+    cat_order = ["basic", "intermediate", "advanced"]
+    cat_emoji = {"basic": "📊", "intermediate": "⚡", "advanced": "🤖"}
+
+    options: list[str] = []
+    for cat in cat_order:
+        mods = [m for m in all_mods if m["category"] == cat]
+        if mods:
+            options.append(f"── {cat_emoji[cat]} {cat.title()} ──")
+            for m in mods:
                 options.append(f"  {m['id']} — {m['name']}")
 
-    # Default to first real module
-    real_options = [o for o in options if not o.startswith("──")]
+    real_opts = [o for o in options if not o.startswith("──")]
+    default_idx = options.index(real_opts[0]) if real_opts else 0
 
     selected_label = st.sidebar.selectbox(
         "Analysis Module",
         options,
-        format_func=lambda x: x,
-        index=options.index(real_options[0]) if real_options else 0,
+        index=default_idx,
+        key="module_select",
     )
-
-    # Skip separators
     if selected_label.startswith("──"):
-        selected_label = real_options[0]
+        selected_label = real_opts[0]
 
     module_id = selected_label.strip().split(" — ")[0].strip()
 
@@ -133,102 +199,80 @@ def _render_sidebar(modules_by_cat: dict) -> tuple[str, ModuleParams, dict]:
     except Exception:
         supported = set()
 
+    # ── Dynamic filters ───────────────────────────────────────────────────────
     st.sidebar.divider()
     st.sidebar.markdown("### Filters")
 
-    players = _all_players()
-    venues  = _all_venues()
-    teams   = _all_teams()
-    seasons = _all_seasons()
-
-    player, player2, team, season, fmt, venue, phase = (None,) * 7
+    player = player2 = team = season = venue = phase = None
     extra = {}
 
-    # Format (shown for most modules)
-    if "format" in supported:
-        overview = _db_overview()
-        available_formats = ["All"] + overview.get("formats", ["T20", "IPL", "ODI", "Test"])
-        fmt = st.sidebar.selectbox("Format", available_formats, index=0)
-        if fmt == "All":
-            fmt = None
+    # Load lists filtered to the selected competition (cached)
+    all_players = _players_for(selected_comp) if any(
+        f in supported for f in ("player", "player2")) else []
+    all_venues  = _venues_for(selected_comp)  if "venue"  in supported else []
+    all_teams   = _teams_for(selected_comp)   if "team"   in supported else []
+    all_seasons = _seasons_for(selected_comp) if "season" in supported else []
 
-    # Player autocomplete
     if "player" in supported:
         label = "Batter" if module_id == "B4" else "Player"
-        player_opts = ["— All Players —"] + players
-        sel = st.sidebar.selectbox(
-            label,
-            player_opts,
-            index=0,
-            help="Start typing to search",
-        )
-        player = None if sel == "— All Players —" else sel
+        player = _search_select(label, all_players, key="player", all_label="— All Players —")
 
-    # Player 2 (Head-to-Head only)
     if "player2" in supported:
-        player2_opts = ["— All Bowlers —"] + players
-        sel2 = st.sidebar.selectbox(
-            "Bowler",
-            player2_opts,
-            index=0,
-            help="Start typing to search",
-        )
-        player2 = None if sel2 == "— All Bowlers —" else sel2
+        player2 = _search_select("Bowler", all_players, key="player2",
+                                 all_label="— All Bowlers —")
 
-    # Team autocomplete
     if "team" in supported:
-        team_opts = ["— All Teams —"] + teams
-        sel_t = st.sidebar.selectbox("Team", team_opts, index=0)
-        team = None if sel_t == "— All Teams —" else sel_t
+        team = _search_select("Team", all_teams, key="team",
+                              all_label="— All Teams —")
 
-    # Season
-    if "season" in supported:
-        season_opts = ["— All Seasons —"] + seasons
-        sel_s = st.sidebar.selectbox("Season", season_opts, index=0)
+    if "season" in supported and all_seasons:
+        sel_s = st.sidebar.selectbox(
+            "Season",
+            ["— All Seasons —"] + all_seasons,
+            key="season",
+        )
         season = None if sel_s == "— All Seasons —" else sel_s
 
-    # Venue autocomplete
     if "venue" in supported:
-        venue_opts = ["— All Venues —"] + venues
-        sel_v = st.sidebar.selectbox("Venue", venue_opts, index=0, help="Start typing to search")
-        venue = None if sel_v == "— All Venues —" else sel_v
+        venue = _search_select("Venue", all_venues, key="venue",
+                               all_label="— All Venues —")
 
-    # Phase (B2, I1)
     if "phase" in supported:
-        phase_opts = {"None": None, "Powerplay (0–5)": "powerplay",
-                      "Middle (6–14)": "middle", "Death (15–19)": "death"}
-        sel_ph = st.sidebar.selectbox("Phase", list(phase_opts.keys()), index=0)
-        phase = phase_opts[sel_ph]
+        phase_map = {
+            "None": None,
+            "Powerplay (0–5)": "powerplay",
+            "Middle (6–14)":   "middle",
+            "Death (15–19)":   "death",
+        }
+        sel_ph = st.sidebar.selectbox("Phase", list(phase_map), key="phase")
+        phase = phase_map[sel_ph]
 
-    # Module-specific extra options
+    # Module-specific extras
     if module_id == "B5":
-        cap = st.sidebar.selectbox(
-            "Leaderboard",
-            {"🟠 Orange Cap (Runs)": "orange", "🟣 Purple Cap (Wickets)": "purple",
-             "⚡ Strike Rate": "sr", "💰 Economy": "economy"},
-        )
-        extra["cap"] = {
-            "🟠 Orange Cap (Runs)": "orange",
+        cap_map = {
+            "🟠 Orange Cap (Runs)":    "orange",
             "🟣 Purple Cap (Wickets)": "purple",
-            "⚡ Strike Rate": "sr",
-            "💰 Economy": "economy",
-        }.get(cap, "orange")
+            "⚡ Strike Rate Leaders":  "sr",
+            "💰 Economy Leaders":      "economy",
+        }
+        sel_cap = st.sidebar.selectbox("Leaderboard", list(cap_map), key="cap")
+        extra["cap"] = cap_map[sel_cap]
 
     st.sidebar.divider()
-    run_clicked = st.sidebar.button("▶  Run Analysis", type="primary", use_container_width=True)
+    run_btn = st.sidebar.button("▶  Run Analysis", type="primary",
+                                use_container_width=True, key="run_btn")
 
     params = ModuleParams(
+        format=selected_comp,
         player=player,
         player2=player2,
         team=team,
         season=season,
-        format=fmt,
         venue=venue,
         phase=phase,
         extra=extra,
     )
-
-    return module_id, params, run_clicked
+    return module_id, params, run_btn
 
 
 # ── Results renderer ──────────────────────────────────────────────────────────
@@ -237,29 +281,25 @@ def _render_results(module_id: str, params: ModuleParams):
     mod = get_module(module_id)
 
     with st.spinner(f"Running {mod.module_id}: {mod.module_name}…"):
-        df = mod.run(params)
-        tabs_data = mod.run_tabs(params)  # may be None
+        df       = mod.run(params)
+        tabs_data = mod.run_tabs(params)
 
     if df.empty:
-        st.warning("No results found for the selected filters. Try broadening your search.")
+        st.warning("No data for the selected filters — try a different competition or broader filters.")
         return
 
-    # ── Main results ──────────────────────────────────────────────────────
     st.subheader(f"📋 {mod.module_name}")
 
     if tabs_data:
-        # Multi-tab layout (e.g. B6 Venue Analysis)
-        tab_labels = ["📊 Overview"] + list(tabs_data.keys())
+        tab_labels  = ["📊 Overview"] + list(tabs_data.keys())
         tab_objects = st.tabs(tab_labels)
-
         with tab_objects[0]:
             _show_df_and_plot(df, mod, params, key="main")
-
-        for i, (tab_name, tab_df) in enumerate(tabs_data.items(), start=1):
+        for i, (name, tdf) in enumerate(tabs_data.items(), 1):
             with tab_objects[i]:
-                if tab_df is not None and not tab_df.empty:
-                    st.dataframe(tab_df, use_container_width=True, hide_index=True)
-                    _csv_download(tab_df, f"{module_id}_{tab_name}.csv")
+                if tdf is not None and not tdf.empty:
+                    st.dataframe(tdf, use_container_width=True, hide_index=True)
+                    _dl_btn(tdf, f"{module_id}_{name}.csv")
                 else:
                     st.info("No data for this view with the current filters.")
     else:
@@ -268,8 +308,7 @@ def _render_results(module_id: str, params: ModuleParams):
 
 def _show_df_and_plot(df, mod, params, key=""):
     st.dataframe(df, use_container_width=True, hide_index=True)
-    _csv_download(df, f"{mod.module_id}_results.csv")
-
+    _dl_btn(df, f"{mod.module_id}_results.csv")
     try:
         fig = mod.plot(df, params)
         if fig:
@@ -280,34 +319,65 @@ def _show_df_and_plot(df, mod, params, key=""):
         st.caption(f"Chart unavailable: {e}")
 
 
-def _csv_download(df, filename: str):
-    st.download_button(
-        "⬇ Download CSV",
-        df.to_csv(index=False),
-        file_name=filename,
-        mime="text/csv",
-    )
+def _dl_btn(df, filename: str):
+    st.download_button("⬇ Download CSV", df.to_csv(index=False),
+                       file_name=filename, mime="text/csv")
 
 
-# ── DB overview metrics ───────────────────────────────────────────────────────
+# ── DB overview bar ───────────────────────────────────────────────────────────
 
 def _render_overview():
     st.divider()
     ov = _db_overview()
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Matches in DB",    f"{ov['matches']:,}")
-    col2.metric("Balls (deliveries)", f"{ov['deliveries']:,}")
-    col3.metric("Unique Players",   f"{ov['players']:,}")
-    col4.metric("Formats loaded",   ", ".join(ov["formats"]) or "None")
+    cols = st.columns(4)
+    cols[0].metric("Matches",     f"{ov['matches']:,}")
+    cols[1].metric("Balls (deliveries)", f"{ov['deliveries']:,}")
+    cols[2].metric("Players",     f"{ov['players']:,}")
+    fmt_str = "  ·  ".join(
+        f"{fmt} ({n:,})" for fmt, n in list(ov["formats"].items())[:5]
+    ) or "None loaded"
+    cols[3].metric("Formats loaded", fmt_str)
+
+    # Show ingest hint if franchise leagues are missing
+    loaded_fmts = set(ov["formats"].keys())
+    missing = [c.label for c in COMPETITIONS
+               if c.label not in ("T20 International",) and
+               c.label.upper() not in loaded_fmts and
+               c.cricsheet_key.upper() not in loaded_fmts]
+    if missing:
+        with st.expander(f"📥 {len(missing)} competition(s) not yet loaded — click to see how"):
+            st.markdown("Run these commands to download more data:")
+            for c in COMPETITIONS:
+                if c.label in missing:
+                    st.code(
+                        f"python -m src.cricket_analytics.cli ingest --format {c.cricsheet_key}",
+                        language="bash",
+                    )
+
+
+# ── Welcome screen ────────────────────────────────────────────────────────────
+
+def _render_welcome(modules_by_cat: dict):
+    st.markdown("### 👈 Select a competition & module, then click **▶ Run Analysis**")
+    with st.expander("📖 Available Modules", expanded=True):
+        cols = st.columns(2)
+        for i, (cat, mods) in enumerate(modules_by_cat.items()):
+            emoji = {"basic": "📊", "intermediate": "⚡", "advanced": "🤖"}.get(cat, "")
+            with cols[i % 2]:
+                st.markdown(f"**{emoji} {cat.title()}**")
+                for m in mods:
+                    st.markdown(f"- `{m['id']}` {m['name']}")
+    with st.expander("🏟️ Available Competitions"):
+        for c in COMPETITIONS:
+            st.markdown(f"**{c.emoji} {c.label}** — {c.description}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    # Page header
     st.markdown(
         "<h1 style='margin-bottom:0'>🏏 Cricket Analytics Platform</h1>"
-        "<p style='color:gray;margin-top:4px'>IPL · T20I · ODI · Test — powered by Cricsheet</p>",
+        "<p style='color:gray;margin-top:4px'>T20 · IPL · BBL · PSL · CPL · SA20 · Hundred · Blast</p>",
         unsafe_allow_html=True,
     )
 
@@ -316,17 +386,16 @@ def main():
         st.error("No modules registered. Check module imports.")
         return
 
-    modules_by_cat = {}
+    modules_by_cat: dict[str, list] = {}
     for m in all_mods:
         modules_by_cat.setdefault(m["category"], []).append(m)
 
-    module_id, params, run_clicked = _render_sidebar(modules_by_cat)
+    module_id, params, run_clicked = _render_sidebar()
 
-    # Persist results across sidebar interactions
     if run_clicked:
         st.session_state["last_module_id"] = module_id
-        st.session_state["last_params"] = params
-        st.session_state["has_results"] = True
+        st.session_state["last_params"]    = params
+        st.session_state["has_results"]    = True
 
     if st.session_state.get("has_results"):
         _render_results(
@@ -334,16 +403,7 @@ def main():
             st.session_state["last_params"],
         )
     else:
-        # Welcome screen
-        st.markdown("### Select a module from the sidebar and click **▶ Run Analysis**")
-        with st.expander("📖 Available Modules", expanded=True):
-            cols = st.columns(2)
-            for i, (cat, mods) in enumerate(modules_by_cat.items()):
-                cat_emoji = {"basic": "📊", "intermediate": "⚡", "advanced": "🤖"}.get(cat, "")
-                with cols[i % 2]:
-                    st.markdown(f"**{cat_emoji} {cat.title()}**")
-                    for m in mods:
-                        st.markdown(f"- `{m['id']}` {m['name']}")
+        _render_welcome(modules_by_cat)
 
     _render_overview()
 

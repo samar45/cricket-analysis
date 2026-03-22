@@ -67,14 +67,24 @@ class BaseModule(ABC):
 
     def _build_where_clauses(self, params: ModuleParams, table_prefix: str = "") -> tuple[str, list]:
         """Build SQL WHERE clauses from standard params. Returns (sql_fragment, bind_values)."""
+        from src.cricket_analytics.leagues import get_sql_filter, COMPETITION_MAP
+
         clauses = []
         values = []
         p = f"{table_prefix}." if table_prefix else ""
 
+        # Competition/format filter — uses league-aware SQL from leagues.py
         fmt = params.format
-        if fmt and fmt.lower() not in ("all", ""):
-            clauses.append(f"{p}format = ?")
-            values.append(fmt)
+        if fmt and fmt not in ("All T20", ""):
+            if fmt in COMPETITION_MAP:
+                league_sql, league_vals = get_sql_filter(fmt, table_prefix)
+                if league_sql != "1=1":
+                    clauses.append(league_sql)
+                    values.extend(league_vals)
+            else:
+                # Fallback: raw format column match
+                clauses.append(f"{p}format = ?")
+                values.append(fmt)
 
         if params.team:
             clauses.append(f"({p}team1 ILIKE ? OR {p}team2 ILIKE ?)")
