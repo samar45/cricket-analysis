@@ -25,10 +25,14 @@ def cli(verbose: bool):
 
 @cli.command()
 def setup():
-    """Initialise the database schema."""
+    """Initialise the database schema and normalise existing venue names."""
     from src.cricket_analytics.db import init_schema
+    from preprocessing.venues import migrate_venues
     init_schema()
     click.echo("Database schema initialised.")
+    n = migrate_venues()
+    if n:
+        click.echo(f"Normalised {n} venue name(s) in DB.")
 
 
 @cli.command()

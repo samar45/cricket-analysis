@@ -102,42 +102,49 @@ class VenueAnalysis(BaseModule):
 
     def _venue_match_stats(self, params: ModuleParams) -> pd.DataFrame:
         where, values = self._build_where_clauses(params, "m")
+        # WHERE is inside the CTE only — outer query joins via match_id,
+        # so the filter is applied exactly once (no duplicated bind values).
         sql = f"""
-        WITH inn AS (
-            SELECT d.match_id, d.innings, SUM(d.runs_total) AS score,
-                   COUNT(*) FILTER (WHERE d.wicket_type IS NOT NULL) AS wickets
-            FROM deliveries d
-            JOIN matches m ON d.match_id = m.match_id
+        WITH filtered_matches AS (
+            SELECT m.match_id, m.venue, m.season, m.winner,
+                   m.toss_winner, m.toss_decision, m.team1, m.team2
+            FROM matches m
             WHERE {where}
+        ),
+        inn AS (
+            SELECT d.match_id, d.innings, SUM(d.runs_total) AS score
+            FROM deliveries d
+            JOIN filtered_matches fm ON d.match_id = fm.match_id
             GROUP BY d.match_id, d.innings
         )
         SELECT
-            m.venue,
-            m.season,
-            COUNT(DISTINCT m.match_id)                                    AS matches,
-            ROUND(AVG(inn.score) FILTER (WHERE inn.innings = 1), 1)       AS avg_1st_innings,
-            ROUND(AVG(inn.score) FILTER (WHERE inn.innings = 2), 1)       AS avg_2nd_innings,
-            MAX(inn.score) FILTER (WHERE inn.innings = 1)                 AS highest_1st_innings,
-            MAX(inn.score) FILTER (WHERE inn.innings = 2)                 AS highest_2nd_innings,
+            fm.venue,
+            fm.season,
+            COUNT(DISTINCT fm.match_id)                                      AS matches,
+            ROUND(AVG(inn.score) FILTER (WHERE inn.innings = 1), 1)          AS avg_1st_innings,
+            ROUND(AVG(inn.score) FILTER (WHERE inn.innings = 2), 1)          AS avg_2nd_innings,
+            MAX(inn.score) FILTER (WHERE inn.innings = 1)                    AS highest_1st_innings,
+            MAX(inn.score) FILTER (WHERE inn.innings = 2)                    AS highest_2nd_innings,
             ROUND(
-                COUNT(DISTINCT m.match_id) FILTER (
-                    WHERE (m.toss_decision = 'bat' AND m.winner = m.team1)
-                    OR (m.toss_decision = 'field' AND m.winner = m.team2)
-                ) * 100.0 / NULLIF(COUNT(DISTINCT m.match_id) FILTER (WHERE m.winner IS NOT NULL), 0),
+                COUNT(DISTINCT fm.match_id) FILTER (
+                    WHERE (fm.toss_decision = 'bat'   AND fm.winner = fm.team1)
+                       OR (fm.toss_decision = 'field' AND fm.winner = fm.team2)
+                ) * 100.0
+                / NULLIF(COUNT(DISTINCT fm.match_id) FILTER (WHERE fm.winner IS NOT NULL), 0),
                 1
-            )                                                             AS bat_first_win_pct,
+            )                                                                AS bat_first_win_pct,
             ROUND(
-                COUNT(DISTINCT m.match_id) FILTER (WHERE m.toss_winner = m.winner)
-                * 100.0 / NULLIF(COUNT(DISTINCT m.match_id) FILTER (WHERE m.winner IS NOT NULL), 0),
+                COUNT(DISTINCT fm.match_id) FILTER (WHERE fm.toss_winner = fm.winner)
+                * 100.0
+                / NULLIF(COUNT(DISTINCT fm.match_id) FILTER (WHERE fm.winner IS NOT NULL), 0),
                 1
-            )                                                             AS toss_winner_wins_pct
-        FROM matches m
-        JOIN inn ON m.match_id = inn.match_id
-        WHERE {where}
-        GROUP BY m.venue, m.season
-        ORDER BY m.season DESC
+            )                                                                AS toss_winner_wins_pct
+        FROM filtered_matches fm
+        JOIN inn ON fm.match_id = inn.match_id
+        GROUP BY fm.venue, fm.season
+        ORDER BY fm.season DESC
         """
-        return query(sql, values)
+        return query(sql, values)  # values used exactly once in filtered_matches CTE
 
     def _best_batters(self, params: ModuleParams) -> pd.DataFrame:
         where, values = self._build_where_clauses(params, "m")

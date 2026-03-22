@@ -190,13 +190,15 @@ def load_to_db(format_key: str, data_dir: Path | None = None) -> int:
             elif meta.get("outcome") in ("tie", "no result", "draw"):
                 result_type = meta["outcome"]
 
+            from preprocessing.venues import normalise_venue
+            raw_venue = str(first_row.get("venue", meta.get("venue", "")))
             match_rows.append({
                 "match_id":        match_id,
                 "date":            str(first_row.get("start_date", "")),
                 "format":          format_label,
                 "tournament":      meta.get("event", tournament_label),
                 "season":          str(first_row.get("season", meta.get("season", ""))),
-                "venue":           str(first_row.get("venue",  meta.get("venue",  ""))),
+                "venue":           normalise_venue(raw_venue),
                 "city":            meta.get("city", ""),
                 "team1":           teams[0] if len(teams) > 0 else str(first_row.get("batting_team", "")),
                 "team2":           teams[1] if len(teams) > 1 else str(first_row.get("bowling_team", "")),

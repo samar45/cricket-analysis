@@ -24,8 +24,7 @@ sources:
       - "cpl"           # Caribbean Premier League
       - "sa20"          # SA20 (South Africa)
       - "hundred"       # The Hundred (England)
-      - "blast"         # T20 Blast (England)
-      - "wpl"           # Women's Premier League (India)
+      - "blast"         # Vitality T20 Blast (England)
     file_type: "csv"    # csv or json
 
   kaggle:

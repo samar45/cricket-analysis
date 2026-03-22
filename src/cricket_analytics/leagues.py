@@ -15,45 +15,39 @@ from dataclasses import dataclass
 # Key is also used as the sub-folder under data/raw/cricsheet/
 
 CRICSHEET_URLS = {
-    # International T20s (all countries)
+    # International T20s (all countries — men)
     "t20s":    "https://cricsheet.org/downloads/t20s_csv2.zip",
-    # Franchise leagues
+    # Franchise leagues (verified 200 OK as of 2026-03)
     "ipl":     "https://cricsheet.org/downloads/ipl_csv2.zip",
     "bbl":     "https://cricsheet.org/downloads/bbl_csv2.zip",
     "psl":     "https://cricsheet.org/downloads/psl_csv2.zip",
     "cpl":     "https://cricsheet.org/downloads/cpl_csv2.zip",
-    "sa20":    "https://cricsheet.org/downloads/sa20_csv2.zip",
-    "hundred": "https://cricsheet.org/downloads/the_hundred_csv2.zip",
-    "blast":   "https://cricsheet.org/downloads/t20_blast_csv2.zip",
-    "wpl":     "https://cricsheet.org/downloads/wpl_csv2.zip",
-    "super_smash": "https://cricsheet.org/downloads/super_smash_csv2.zip",
+    "sa20":    "https://cricsheet.org/downloads/sat_male_csv2.zip",    # SA20 slug = "sat"
+    "hundred": "https://cricsheet.org/downloads/hnd_male_csv2.zip",    # Hundred slug = "hnd"
+    "blast":   "https://cricsheet.org/downloads/ntb_male_csv2.zip",    # NatWest/Vitality T20 Blast = "ntb"
 }
 
 # What format label to store in the matches table for each key
 CRICSHEET_FORMAT_LABELS = {
-    "t20s":        "T20",
-    "ipl":         "IPL",
-    "bbl":         "BBL",
-    "psl":         "PSL",
-    "cpl":         "CPL",
-    "sa20":        "SA20",
-    "hundred":     "Hundred",
-    "blast":       "Blast",
-    "wpl":         "WPL",
-    "super_smash": "Super Smash",
+    "t20s":    "T20",
+    "ipl":     "IPL",
+    "bbl":     "BBL",
+    "psl":     "PSL",
+    "cpl":     "CPL",
+    "sa20":    "SA20",
+    "hundred": "Hundred",
+    "blast":   "Blast",
 }
 
 CRICSHEET_TOURNAMENT_LABELS = {
-    "t20s":        "T20I",
-    "ipl":         "IPL",
-    "bbl":         "Big Bash League",
-    "psl":         "Pakistan Super League",
-    "cpl":         "Caribbean Premier League",
-    "sa20":        "SA20",
-    "hundred":     "The Hundred",
-    "blast":       "T20 Blast",
-    "wpl":         "Women's Premier League",
-    "super_smash": "Super Smash",
+    "t20s":    "T20I",
+    "ipl":     "IPL",
+    "bbl":     "Big Bash League",
+    "psl":     "Pakistan Super League",
+    "cpl":     "Caribbean Premier League",
+    "sa20":    "SA20",
+    "hundred": "The Hundred",
+    "blast":   "Vitality T20 Blast",
 }
 
 
@@ -128,13 +122,6 @@ COMPETITIONS: list[Competition] = [
         cricsheet_key="blast",
         sql_filter="({p}format = 'Blast' OR {p}tournament ILIKE '%T20 Blast%' OR {p}tournament ILIKE '%Vitality Blast%')",
         description="Vitality T20 Blast (England & Wales)",
-    ),
-    Competition(
-        label="WPL",
-        emoji="👸",
-        cricsheet_key="wpl",
-        sql_filter="({p}format = 'WPL' OR {p}tournament ILIKE '%Women%Premier%')",
-        description="Women's Premier League (India)",
     ),
 ]
 
