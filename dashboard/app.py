@@ -1,6 +1,10 @@
 """Streamlit dashboard — Cricket Analytics Platform.
 
-Run with:  streamlit run dashboard/app.py
+Design:
+  Sidebar  = Competition picker + Module navigation ONLY (clean, minimal)
+  Main     = Module-specific inline filters + results + charts
+  Filters are contextual — each module shows only the filters it needs,
+  rendered IN the page above the results (not crammed into the sidebar).
 """
 
 import sys
@@ -21,647 +25,581 @@ st.set_page_config(
 import modules.basic        # noqa: F401
 import modules.intermediate # noqa: F401
 
+import pandas as pd
+import plotly.graph_objects as go
+
 from modules.base import list_modules, get_module, ModuleParams
 from src.cricket_analytics.db import query
 from src.cricket_analytics.leagues import COMPETITIONS, get_sql_filter
 
-import plotly.graph_objects as go
 
+# ── Constants ────────────────────────────────────────────────────────────────
 
-# ── IPL team colours ──────────────────────────────────────────────────────────
-
-IPL_TEAM_COLORS: dict[str, str] = {
-    "Mumbai Indians":                "#005DA0",
-    "Chennai Super Kings":           "#F9CD05",
-    "Royal Challengers Bengaluru":   "#EC1C24",
-    "Royal Challengers Bangalore":   "#EC1C24",
-    "Kolkata Knight Riders":         "#3A225D",
-    "Delhi Capitals":                "#0078BC",
-    "Delhi Daredevils":              "#0078BC",
-    "Punjab Kings":                  "#ED1B24",
-    "Kings XI Punjab":               "#ED1B24",
-    "Rajasthan Royals":              "#254AA5",
-    "Sunrisers Hyderabad":           "#F7A721",
-    "Gujarat Titans":                "#1C1C1C",
-    "Lucknow Super Giants":          "#A72056",
-    "Deccan Chargers":               "#F7A721",
-    "Kochi Tuskers Kerala":          "#6B2737",
-    "Pune Warriors":                 "#1B4F8A",
-    "Rising Pune Supergiants":       "#6F347A",
-    "Rising Pune Supergiant":        "#6F347A",
-    "Gujarat Lions":                 "#D4A017",
+IPL_TEAM_COLORS = {
+    "Mumbai Indians": "#005DA0", "Chennai Super Kings": "#FCCA06",
+    "Royal Challengers Bengaluru": "#EC1C24", "Kolkata Knight Riders": "#3A225D",
+    "Delhi Capitals": "#004C93", "Punjab Kings": "#DD1F2D",
+    "Rajasthan Royals": "#254AA5", "Sunrisers Hyderabad": "#FF822A",
+    "Gujarat Titans": "#1C1C1C", "Lucknow Super Giants": "#A72056",
+    "Deccan Chargers": "#F7A721", "Rising Pune Supergiants": "#6F347A",
+    "Gujarat Lions": "#D4A017", "Kochi Tuskers Kerala": "#6B2737",
+    "Pune Warriors": "#1B4F8A",
 }
 
-_DEFAULT_COLOR = "#4A90D9"
+MODULE_NAV = [
+    ("🏠  Overview",          None),
+    ("🏏  Batting Stats",     "B1"),
+    ("🎯  Bowling Stats",     "B2"),
+    ("🏆  Team Performance",  "B3"),
+    ("⚔️  Head to Head",     "B4"),
+    ("👑  Leaderboards",      "B5"),
+    ("🏟️  Venue Analysis",   "B6"),
+    ("📊  Phase Breakdown",   "I1"),
+    ("🤝  Partnerships",      "I2"),
+    ("💥  Impact Score",      "I3"),
+    ("📈  Form Tracker",      "I4"),
+]
+
+MODULE_DESC = {
+    "B1": "Career batting stats — runs, average, strike rate, 50s, 100s, highest score",
+    "B2": "Career bowling stats — wickets, economy, average, dot ball %",
+    "B3": "Team win/loss records, toss advantage, performance trends",
+    "B4": "Batter vs bowler head-to-head matchup: runs, dismissals, dots, strike rate",
+    "B5": "Orange Cap, Purple Cap, Strike Rate and Economy leaderboards",
+    "B6": "Venue deep-dive: avg scores, bat-first win %, best batters & bowlers at a ground",
+    "I1": "Powerplay / Middle / Death overs breakdown for teams and players",
+    "I2": "Top batting partnerships by total runs and partnership strike rate",
+    "I3": "Combined batting + bowling impact score to find all-rounders",
+    "I4": "Rolling average form tracker — see who's in/out of form",
+}
 
 
-def _team_color(team: str, competition: str) -> str:
-    if competition == "IPL":
-        return IPL_TEAM_COLORS.get(team, _DEFAULT_COLOR)
-    return _DEFAULT_COLOR
-
-
-# ── Competition-aware cached lookups ──────────────────────────────────────────
+# ── Cached data loaders ──────────────────────────────────────────────────────
 
 @st.cache_data(ttl=600, show_spinner=False)
-def _players_for(competition: str) -> list[str]:
-    """All player names for the given competition (batter + bowler combined)."""
+def _players_for(comp: str) -> list[str]:
+    """Players sorted by matches played (popular names first for easier search)."""
     try:
-        league_sql, league_vals = get_sql_filter(competition, "m")
-        where = f"WHERE {league_sql}" if league_sql != "1=1" else ""
+        sql_f, vals = get_sql_filter(comp, "m")
+        w = f"WHERE {sql_f}" if sql_f != "1=1" else ""
         sql = f"""
-            SELECT DISTINCT batter AS name
-            FROM deliveries d
-            JOIN matches m ON d.match_id = m.match_id
-            {where} AND d.batter IS NOT NULL
-            UNION
-            SELECT DISTINCT bowler AS name
-            FROM deliveries d
-            JOIN matches m ON d.match_id = m.match_id
-            {where} AND d.bowler IS NOT NULL
-            ORDER BY name
+            SELECT name, SUM(appearances) AS n FROM (
+                SELECT d.batter AS name, COUNT(DISTINCT d.match_id) AS appearances
+                FROM deliveries d JOIN matches m ON d.match_id = m.match_id
+                {w} AND d.batter IS NOT NULL GROUP BY d.batter
+                UNION ALL
+                SELECT d.bowler, COUNT(DISTINCT d.match_id)
+                FROM deliveries d JOIN matches m ON d.match_id = m.match_id
+                {w} AND d.bowler IS NOT NULL GROUP BY d.bowler
+            ) GROUP BY name ORDER BY n DESC
         """
-        df = query(sql, league_vals + league_vals if league_vals else None)
-        return df["name"].dropna().tolist()
+        return query(sql, (vals + vals) if vals else None)["name"].dropna().tolist()
     except Exception:
         return []
 
 
 @st.cache_data(ttl=600, show_spinner=False)
-def _venues_for(competition: str) -> list[str]:
+def _batters_for(comp: str) -> list[str]:
     try:
-        league_sql, league_vals = get_sql_filter(competition, "m")
-        where = f"WHERE {league_sql}" if league_sql != "1=1" else ""
+        sql_f, vals = get_sql_filter(comp, "m")
+        w = f"WHERE {sql_f}" if sql_f != "1=1" else ""
         sql = f"""
-            SELECT DISTINCT venue FROM matches m
-            {where} AND venue IS NOT NULL
-            ORDER BY venue
+            SELECT d.batter AS name, SUM(d.runs_batter) AS runs
+            FROM deliveries d JOIN matches m ON d.match_id = m.match_id
+            {w} AND d.batter IS NOT NULL GROUP BY d.batter ORDER BY runs DESC
         """
-        df = query(sql, league_vals or None)
-        return df["venue"].dropna().tolist()
+        return query(sql, vals or None)["name"].dropna().tolist()
     except Exception:
         return []
 
 
 @st.cache_data(ttl=600, show_spinner=False)
-def _teams_for(competition: str) -> list[str]:
+def _bowlers_for(comp: str) -> list[str]:
     try:
-        league_sql, league_vals = get_sql_filter(competition, "m")
-        where = f"WHERE {league_sql}" if league_sql != "1=1" else ""
+        sql_f, vals = get_sql_filter(comp, "m")
+        w = f"WHERE {sql_f}" if sql_f != "1=1" else ""
         sql = f"""
-            SELECT DISTINCT team1 AS team FROM matches m {where}
-            UNION
-            SELECT DISTINCT team2 AS team FROM matches m {where}
-            ORDER BY team
+            SELECT d.bowler AS name, COUNT(*) AS wkts
+            FROM deliveries d JOIN matches m ON d.match_id = m.match_id
+            {w} AND d.bowler IS NOT NULL AND d.wicket_type IS NOT NULL
+            GROUP BY d.bowler ORDER BY wkts DESC
         """
-        df = query(sql, (league_vals + league_vals) if league_vals else None)
-        return df["team"].dropna().tolist()
+        return query(sql, vals or None)["name"].dropna().tolist()
     except Exception:
         return []
 
 
 @st.cache_data(ttl=600, show_spinner=False)
-def _seasons_for(competition: str) -> list[str]:
+def _venues_for(comp: str) -> list[str]:
     try:
-        league_sql, league_vals = get_sql_filter(competition, "m")
-        where = f"WHERE {league_sql}" if league_sql != "1=1" else ""
-        sql = f"SELECT DISTINCT season FROM matches m {where} AND season IS NOT NULL ORDER BY season DESC"
-        df = query(sql, league_vals or None)
-        return df["season"].dropna().tolist()
+        sql_f, vals = get_sql_filter(comp, "m")
+        w = f"WHERE {sql_f}" if sql_f != "1=1" else ""
+        return query(
+            f"SELECT DISTINCT venue FROM matches m {w} AND venue IS NOT NULL ORDER BY venue",
+            vals or None
+        )["venue"].dropna().tolist()
     except Exception:
         return []
 
 
-# ── Competition overview (home screen data) ───────────────────────────────────
+@st.cache_data(ttl=600, show_spinner=False)
+def _teams_for(comp: str) -> list[str]:
+    try:
+        sql_f, vals = get_sql_filter(comp, "m")
+        w = f"WHERE {sql_f}" if sql_f != "1=1" else ""
+        return query(
+            f"SELECT DISTINCT team1 AS team FROM matches m {w} UNION "
+            f"SELECT DISTINCT team2 FROM matches m {w} ORDER BY team",
+            (vals + vals) if vals else None
+        )["team"].dropna().tolist()
+    except Exception:
+        return []
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def _seasons_for(comp: str) -> list[str]:
+    try:
+        sql_f, vals = get_sql_filter(comp, "m")
+        w = f"WHERE {sql_f}" if sql_f != "1=1" else ""
+        return query(
+            f"SELECT DISTINCT season FROM matches m {w} AND season IS NOT NULL ORDER BY season DESC",
+            vals or None
+        )["season"].dropna().tolist()
+    except Exception:
+        return []
+
+
+# ── Overview data ─────────────────────────────────────────────────────────────
 
 @st.cache_data(ttl=300, show_spinner=False)
-def _competition_overview(competition: str) -> dict:
-    """Load all data needed for the overview home screen."""
+def _overview_data(comp: str) -> dict:
     try:
-        league_sql, league_vals = get_sql_filter(competition, "m")
-        where_m = f"WHERE {league_sql}" if league_sql != "1=1" else "WHERE 1=1"
-        vals = league_vals or []
+        sql_f, vals = get_sql_filter(comp, "m")
+        w = f"WHERE {sql_f}" if sql_f != "1=1" else "WHERE 1=1"
+        v = vals or []
 
-        # Metrics
-        matches_n = query(
-            f"SELECT COUNT(*) AS n FROM matches m {where_m}", vals or None
-        )["n"].iloc[0]
-        balls_n = query(
-            f"SELECT COUNT(*) AS n FROM deliveries d JOIN matches m ON d.match_id = m.match_id {where_m}",
-            vals or None
-        )["n"].iloc[0]
-        players_n = query(
-            f"SELECT COUNT(DISTINCT d.batter) AS n FROM deliveries d JOIN matches m ON d.match_id = m.match_id {where_m}",
-            vals or None
-        )["n"].iloc[0]
-        seasons_n = query(
-            f"SELECT COUNT(DISTINCT m.season) AS n FROM matches m {where_m}",
-            vals or None
-        )["n"].iloc[0]
+        matches = query(f"SELECT COUNT(*) n FROM matches m {w}", v or None)["n"].iloc[0]
+        balls   = query(f"SELECT COUNT(*) n FROM deliveries d JOIN matches m ON d.match_id=m.match_id {w}", v or None)["n"].iloc[0]
+        players = query(f"SELECT COUNT(DISTINCT d.batter) n FROM deliveries d JOIN matches m ON d.match_id=m.match_id {w}", v or None)["n"].iloc[0]
+        seasons = query(f"SELECT COUNT(DISTINCT m.season) n FROM matches m {w}", v or None)["n"].iloc[0]
 
-        # Top 10 run scorers
-        top_batters = query(f"""
+        top_bat = query(f"""
             SELECT d.batter AS player, SUM(d.runs_batter) AS runs
-            FROM deliveries d
-            JOIN matches m ON d.match_id = m.match_id
-            {where_m}
-            GROUP BY d.batter
-            ORDER BY runs DESC
-            LIMIT 10
-        """, vals or None)
+            FROM deliveries d JOIN matches m ON d.match_id=m.match_id {w}
+            GROUP BY d.batter ORDER BY runs DESC LIMIT 10
+        """, v or None)
 
-        # Top 10 wicket takers
-        top_bowlers = query(f"""
+        top_bowl = query(f"""
             SELECT d.bowler AS player, COUNT(*) AS wickets
-            FROM deliveries d
-            JOIN matches m ON d.match_id = m.match_id
-            {where_m}
+            FROM deliveries d JOIN matches m ON d.match_id=m.match_id {w}
             AND d.wicket_type IS NOT NULL
-            AND d.wicket_type NOT IN ('run out', 'retired hurt', 'obstructing the field')
-            GROUP BY d.bowler
-            ORDER BY wickets DESC
-            LIMIT 10
-        """, vals or None)
+            AND d.wicket_type NOT IN ('run out','retired hurt','obstructing the field')
+            GROUP BY d.bowler ORDER BY wickets DESC LIMIT 10
+        """, v or None)
 
-        # Matches per season
-        matches_per_season = query(f"""
-            SELECT m.season, COUNT(*) AS matches
-            FROM matches m {where_m}
-            AND m.season IS NOT NULL
-            GROUP BY m.season
-            ORDER BY m.season
-        """, vals or None)
+        per_season = query(f"""
+            SELECT m.season, COUNT(*) AS matches FROM matches m {w}
+            AND m.season IS NOT NULL GROUP BY m.season ORDER BY m.season
+        """, v or None)
 
-        # Team win records
-        team_wins = query(f"""
-            SELECT winner AS team,
-                   COUNT(*) AS wins
-            FROM matches m {where_m}
-            AND winner IS NOT NULL
-            GROUP BY winner
-        """, vals or None)
+        team_w = query(f"SELECT winner AS team, COUNT(*) wins FROM matches m {w} AND winner IS NOT NULL GROUP BY winner", v or None)
+        team_p = query(f"""
+            SELECT team, COUNT(*) played FROM (
+                SELECT m.team1 AS team FROM matches m {w}
+                UNION ALL SELECT m.team2 FROM matches m {w}
+            ) t GROUP BY team
+        """, (v + v) if v else None)
 
-        team_played = query(f"""
-            SELECT team, COUNT(*) AS played FROM (
-                SELECT m.team1 AS team FROM matches m {where_m}
-                UNION ALL
-                SELECT m.team2 AS team FROM matches m {where_m}
-            ) t
-            GROUP BY team
-        """, (vals + vals) if vals else None)
+        tp = team_p.merge(team_w, on="team", how="left").fillna(0)
+        tp["wins"] = tp["wins"].astype(int)
+        tp["win_pct"] = (tp["wins"] / tp["played"] * 100).round(1)
+        tp = tp.sort_values("win_pct", ascending=False).head(15)
 
-        team_perf = team_played.merge(team_wins, on="team", how="left").fillna(0)
-        team_perf["wins"] = team_perf["wins"].astype(int)
-        team_perf["win_pct"] = (team_perf["wins"] / team_perf["played"] * 100).round(1)
-        team_perf = team_perf.sort_values("win_pct", ascending=False).head(15)
+        # Latest season highlight
+        latest = ts = tb = None
+        if not per_season.empty:
+            latest = str(per_season["season"].iloc[-1])
+            sw = w + f" AND m.season = '{latest}'"
+            r = query(f"SELECT d.batter AS player, SUM(d.runs_batter) AS v FROM deliveries d JOIN matches m ON d.match_id=m.match_id {sw} GROUP BY d.batter ORDER BY v DESC LIMIT 1", v or None)
+            if not r.empty:
+                ts = {"player": r.iloc[0]["player"], "val": int(r.iloc[0]["v"])}
+            r2 = query(f"SELECT d.bowler AS player, COUNT(*) AS v FROM deliveries d JOIN matches m ON d.match_id=m.match_id {sw} AND d.wicket_type IS NOT NULL AND d.wicket_type NOT IN ('run out','retired hurt','obstructing the field') GROUP BY d.bowler ORDER BY v DESC LIMIT 1", v or None)
+            if not r2.empty:
+                tb = {"player": r2.iloc[0]["player"], "val": int(r2.iloc[0]["v"])}
 
-        # Most recent season highlight
-        latest_season = None
-        top_scorer_latest = None
-        top_bowler_latest = None
-
-        if not matches_per_season.empty:
-            latest_season = str(matches_per_season["season"].iloc[-1])
-            season_where = where_m + f" AND m.season = '{latest_season}'"
-
-            ts = query(f"""
-                SELECT d.batter AS player, SUM(d.runs_batter) AS runs
-                FROM deliveries d
-                JOIN matches m ON d.match_id = m.match_id
-                {season_where}
-                GROUP BY d.batter ORDER BY runs DESC LIMIT 1
-            """, vals or None)
-            if not ts.empty:
-                top_scorer_latest = ts.iloc[0]
-
-            tb = query(f"""
-                SELECT d.bowler AS player, COUNT(*) AS wickets
-                FROM deliveries d
-                JOIN matches m ON d.match_id = m.match_id
-                {season_where}
-                AND d.wicket_type IS NOT NULL
-                AND d.wicket_type NOT IN ('run out', 'retired hurt', 'obstructing the field')
-                GROUP BY d.bowler ORDER BY wickets DESC LIMIT 1
-            """, vals or None)
-            if not tb.empty:
-                top_bowler_latest = tb.iloc[0]
-
-        return {
-            "matches": int(matches_n),
-            "balls": int(balls_n),
-            "players": int(players_n),
-            "seasons": int(seasons_n),
-            "top_batters": top_batters,
-            "top_bowlers": top_bowlers,
-            "matches_per_season": matches_per_season,
-            "team_perf": team_perf,
-            "latest_season": latest_season,
-            "top_scorer_latest": top_scorer_latest,
-            "top_bowler_latest": top_bowler_latest,
-        }
+        return {"matches": int(matches), "balls": int(balls), "players": int(players),
+                "seasons": int(seasons), "top_bat": top_bat, "top_bowl": top_bowl,
+                "per_season": per_season, "team_perf": tp,
+                "latest": latest, "ts": ts, "tb": tb}
     except Exception as e:
-        return {
-            "matches": 0, "balls": 0, "players": 0, "seasons": 0,
-            "top_batters": None, "top_bowlers": None,
-            "matches_per_season": None, "team_perf": None,
-            "latest_season": None, "top_scorer_latest": None,
-            "top_bowler_latest": None,
-            "error": str(e),
-        }
+        return {"matches": 0, "balls": 0, "players": 0, "seasons": 0,
+                "top_bat": None, "top_bowl": None, "per_season": None,
+                "team_perf": None, "latest": None, "ts": None, "tb": None, "err": str(e)}
 
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# ── Sidebar (navigation ONLY — no filters) ───────────────────────────────────
 
-def _render_sidebar() -> tuple[str, str | None, ModuleParams, bool]:
-    """Render full sidebar. Returns (competition, module_id_or_None, params, run_clicked)."""
-
-    st.sidebar.markdown("## 🏏 Cricket Analytics")
+def _sidebar() -> tuple[str, str | None]:
+    st.sidebar.markdown("### 🏏 Cricket Analytics")
     st.sidebar.divider()
 
-    # ── Competition selector ──────────────────────────────────────────────────
-    st.sidebar.markdown("**Competition**")
+    # Competition radio
     comp_labels = [c.label for c in COMPETITIONS]
     comp_emojis = {c.label: c.emoji for c in COMPETITIONS}
-
-    selected_comp = st.sidebar.radio(
-        "Competition",
-        comp_labels,
+    comp = st.sidebar.radio(
+        "Competition", comp_labels,
         format_func=lambda x: f"{comp_emojis[x]}  {x}",
-        key="competition",
-        label_visibility="collapsed",
+        key="comp", label_visibility="collapsed",
     )
 
     st.sidebar.divider()
 
-    # ── Module navigation ─────────────────────────────────────────────────────
-    all_mods = list_modules()
-    cat_order   = ["basic", "intermediate"]
-    cat_emoji   = {"basic": "📊", "intermediate": "⚡", "advanced": "🤖"}
-    cat_heading = {"basic": "Basic Analysis", "intermediate": "Advanced Analysis"}
-
-    # Build per-category radio widgets; track which module is selected
-    selected_module_id = st.session_state.get("selected_module_id", None)
-
-    # Overview option always at top
-    st.sidebar.markdown("**Overview**")
-    show_overview = st.sidebar.radio(
-        "overview_nav",
-        ["🏠  Overview"],
-        key="overview_nav",
-        label_visibility="collapsed",
+    # Module radio — single flat list, clean
+    nav_labels = [lbl for lbl, _ in MODULE_NAV]
+    sel = st.sidebar.radio(
+        "Navigate", nav_labels,
+        key="nav", label_visibility="collapsed",
     )
-
-    new_module_id = None  # None means Overview
-
-    for cat in cat_order:
-        mods = [m for m in all_mods if m["category"] == cat]
-        if not mods:
-            continue
-        emoji = cat_emoji.get(cat, "")
-        heading = cat_heading.get(cat, cat.title())
-        st.sidebar.markdown(f"**{emoji} {heading}**")
-
-        mod_labels = [f"{m['id']} — {m['name']}" for m in mods]
-        mod_ids    = [m["id"] for m in mods]
-
-        # Default: no selection (None → first empty option)
-        cat_key = f"nav_{cat}"
-
-        # Determine if a module from this category is currently selected
-        current_cat_selection = None
-        if selected_module_id in mod_ids:
-            current_cat_selection = mod_labels[mod_ids.index(selected_module_id)]
-
-        options_with_none = ["— Select —"] + mod_labels
-        default_idx = 0
-        if current_cat_selection in options_with_none:
-            default_idx = options_with_none.index(current_cat_selection)
-
-        sel = st.sidebar.radio(
-            heading,
-            options_with_none,
-            index=default_idx,
-            key=cat_key,
-            label_visibility="collapsed",
-        )
-        if sel != "— Select —":
-            label_idx = mod_labels.index(sel)
-            new_module_id = mod_ids[label_idx]
-
-    # If a module radio was clicked, update session state and clear overview
-    if new_module_id is not None:
-        if st.session_state.get("selected_module_id") != new_module_id:
-            st.session_state["selected_module_id"] = new_module_id
-            # Reset the other category radios to "— Select —" by clearing their keys
-            # (Streamlit doesn't easily allow resetting radios, but we track via session state)
-        selected_module_id = new_module_id
-    else:
-        # Overview is active — clear any module selection
-        if show_overview == "🏠  Overview":
-            selected_module_id = None
-            st.session_state["selected_module_id"] = None
+    module_id = dict(MODULE_NAV).get(sel)
 
     st.sidebar.divider()
+    st.sidebar.caption("Data: [Cricsheet.org](https://cricsheet.org)")
 
-    # ── Filters (only shown when a module is selected) ─────────────────────
-    run_btn = False
-    params = ModuleParams(format=selected_comp)
-
-    if selected_module_id is not None:
-        try:
-            mod = get_module(selected_module_id)
-            supported = mod.supported_filters
-        except Exception:
-            supported = set()
-
-        player = player2 = team = season = venue = phase = None
-        extra: dict = {}
-
-        all_players = _players_for(selected_comp) if any(
-            f in supported for f in ("player", "player2")) else []
-        all_venues  = _venues_for(selected_comp)  if "venue"  in supported else []
-        all_teams   = _teams_for(selected_comp)   if "team"   in supported else []
-        all_seasons = _seasons_for(selected_comp) if "season" in supported else []
-
-        has_filters = bool(supported - {"format"})
-
-        if has_filters:
-            st.sidebar.markdown("**Filters**")
-
-        if "player" in supported:
-            label = "Batter" if selected_module_id == "B4" else "Player"
-            player = _search_select(label, all_players, key="player",
-                                    all_label="— All Players —")
-
-        if "player2" in supported:
-            player2 = _search_select("Bowler", all_players, key="player2",
-                                     all_label="— All Bowlers —")
-
-        if "team" in supported:
-            team = _search_select("Team", all_teams, key="team",
-                                  all_label="— All Teams —")
-
-        if "season" in supported and all_seasons:
-            sel_s = st.sidebar.selectbox(
-                "Season",
-                ["— All Seasons —"] + all_seasons,
-                key="season",
-            )
-            season = None if sel_s == "— All Seasons —" else sel_s
-
-        if "venue" in supported:
-            venue = _search_select("Venue", all_venues, key="venue",
-                                   all_label="— All Venues —")
-
-        if "phase" in supported:
-            phase_map = {
-                "None": None,
-                "Powerplay (0–5)": "powerplay",
-                "Middle (6–14)":   "middle",
-                "Death (15–19)":   "death",
-            }
-            sel_ph = st.sidebar.selectbox("Phase", list(phase_map), key="phase")
-            phase = phase_map[sel_ph]
-
-        if selected_module_id == "B5":
-            cap_map = {
-                "🟠 Orange Cap (Runs)":    "orange",
-                "🟣 Purple Cap (Wickets)": "purple",
-                "⚡ Strike Rate Leaders":  "sr",
-                "💰 Economy Leaders":      "economy",
-            }
-            sel_cap = st.sidebar.selectbox("Leaderboard", list(cap_map), key="cap")
-            extra["cap"] = cap_map[sel_cap]
-
-        if has_filters:
-            st.sidebar.divider()
-            run_btn = st.sidebar.button(
-                "▶  Run Analysis", type="primary",
-                use_container_width=True, key="run_btn"
-            )
-
-        params = ModuleParams(
-            format=selected_comp,
-            player=player,
-            player2=player2,
-            team=team,
-            season=season,
-            venue=venue,
-            phase=phase,
-            extra=extra,
-        )
-
-    return selected_comp, selected_module_id, params, run_btn
+    return comp, module_id
 
 
-def _search_select(label: str, options: list[str], key: str,
-                   all_label: str = "— All —", max_shown: int = 150) -> str | None:
-    """Search text_input above a selectbox for clean filtered selection."""
-    search = st.sidebar.text_input(f"🔍 Search {label.lower()}…", key=f"search_{key}")
-    filtered = [o for o in options if search.lower() in o.lower()] if search else options
-    shown = filtered[:max_shown]
-    suffix = f" ({max_shown}/{len(filtered)})" if len(filtered) > max_shown else ""
-    display_opts = [all_label] + shown
-    sel = st.sidebar.selectbox(
-        f"{label}{suffix}",
-        display_opts,
-        key=f"sel_{key}",
-    )
-    return None if sel == all_label else sel
+# ── Selectbox helper ──────────────────────────────────────────────────────────
+
+def _pick(label: str, options: list[str], key: str, all_label: str = "All") -> str | None:
+    """Single selectbox with 'All' default. Streamlit's built-in type-to-search works."""
+    val = st.selectbox(label, [all_label] + options, key=key)
+    return None if val == all_label else val
 
 
-# ── Overview home screen ──────────────────────────────────────────────────────
+# ── Per-module filter panels (rendered in main area) ──────────────────────────
 
-def _render_overview(competition: str):
-    comp_obj = next((c for c in COMPETITIONS if c.label == competition), None)
-    emoji = comp_obj.emoji if comp_obj else "🏏"
+def _filters_B1(comp):
+    c1, c2, c3 = st.columns([3, 2, 2])
+    with c1:
+        player = _pick("Player", _players_for(comp), "f_player")
+    with c2:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    with c3:
+        venue = _pick("Venue", _venues_for(comp), "f_venue")
+    return ModuleParams(format=comp, player=player, season=season, venue=venue)
 
-    st.markdown(
-        f"<h1 style='margin-bottom:0'>{emoji} {competition} Analytics</h1>",
-        unsafe_allow_html=True,
-    )
 
-    with st.spinner("Loading overview…"):
-        ov = _competition_overview(competition)
+def _filters_B2(comp):
+    c1, c2, c3, c4 = st.columns([3, 2, 2, 2])
+    with c1:
+        player = _pick("Player", _players_for(comp), "f_player")
+    with c2:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    with c3:
+        venue = _pick("Venue", _venues_for(comp), "f_venue")
+    with c4:
+        ph_map = {"All Phases": None, "Powerplay (1-6)": "powerplay",
+                   "Middle (7-15)": "middle", "Death (16-20)": "death"}
+        phase = ph_map[st.selectbox("Phase", list(ph_map), key="f_phase")]
+    return ModuleParams(format=comp, player=player, season=season, venue=venue, phase=phase)
 
-    if ov.get("error") and ov["matches"] == 0:
-        st.error(f"Could not load data: {ov['error']}")
+
+def _filters_B3(comp):
+    c1, c2, c3 = st.columns([3, 2, 2])
+    with c1:
+        team = _pick("Team", _teams_for(comp), "f_team")
+    with c2:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    with c3:
+        venue = _pick("Venue", _venues_for(comp), "f_venue")
+    return ModuleParams(format=comp, team=team, season=season, venue=venue)
+
+
+def _filters_B4(comp):
+    c1, c2 = st.columns(2)
+    with c1:
+        batter = _pick("🏏 Batter", _batters_for(comp), "f_batter", "All Batters")
+    with c2:
+        bowler = _pick("🎯 Bowler", _bowlers_for(comp), "f_bowler", "All Bowlers")
+    c3, _ = st.columns([2, 3])
+    with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    return ModuleParams(format=comp, player=batter, player2=bowler, season=season)
+
+
+def _filters_B5(comp):
+    c1, c2 = st.columns([3, 2])
+    with c1:
+        cap_map = {"🟠 Orange Cap (Runs)": "orange", "🟣 Purple Cap (Wickets)": "purple",
+                    "⚡ Strike Rate Leaders": "sr", "💰 Economy Leaders": "economy"}
+        cap = cap_map[st.selectbox("Leaderboard", list(cap_map), key="f_cap")]
+    with c2:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    return ModuleParams(format=comp, season=season, extra={"cap": cap})
+
+
+def _filters_B6(comp):
+    c1, c2, c3 = st.columns([3, 2, 2])
+    with c1:
+        venue = _pick("Venue", _venues_for(comp), "f_venue")
+    with c2:
+        team = _pick("Team", _teams_for(comp), "f_team")
+    with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    return ModuleParams(format=comp, venue=venue, team=team, season=season)
+
+
+def _filters_I1(comp):
+    c1, c2, c3 = st.columns([3, 2, 2])
+    with c1:
+        team = _pick("Team", _teams_for(comp), "f_team")
+    with c2:
+        player = _pick("Player", _players_for(comp), "f_player")
+    with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    return ModuleParams(format=comp, team=team, player=player, season=season)
+
+
+def _filters_I2(comp):
+    c1, c2, c3 = st.columns([3, 2, 2])
+    with c1:
+        player = _pick("Player", _players_for(comp), "f_player")
+    with c2:
+        team = _pick("Team", _teams_for(comp), "f_team")
+    with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    return ModuleParams(format=comp, player=player, team=team, season=season)
+
+
+def _filters_I3(comp):
+    c1, c2, c3 = st.columns([3, 2, 2])
+    with c1:
+        player = _pick("Player", _players_for(comp), "f_player")
+    with c2:
+        team = _pick("Team", _teams_for(comp), "f_team")
+    with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    return ModuleParams(format=comp, player=player, team=team, season=season)
+
+
+def _filters_I4(comp):
+    c1, c2, c3 = st.columns([2, 3, 2])
+    with c1:
+        role = st.radio("Role", ["batter", "bowler"], horizontal=True, key="f_role")
+    with c2:
+        plist = _batters_for(comp) if role == "batter" else _bowlers_for(comp)
+        player = _pick("Player", plist, f"f_player_{role}")
+    with c3:
+        window = st.slider("Rolling window", 3, 15, 5, key="f_window")
+    return ModuleParams(format=comp, player=player, extra={"role": role, "window": window})
+
+
+FILTER_FNS = {
+    "B1": _filters_B1, "B2": _filters_B2, "B3": _filters_B3,
+    "B4": _filters_B4, "B5": _filters_B5, "B6": _filters_B6,
+    "I1": _filters_I1, "I2": _filters_I2, "I3": _filters_I3,
+    "I4": _filters_I4,
+}
+
+
+# ── Chart helpers ─────────────────────────────────────────────────────────────
+
+def _ipl_bar_color(teams: list[str], comp: str) -> list[str]:
+    if comp == "IPL":
+        return [IPL_TEAM_COLORS.get(t, "#4A90D9") for t in teams]
+    return ["#4A90D9"] * len(teams)
+
+
+def _apply_ipl_colors(fig, comp: str):
+    if comp != "IPL":
         return
+    try:
+        for trace in fig.data:
+            if trace.type == "bar":
+                names = list(trace.y) if trace.orientation == "h" else list(trace.x)
+                if names and all(isinstance(n, str) for n in names):
+                    colors = [IPL_TEAM_COLORS.get(n, "#4A90D9") for n in names]
+                    if any(c != "#4A90D9" for c in colors):
+                        trace.marker.color = colors
+    except Exception:
+        pass
 
-    # ── Metric cards ─────────────────────────────────────────────────────────
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Matches",  f"{ov['matches']:,}")
-    c2.metric("Balls",    f"{ov['balls']:,}")
-    c3.metric("Players",  f"{ov['players']:,}")
-    c4.metric("Seasons",  f"{ov['seasons']:,}")
+
+def _hbar(x_vals, y_vals, color="#4A90D9", colors=None, height=360):
+    fig = go.Figure(go.Bar(
+        x=x_vals, y=y_vals, orientation="h",
+        marker_color=colors or color,
+        text=x_vals, textposition="outside",
+    ))
+    fig.update_layout(
+        margin=dict(l=0, r=40, t=0, b=0), height=height,
+        yaxis=dict(autorange="reversed"),
+        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+    )
+    return fig
+
+
+# ── Overview page ─────────────────────────────────────────────────────────────
+
+def _render_overview(comp: str):
+    comp_obj = next((c for c in COMPETITIONS if c.label == comp), None)
+    emoji = comp_obj.emoji if comp_obj else "🏏"
+    st.markdown(f"# {emoji} {comp} Dashboard")
+
+    with st.spinner("Loading..."):
+        ov = _overview_data(comp)
 
     if ov["matches"] == 0:
-        st.info("No data loaded for this competition yet. Use the CLI to ingest data.")
+        st.info(f"No data for **{comp}**. Run:  `python -m src.cricket_analytics.cli ingest --format {comp_obj.cricsheet_key if comp_obj else 'ipl'}`")
         return
 
-    # ── This season at a glance (IPL only — or any competition) ──────────────
-    if ov["latest_season"] and (ov["top_scorer_latest"] is not None or ov["top_bowler_latest"] is not None):
+    # ── Metrics row
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Matches", f"{ov['matches']:,}")
+    c2.metric("Balls Bowled", f"{ov['balls']:,}")
+    c3.metric("Players", f"{ov['players']:,}")
+    c4.metric("Seasons", f"{ov['seasons']}")
+
+    # ── Latest season highlight
+    if ov["latest"] and (ov["ts"] or ov["tb"]):
         with st.container(border=True):
-            st.markdown(f"#### ✨ {ov['latest_season']} Season at a Glance")
+            st.markdown(f"#### ✨ {ov['latest']} Season Highlights")
             g1, g2 = st.columns(2)
-            if ov["top_scorer_latest"] is not None:
-                ts = ov["top_scorer_latest"]
-                g1.metric(f"🏏 Top Run Scorer", ts["player"], f"{int(ts['runs'])} runs")
-            if ov["top_bowler_latest"] is not None:
-                tb = ov["top_bowler_latest"]
-                g2.metric(f"🎯 Top Wicket Taker", tb["player"], f"{int(tb['wickets'])} wickets")
+            if ov["ts"]:
+                g1.metric("🏏 Top Scorer", ov["ts"]["player"], f"{ov['ts']['val']} runs")
+            if ov["tb"]:
+                g2.metric("🎯 Top Wicket Taker", ov["tb"]["player"], f"{ov['tb']['val']} wickets")
 
-    # ── Top batters & bowlers ─────────────────────────────────────────────────
-    col_left, col_right = st.columns(2)
-
-    with col_left:
+    # ── Top batters + bowlers
+    left, right = st.columns(2)
+    with left:
         with st.container(border=True):
             st.markdown("#### 🏏 Top 10 Run Scorers")
-            tb_df = ov["top_batters"]
-            if tb_df is not None and not tb_df.empty:
-                colors = [_team_color("", competition)] * len(tb_df)
-                # For IPL, we can't easily match batter→team here, use default palette
-                fig = go.Figure(go.Bar(
-                    x=tb_df["runs"].tolist(),
-                    y=tb_df["player"].tolist(),
-                    orientation="h",
-                    marker_color=_DEFAULT_COLOR,
-                    text=tb_df["runs"].tolist(),
-                    textposition="outside",
-                ))
-                fig.update_layout(
-                    margin=dict(l=10, r=10, t=10, b=10),
-                    height=380,
-                    yaxis=dict(autorange="reversed"),
-                    xaxis_title="Runs",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
+            df = ov["top_bat"]
+            if df is not None and not df.empty:
+                st.plotly_chart(
+                    _hbar(df["runs"].tolist(), df["player"].tolist()),
+                    use_container_width=True, key="ov_bat",
                 )
-                st.plotly_chart(fig, use_container_width=True)
-
-    with col_right:
+    with right:
         with st.container(border=True):
             st.markdown("#### 🎯 Top 10 Wicket Takers")
-            bw_df = ov["top_bowlers"]
-            if bw_df is not None and not bw_df.empty:
-                fig = go.Figure(go.Bar(
-                    x=bw_df["wickets"].tolist(),
-                    y=bw_df["player"].tolist(),
-                    orientation="h",
-                    marker_color="#E45E3E",
-                    text=bw_df["wickets"].tolist(),
-                    textposition="outside",
-                ))
-                fig.update_layout(
-                    margin=dict(l=10, r=10, t=10, b=10),
-                    height=380,
-                    yaxis=dict(autorange="reversed"),
-                    xaxis_title="Wickets",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
+            df = ov["top_bowl"]
+            if df is not None and not df.empty:
+                st.plotly_chart(
+                    _hbar(df["wickets"].tolist(), df["player"].tolist(), "#E45E3E"),
+                    use_container_width=True, key="ov_bowl",
                 )
-                st.plotly_chart(fig, use_container_width=True)
 
-    # ── Matches per season ────────────────────────────────────────────────────
+    # ── Matches per season
     with st.container(border=True):
         st.markdown("#### 📅 Matches per Season")
-        ms_df = ov["matches_per_season"]
-        if ms_df is not None and not ms_df.empty:
+        df = ov["per_season"]
+        if df is not None and not df.empty:
             fig = go.Figure(go.Bar(
-                x=[str(s) for s in ms_df["season"].tolist()],
-                y=ms_df["matches"].tolist(),
-                marker_color=_DEFAULT_COLOR,
-                text=ms_df["matches"].tolist(),
-                textposition="outside",
+                x=[str(s) for s in df["season"]], y=df["matches"].tolist(),
+                marker_color="#4A90D9", text=df["matches"].tolist(), textposition="outside",
             ))
             fig.update_layout(
-                margin=dict(l=10, r=10, t=10, b=10),
-                height=300,
-                xaxis_title="Season",
-                yaxis_title="Matches",
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
+                margin=dict(l=0, r=0, t=0, b=0), height=280,
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="ov_season")
 
-    # ── Team win percentage ───────────────────────────────────────────────────
+    # ── Team win %
     with st.container(border=True):
-        st.markdown("#### 🏆 Team Win % (all-time)")
-        tp_df = ov["team_perf"]
-        if tp_df is not None and not tp_df.empty:
-            teams_list = tp_df["team"].tolist()
-            win_pcts   = tp_df["win_pct"].tolist()
-            bar_colors = [_team_color(t, competition) for t in teams_list]
-            fig = go.Figure(go.Bar(
-                x=win_pcts,
-                y=teams_list,
-                orientation="h",
-                marker_color=bar_colors,
-                text=[f"{p}%" for p in win_pcts],
-                textposition="outside",
-            ))
-            fig.update_layout(
-                margin=dict(l=10, r=10, t=10, b=10),
-                height=max(300, len(teams_list) * 28),
-                yaxis=dict(autorange="reversed"),
-                xaxis_title="Win %",
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
+        st.markdown("#### 🏆 Team Win %")
+        df = ov["team_perf"]
+        if df is not None and not df.empty:
+            teams = df["team"].tolist()
+            pcts = df["win_pct"].tolist()
+            st.plotly_chart(
+                _hbar(pcts, teams, colors=_ipl_bar_color(teams, comp),
+                      height=max(280, len(teams) * 28)),
+                use_container_width=True, key="ov_team",
             )
-            st.plotly_chart(fig, use_container_width=True)
 
 
-# ── Module results ─────────────────────────────────────────────────────────────
+# ── Module page ───────────────────────────────────────────────────────────────
 
-def _render_module(module_id: str, params: ModuleParams, competition: str):
+def _render_module(module_id: str, comp: str):
     try:
         mod = get_module(module_id)
-    except KeyError as e:
-        st.error(str(e))
+    except KeyError:
+        st.error(f"Module {module_id} not found.")
         return
 
-    comp_obj = next((c for c in COMPETITIONS if c.label == competition), None)
+    comp_obj = next((c for c in COMPETITIONS if c.label == comp), None)
     emoji = comp_obj.emoji if comp_obj else "🏏"
 
-    st.markdown(
-        f"<h1 style='margin-bottom:0'>{emoji} {competition} — {mod.module_name}</h1>",
-        unsafe_allow_html=True,
-    )
+    st.markdown(f"# {emoji} {mod.module_name}")
+    st.caption(MODULE_DESC.get(module_id, ""))
 
-    with st.spinner(f"Running {mod.module_id}: {mod.module_name}…"):
-        df        = mod.run(params)
-        tabs_data = mod.run_tabs(params)
-
-    if df is None or df.empty:
-        st.warning("No data for the selected filters — try a broader competition or fewer filters.")
+    # ── Inline filter panel
+    filter_fn = FILTER_FNS.get(module_id)
+    if not filter_fn:
+        st.error(f"No filter config for {module_id}")
         return
 
     with st.container(border=True):
+        params = filter_fn(comp)
+        _, btn_col = st.columns([5, 1])
+        with btn_col:
+            run_clicked = st.button("▶ Analyse", type="primary",
+                                    use_container_width=True, key=f"run_{module_id}")
+
+    # ── State: remember last run params
+    state_key = f"res_{module_id}"
+    if run_clicked:
+        st.session_state[state_key] = params
+
+    stored = st.session_state.get(state_key)
+    if stored is None:
+        st.info("👆 Choose your filters and click **Analyse**")
+        return
+
+    # ── Run analysis
+    with st.spinner("Analysing..."):
+        try:
+            df = mod.run(stored)
+            tabs_data = mod.run_tabs(stored)
+        except Exception as e:
+            st.error(f"Error: {e}")
+            return
+
+    if df is None or df.empty:
+        st.warning("No data for these filters. Try broader selections.")
+        return
+
+    # ── Render results
+    with st.container(border=True):
         if tabs_data:
-            tab_labels  = ["📊 Overview"] + list(tabs_data.keys())
-            tab_objects = st.tabs(tab_labels)
-            with tab_objects[0]:
-                _show_df_and_plot(df, mod, params, competition, key="main")
+            tab_labels = ["📊 Overview"] + list(tabs_data.keys())
+            tab_objs = st.tabs(tab_labels)
+            with tab_objs[0]:
+                _show_results(df, mod, stored, comp, "main")
             for i, (name, tdf) in enumerate(tabs_data.items(), 1):
-                with tab_objects[i]:
+                with tab_objs[i]:
                     if tdf is not None and not tdf.empty:
                         st.dataframe(tdf, use_container_width=True, hide_index=True)
-                        _dl_btn(tdf, f"{module_id}_{name}.csv")
+                        st.download_button("⬇ CSV", tdf.to_csv(index=False),
+                                           f"{module_id}_{name}.csv", "text/csv",
+                                           key=f"dl_{module_id}_{name}")
                     else:
-                        st.info("No data for this view with the current filters.")
+                        st.info("No data for this tab.")
         else:
-            _show_df_and_plot(df, mod, params, competition, key="main")
+            _show_results(df, mod, stored, comp, "main")
 
 
-def _show_df_and_plot(df, mod, params, competition: str, key: str = ""):
+def _show_results(df, mod, params, comp, key=""):
     st.dataframe(df, use_container_width=True, hide_index=True)
-    _dl_btn(df, f"{mod.module_id}_results.csv")
+    st.download_button("⬇ Download CSV", df.to_csv(index=False),
+                       f"{mod.module_id}_results.csv", "text/csv",
+                       key=f"dl_{mod.module_id}_{key}")
     try:
         fig = mod.plot(df, params)
         if fig is not None:
-            # Inject team colors for IPL bar charts where applicable
-            if competition == "IPL" and hasattr(fig, "data"):
-                _apply_ipl_colors(fig)
+            _apply_ipl_colors(fig, comp)
             st.plotly_chart(fig, use_container_width=True, key=f"plot_{key}")
     except NotImplementedError:
         pass
@@ -669,68 +607,22 @@ def _show_df_and_plot(df, mod, params, competition: str, key: str = ""):
         st.caption(f"Chart unavailable: {e}")
 
 
-def _apply_ipl_colors(fig):
-    """Attempt to color bars by team name when x or y axis contains team names."""
-    try:
-        for trace in fig.data:
-            if trace.type == "bar":
-                # Try y-axis (horizontal bars) then x-axis (vertical)
-                names = list(trace.y) if trace.orientation == "h" else list(trace.x)
-                if names and all(isinstance(n, str) for n in names):
-                    colors = [IPL_TEAM_COLORS.get(n, _DEFAULT_COLOR) for n in names]
-                    if any(c != _DEFAULT_COLOR for c in colors):
-                        trace.marker.color = colors
-    except Exception:
-        pass
-
-
-def _dl_btn(df, filename: str):
-    st.download_button("⬇ Download CSV", df.to_csv(index=False),
-                       file_name=filename, mime="text/csv")
-
-
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    all_mods = list_modules()
-    if not all_mods:
-        st.error("No modules registered. Check module imports.")
-        return
+    comp, module_id = _sidebar()
 
-    competition, module_id, params, run_clicked = _render_sidebar()
+    # Clear stored results when competition changes
+    prev = st.session_state.get("_prev_comp")
+    if prev != comp:
+        for k in [k for k in st.session_state if k.startswith("res_")]:
+            del st.session_state[k]
+        st.session_state["_prev_comp"] = comp
 
-    # Decide what to show in the main area
     if module_id is None:
-        # Overview / home screen
-        _render_overview(competition)
-        return
-
-    # A module is selected
-    has_filters = False
-    try:
-        mod_obj  = get_module(module_id)
-        supported = mod_obj.supported_filters
-        has_filters = bool(supported - {"format"})
-    except Exception:
-        pass
-
-    if not has_filters:
-        # Auto-run modules with no meaningful filters (e.g. B5 leaderboards need cap type)
-        _render_module(module_id, params, competition)
-    elif run_clicked or st.session_state.get(f"ran_{module_id}_{competition}"):
-        if run_clicked:
-            st.session_state[f"ran_{module_id}_{competition}"] = True
-        _render_module(module_id, params, competition)
+        _render_overview(comp)
     else:
-        # Show a prompt to run
-        comp_obj = next((c for c in COMPETITIONS if c.label == competition), None)
-        emoji = comp_obj.emoji if comp_obj else "🏏"
-        st.markdown(
-            f"<h1 style='margin-bottom:0'>{emoji} {competition} — {module_id}</h1>",
-            unsafe_allow_html=True,
-        )
-        with st.container(border=True):
-            st.info("👈 Set your filters in the sidebar, then click **▶ Run Analysis**.")
+        _render_module(module_id, comp)
 
 
 if __name__ == "__main__":

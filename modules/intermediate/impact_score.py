@@ -106,7 +106,14 @@ class ImpactScore(BaseModule):
     def plot(self, df: pd.DataFrame, params: ModuleParams):
         if df.empty:
             return None
-        top = df.head(20)
+        top = df.head(20).copy()
+        # Fix NaN values that crash Plotly scatter size/color
+        for col in ("avg_impact_per_match", "total_impact"):
+            if col in top.columns:
+                top[col] = pd.to_numeric(top[col], errors="coerce").fillna(0)
+        # Need non-zero sizes for scatter — use runs as fallback
+        if top["avg_impact_per_match"].sum() == 0:
+            top["avg_impact_per_match"] = top["total_runs"].clip(lower=1)
         fig = px.scatter(
             top,
             x="total_runs", y="total_wickets",
