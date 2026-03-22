@@ -350,14 +350,17 @@ def _filters_B6(comp):
 
 
 def _filters_I1(comp):
-    c1, c2, c3 = st.columns([3, 2, 2])
+    c0, c1, c2, c3 = st.columns([2, 3, 2, 2])
+    with c0:
+        role = st.radio("Role", ["batting", "bowling"], horizontal=True, key="f_phase_role")
     with c1:
-        team = _pick("Team", _teams_for(comp), "f_team")
+        plist = _batters_for(comp) if role == "batting" else _bowlers_for(comp)
+        player = _pick("Player", plist, f"f_player_{role}")
     with c2:
-        player = _pick("Player", _players_for(comp), "f_player")
+        team = _pick("Team", _teams_for(comp), "f_team")
     with c3:
         season = _pick("Season", _seasons_for(comp), "f_season")
-    return ModuleParams(format=comp, team=team, player=player, season=season)
+    return ModuleParams(format=comp, team=team, player=player, season=season, extra={"role": role})
 
 
 def _filters_I2(comp):

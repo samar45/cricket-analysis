@@ -128,6 +128,51 @@ VENUE_ALIASES: dict[str, str] = {
 
     # ── Bangladesh (additional) ─────────────────────────────────────────────
     "Bangabandhu National Stadium, Dhaka":   "Bangabandhu National Stadium",
+
+    # ── India (more duplicates found) ──────────────────────────────────────
+    "M.Chinnaswamy Stadium":                 "M Chinnaswamy Stadium",
+    "M Chinnaswamy Stadium, Bangalore":      "M Chinnaswamy Stadium",
+    "M Chinnaswamy Stadium, Bengaluru":      "M Chinnaswamy Stadium",
+
+    "Brabourne Stadium, Mumbai":             "Brabourne Stadium",
+
+    "Barabati Stadium, Cuttack":             "Barabati Stadium",
+
+    "Bharat Ratna Shri Atal Bihari Vajpai Ekana Cricket Stadium": "Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",
+    "Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium": "Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",
+
+    "Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium": "Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",
+    "ACA-VDCA Stadium, Visakhapatnam":       "Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",
+    "Dr YS Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam": "Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",
+
+    "Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur": "Maharaja Yadavindra Singh International Cricket Stadium",
+    "Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur, Chandigarh": "Maharaja Yadavindra Singh International Cricket Stadium",
+
+    "Maharashtra Cricket Association Stadium": "Maharashtra Cricket Association Stadium, Pune",
+    "MCA International Stadium, Pune":       "Maharashtra Cricket Association Stadium, Pune",
+    "Maharashtra Cricket Association Stadium, Gahunje": "Maharashtra Cricket Association Stadium, Pune",
+    "Maharashtra Cricket Association Stadium, Gahunje, Pune": "Maharashtra Cricket Association Stadium, Pune",
+
+    "Green Park, Kanpur":                    "Green Park",
+
+    "Nehru Stadium, Indore":                 "Holkar Cricket Stadium, Indore",
+
+    "Sawai Mansingh Stadium, Jaipur":        "Sawai Mansingh Stadium",
+
+    # ── South Africa ───────────────────────────────────────────────────────
+    "Newlands, Cape Town":                   "Newlands",
+    "SuperSport Park, Centurion":            "SuperSport Park",
+    "Kingsmead, Durban":                     "Kingsmead",
+    "St George's Park, Gqeberha":            "St George's Park",
+    "St George's Park, Port Elizabeth":       "St George's Park",
+
+    # ── England ────────────────────────────────────────────────────────────
+    "Edgbaston, Birmingham":                 "Edgbaston",
+    "Old Trafford, Manchester":              "Old Trafford",
+    "Sophia Gardens, Cardiff":               "Sophia Gardens",
+    "The Rose Bowl, Southampton":            "The Rose Bowl",
+    "Headingley, Leeds":                     "Headingley",
+    "Trent Bridge, Nottingham":              "Trent Bridge",
 }
 
 # ── Normalisation function ────────────────────────────────────────────────────

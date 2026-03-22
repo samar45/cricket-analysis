@@ -76,37 +76,50 @@ class HeadToHead(BaseModule):
     def plot(self, df: pd.DataFrame, params: ModuleParams):
         if df.empty:
             return None
-        top = df.head(20)
 
-        # Bubble chart: x=balls, y=runs, size=dismissals, colour=SR
+        top = df.head(15).copy()
+        top["label"] = top["batter"] + " vs " + top["bowler"]
+
+        # Grouped horizontal bar: Runs (green) + Dismissals (red)
         fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=top["balls_faced"],
-            y=top["runs_scored"],
-            mode="markers+text",
-            marker=dict(
-                size=top["dismissals"].clip(lower=1) * 8,
-                color=top["batter_sr"],
-                colorscale="RdYlGn",
-                showscale=True,
-                colorbar=dict(title="Batter SR"),
-            ),
-            text=top["batter"] + " vs " + top["bowler"],
-            textposition="top center",
-            hovertemplate=(
-                "<b>%{text}</b><br>"
-                "Balls: %{x}<br>Runs: %{y}<br>"
-                "Dismissals: %{marker.size}<br>"
-                "<extra></extra>"
-            ),
+
+        fig.add_trace(go.Bar(
+            name="Runs",
+            y=top["label"], x=top["runs_scored"],
+            orientation="h", marker_color="#4CAF50",
+            text=top["runs_scored"], textposition="outside",
         ))
-        title = "Head-to-Head Matchups"
-        if params.player:
-            title = f"{params.player} vs " + (params.player2 or "All Bowlers")
+
+        fig.add_trace(go.Bar(
+            name="Dismissals",
+            y=top["label"], x=top["dismissals"],
+            orientation="h", marker_color="#F44336",
+            text=top["dismissals"], textposition="outside",
+        ))
+
+        # Add SR as annotation on right
+        for i, row in top.iterrows():
+            fig.add_annotation(
+                x=max(top["runs_scored"]) * 1.15,
+                y=row["label"],
+                text=f"SR {row['batter_sr']}",
+                showarrow=False,
+                font=dict(size=11, color="#aaa"),
+            )
+
+        title = "Head-to-Head: Runs & Dismissals"
+        if params.player and params.player2:
+            title = f"{params.player} vs {params.player2}"
+        elif params.player:
+            title = f"{params.player} vs All Bowlers"
+
         fig.update_layout(
             title=title,
-            xaxis_title="Balls Faced",
-            yaxis_title="Runs Scored",
-            height=500,
+            barmode="group",
+            yaxis=dict(autorange="reversed"),
+            xaxis_title="Count",
+            height=max(400, len(top) * 35),
+            legend=dict(x=0.7, y=0.01),
+            margin=dict(r=80),
         )
         return fig
