@@ -24,6 +24,7 @@ st.set_page_config(
 # Register all modules
 import modules.basic        # noqa: F401
 import modules.intermediate # noqa: F401
+import modules.advanced     # noqa: F401
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -58,6 +59,11 @@ MODULE_NAV = [
     ("🤝  Partnerships",      "I2"),
     ("💥  Impact Score",      "I3"),
     ("📈  Form Tracker",      "I4"),
+    ("🎯  True SR / Economy", "A1"),
+    ("⚡  Pace vs Spin",      "A2"),
+    ("🏅  Season Awards",     "A3"),
+    ("🆚  Player Comparison", "A4"),
+    ("🔥  Clutch Performance","A5"),
 ]
 
 MODULE_DESC = {
@@ -71,6 +77,11 @@ MODULE_DESC = {
     "I2": "Top batting partnerships by total runs and partnership strike rate",
     "I3": "Combined batting + bowling impact score to find all-rounders",
     "I4": "Rolling average form tracker — see who's in/out of form",
+    "A1": "Context-adjusted SR and Economy — accounts for phase difficulty and venue",
+    "A2": "How batters/teams perform against pace vs spin bowling",
+    "A3": "Top 5 per season by phase (death/PP/middle), best debutants",
+    "A4": "Side-by-side batter vs batter or bowler vs bowler with radar chart",
+    "A5": "Clutch performance under pressure — death overs, close chases",
 }
 
 
@@ -279,14 +290,18 @@ def _pick(label: str, options: list[str], key: str, all_label: str = "All") -> s
 # ── Per-module filter panels (rendered in main area) ──────────────────────────
 
 def _filters_B1(comp):
-    c1, c2, c3 = st.columns([3, 2, 2])
+    c1, c2, c3, c4 = st.columns([3, 2, 2, 2])
     with c1:
         player = _pick("Player", _players_for(comp), "f_player")
     with c2:
         season = _pick("Season", _seasons_for(comp), "f_season")
     with c3:
         venue = _pick("Venue", _venues_for(comp), "f_venue")
-    return ModuleParams(format=comp, player=player, season=season, venue=venue)
+    with c4:
+        ph_map = {"All Phases": None, "Powerplay (1-6)": "powerplay",
+                   "Middle (7-15)": "middle", "Death (16-20)": "death"}
+        phase = ph_map[st.selectbox("Phase", list(ph_map), key="f_phase")]
+    return ModuleParams(format=comp, player=player, season=season, venue=venue, phase=phase)
 
 
 def _filters_B2(comp):
@@ -321,10 +336,16 @@ def _filters_B4(comp):
         batter = _pick("🏏 Batter", _batters_for(comp), "f_batter", "All Batters")
     with c2:
         bowler = _pick("🎯 Bowler", _bowlers_for(comp), "f_bowler", "All Bowlers")
-    c3, _ = st.columns([2, 3])
+    c3, c4, c5 = st.columns([2, 2, 2])
     with c3:
         season = _pick("Season", _seasons_for(comp), "f_season")
-    return ModuleParams(format=comp, player=batter, player2=bowler, season=season)
+    with c4:
+        venue = _pick("Venue", _venues_for(comp), "f_venue")
+    with c5:
+        ph_map = {"All Phases": None, "Powerplay (1-6)": "powerplay",
+                   "Middle (7-15)": "middle", "Death (16-20)": "death"}
+        phase = ph_map[st.selectbox("Phase", list(ph_map), key="f_phase")]
+    return ModuleParams(format=comp, player=batter, player2=bowler, season=season, venue=venue, phase=phase)
 
 
 def _filters_B5(comp):
@@ -350,7 +371,7 @@ def _filters_B6(comp):
 
 
 def _filters_I1(comp):
-    c0, c1, c2, c3 = st.columns([2, 3, 2, 2])
+    c0, c1, c2, c3, c4 = st.columns([2, 3, 2, 2, 2])
     with c0:
         role = st.radio("Role", ["batting", "bowling"], horizontal=True, key="f_phase_role")
     with c1:
@@ -360,7 +381,9 @@ def _filters_I1(comp):
         team = _pick("Team", _teams_for(comp), "f_team")
     with c3:
         season = _pick("Season", _seasons_for(comp), "f_season")
-    return ModuleParams(format=comp, team=team, player=player, season=season, extra={"role": role})
+    with c4:
+        venue = _pick("Venue", _venues_for(comp), "f_venue")
+    return ModuleParams(format=comp, team=team, player=player, season=season, venue=venue, extra={"role": role})
 
 
 def _filters_I2(comp):
@@ -386,15 +409,111 @@ def _filters_I3(comp):
 
 
 def _filters_I4(comp):
-    c1, c2, c3 = st.columns([2, 3, 2])
+    c1, c2, c3, c4 = st.columns([2, 3, 2, 2])
     with c1:
         role = st.radio("Role", ["batter", "bowler"], horizontal=True, key="f_role")
     with c2:
         plist = _batters_for(comp) if role == "batter" else _bowlers_for(comp)
         player = _pick("Player", plist, f"f_player_{role}")
     with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season")
+    with c4:
         window = st.slider("Rolling window", 3, 15, 5, key="f_window")
-    return ModuleParams(format=comp, player=player, extra={"role": role, "window": window})
+    return ModuleParams(format=comp, player=player, season=season, extra={"role": role, "window": window})
+
+
+def _filters_A1(comp):
+    c0, c1, c2, c3 = st.columns([2, 3, 2, 2])
+    with c0:
+        role = st.radio("Role", ["batting", "bowling"], horizontal=True, key="f_role_a1")
+    with c1:
+        plist = _batters_for(comp) if role == "batting" else _bowlers_for(comp)
+        player = _pick("Player", plist, f"f_player_{role}_a1")
+    with c2:
+        team = _pick("Team", _teams_for(comp), "f_team_a1")
+    with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season_a1")
+    return ModuleParams(format=comp, player=player, team=team, season=season, extra={"role": role})
+
+
+def _filters_A2(comp):
+    c0, c1, c2, c3, c4 = st.columns([2, 3, 2, 2, 2])
+    with c0:
+        mode_map = {"Batter vs Type": "batter_vs_type", "Team vs Type": "team_vs_type",
+                     "Bowler Classification": "bowler_classification"}
+        mode = mode_map[st.selectbox("Mode", list(mode_map), key="f_mode_a2")]
+    with c1:
+        if mode == "batter_vs_type":
+            player = _pick("Batter", _batters_for(comp), "f_player_a2")
+        elif mode == "team_vs_type":
+            player = None
+        else:
+            player = None
+    with c2:
+        team = _pick("Team", _teams_for(comp), "f_team_a2") if mode == "team_vs_type" else None
+    with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season_a2")
+    with c4:
+        venue = _pick("Venue", _venues_for(comp), "f_venue_a2")
+    return ModuleParams(format=comp, player=player, team=team, season=season, venue=venue,
+                        extra={"mode": mode})
+
+
+def _filters_A3(comp):
+    c0, c1, c2 = st.columns([3, 2, 2])
+    with c0:
+        award_map = {
+            "🏏 Death Overs — Top Batters": "death_batter",
+            "🏏 Powerplay — Top Batters": "powerplay_batter",
+            "🏏 Middle Overs — Top Batters": "middle_batter",
+            "🎯 Death Overs — Top Bowlers": "death_bowler",
+            "🎯 Powerplay — Top Bowlers": "powerplay_bowler",
+            "🎯 Middle Overs — Top Bowlers": "middle_bowler",
+            "⭐ Best Debutants — Batters": "debutant_batter",
+            "⭐ Best Debutants — Bowlers": "debutant_bowler",
+        }
+        award = award_map[st.selectbox("Award", list(award_map), key="f_award_a3")]
+    with c1:
+        season = _pick("Season", _seasons_for(comp), "f_season_a3")
+    with c2:
+        venue = _pick("Venue", _venues_for(comp), "f_venue_a3")
+    return ModuleParams(format=comp, season=season, venue=venue, extra={"award": award})
+
+
+def _filters_A4(comp):
+    c0, c1, c2, c3, c4 = st.columns([2, 3, 3, 2, 2])
+    with c0:
+        role = st.radio("Role", ["batter", "bowler"], horizontal=True, key="f_role_a4")
+    with c1:
+        if role == "batter":
+            player1 = _pick("Player 1", _batters_for(comp), "f_p1_a4", "Select Batter 1")
+        else:
+            player1 = _pick("Player 1", _bowlers_for(comp), "f_p1_a4", "Select Bowler 1")
+    with c2:
+        if role == "batter":
+            player2 = _pick("Player 2", _batters_for(comp), "f_p2_a4", "Select Batter 2")
+        else:
+            player2 = _pick("Player 2", _bowlers_for(comp), "f_p2_a4", "Select Bowler 2")
+    with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season_a4")
+    with c4:
+        venue = _pick("Venue", _venues_for(comp), "f_venue_a4")
+    return ModuleParams(format=comp, player=player1, player2=player2, season=season,
+                        venue=venue, extra={"role": role})
+
+
+def _filters_A5(comp):
+    c0, c1, c2, c3 = st.columns([2, 3, 2, 2])
+    with c0:
+        role = st.radio("Role", ["batting", "bowling"], horizontal=True, key="f_role_a5")
+    with c1:
+        plist = _batters_for(comp) if role == "batting" else _bowlers_for(comp)
+        player = _pick("Player", plist, f"f_player_{role}_a5")
+    with c2:
+        team = _pick("Team", _teams_for(comp), "f_team_a5")
+    with c3:
+        season = _pick("Season", _seasons_for(comp), "f_season_a5")
+    return ModuleParams(format=comp, player=player, team=team, season=season, extra={"role": role})
 
 
 FILTER_FNS = {
@@ -402,6 +521,8 @@ FILTER_FNS = {
     "B4": _filters_B4, "B5": _filters_B5, "B6": _filters_B6,
     "I1": _filters_I1, "I2": _filters_I2, "I3": _filters_I3,
     "I4": _filters_I4,
+    "A1": _filters_A1, "A2": _filters_A2, "A3": _filters_A3,
+    "A4": _filters_A4, "A5": _filters_A5,
 }
 
 

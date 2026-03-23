@@ -11,6 +11,7 @@ Impact formula (weighted):
 
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from modules.base import BaseModule, ModuleParams, register_module
 from src.cricket_analytics.db import query
@@ -38,7 +39,9 @@ class ImpactScore(BaseModule):
                 d.batter AS player, d.match_id,
                 SUM(d.runs_batter) AS runs,
                 COUNT(*) FILTER (WHERE d.extra_type IS NULL
-                    OR d.extra_type NOT IN ('wides')) AS balls
+                    OR d.extra_type NOT IN ('wides')) AS balls,
+                COUNT(*) FILTER (WHERE d.runs_batter = 4) AS fours,
+                COUNT(*) FILTER (WHERE d.runs_batter = 6) AS sixes
             FROM deliveries d
             JOIN matches m ON d.match_id = m.match_id
             WHERE {where} {player_clause}
@@ -52,7 +55,8 @@ class ImpactScore(BaseModule):
                     THEN 1 ELSE 0 END) AS wickets,
                 SUM(CASE WHEN d.extra_type NOT IN ('byes','legbyes') OR d.extra_type IS NULL
                     THEN d.runs_total ELSE 0 END) AS runs_conceded,
-                COUNT(*) FILTER (WHERE d.extra_type IS NULL) AS legal_balls
+                COUNT(*) FILTER (WHERE d.extra_type IS NULL) AS legal_balls,
+                COUNT(*) FILTER (WHERE d.runs_batter = 0 AND d.extra_type IS NULL) AS dots
             FROM deliveries d
             JOIN matches m ON d.match_id = m.match_id
             WHERE {where} {player_clause}
@@ -64,9 +68,12 @@ class ImpactScore(BaseModule):
                 COALESCE(bat.match_id, bowl.match_id) AS match_id,
                 COALESCE(bat.runs, 0) AS runs,
                 COALESCE(bat.balls, 0) AS balls,
+                COALESCE(bat.fours, 0) AS fours,
+                COALESCE(bat.sixes, 0) AS sixes,
                 COALESCE(bowl.wickets, 0) AS wickets,
                 COALESCE(bowl.runs_conceded, 0) AS runs_conceded,
-                COALESCE(bowl.legal_balls, 0) AS legal_balls
+                COALESCE(bowl.legal_balls, 0) AS legal_balls,
+                COALESCE(bowl.dots, 0) AS dots
             FROM bat
             FULL OUTER JOIN bowl ON bat.player = bowl.player AND bat.match_id = bowl.match_id
         )
@@ -75,14 +82,25 @@ class ImpactScore(BaseModule):
             COUNT(DISTINCT match_id) AS matches,
             SUM(runs) AS total_runs,
             SUM(wickets) AS total_wickets,
+            SUM(fours) AS total_fours,
+            SUM(sixes) AS total_sixes,
             ROUND(SUM(runs) * 100.0 / NULLIF(SUM(balls), 0), 1) AS batting_sr,
             ROUND(SUM(runs_conceded) * 6.0 / NULLIF(SUM(legal_balls), 0), 2) AS economy,
+            ROUND(SUM(dots) * 100.0 / NULLIF(SUM(legal_balls), 0), 1) AS dot_pct,
             ROUND(SUM(
                 runs * (runs * 1.0 / NULLIF(balls, 0)) * 0.6
                 + GREATEST(wickets * 20.0
                     + GREATEST(8 - (runs_conceded * 6.0 / NULLIF(legal_balls, 1)), 0)
                     * (legal_balls / 6.0) * 0.4, 0)
             ) / NULLIF(COUNT(DISTINCT match_id), 0), 2) AS avg_impact,
+            ROUND(SUM(
+                runs * (runs * 1.0 / NULLIF(balls, 0)) * 0.6
+            ), 1) AS bat_impact,
+            ROUND(SUM(
+                GREATEST(wickets * 20.0
+                    + GREATEST(8 - (runs_conceded * 6.0 / NULLIF(legal_balls, 1)), 0)
+                    * (legal_balls / 6.0) * 0.4, 0)
+            ), 1) AS bowl_impact,
             ROUND(SUM(
                 runs * (runs * 1.0 / NULLIF(balls, 0)) * 0.6
                 + GREATEST(wickets * 20.0
@@ -102,44 +120,71 @@ class ImpactScore(BaseModule):
             return None
 
         top = df.head(20).copy()
-        for col in ("avg_impact", "total_impact"):
+        for col in ("avg_impact", "total_impact", "bat_impact", "bowl_impact"):
             if col in top.columns:
                 top[col] = pd.to_numeric(top[col], errors="coerce").fillna(0)
 
-        # Horizontal bar: total impact, colored by batting/bowling split
-        fig = go.Figure()
+        fig = make_subplots(
+            rows=1, cols=2, column_widths=[0.55, 0.45],
+            subplot_titles=[
+                "Total Impact: Batting vs Bowling",
+                "Avg Impact per Match — Top 15"
+            ],
+        )
 
-        # Batting contribution bar
-        bat_impact = (top["total_runs"] * top["batting_sr"].fillna(0) / 100 * 0.6).round(1)
-        bowl_impact = (top["total_impact"] - bat_impact).clip(lower=0).round(1)
+        top15 = top.head(15)
 
+        # Left: stacked bar — batting impact + bowling impact
         fig.add_trace(go.Bar(
             name="Batting Impact",
-            y=top["player"], x=bat_impact,
+            y=top15["player"], x=top15["bat_impact"],
             orientation="h", marker_color="#4CAF50",
-        ))
+            hovertemplate="<b>%{y}</b><br>Bat Impact: %{x:.1f}<extra></extra>",
+        ), row=1, col=1)
+
         fig.add_trace(go.Bar(
             name="Bowling Impact",
-            y=top["player"], x=bowl_impact,
+            y=top15["player"], x=top15["bowl_impact"],
             orientation="h", marker_color="#2196F3",
-        ))
+            hovertemplate="<b>%{y}</b><br>Bowl Impact: %{x:.1f}<extra></extra>",
+        ), row=1, col=1)
 
-        # Annotate avg impact on right
-        for _, row in top.iterrows():
-            fig.add_annotation(
-                x=float(row["total_impact"]) + max(top["total_impact"]) * 0.03,
-                y=row["player"],
-                text=f"avg {row['avg_impact']}",
-                showarrow=False,
-                font=dict(size=10, color="#aaa"),
-            )
+        # Right: avg impact per match as lollipop
+        top15_sorted = top15.sort_values("avg_impact", ascending=True)
+        for _, row in top15_sorted.iterrows():
+            fig.add_trace(go.Scatter(
+                x=[0, float(row["avg_impact"])],
+                y=[row["player"], row["player"]],
+                mode="lines", line=dict(color="#E0E0E0", width=2),
+                showlegend=False,
+            ), row=1, col=2)
+
+        fig.add_trace(go.Scatter(
+            x=top15_sorted["avg_impact"],
+            y=top15_sorted["player"],
+            mode="markers+text",
+            marker=dict(
+                size=12,
+                color=top15_sorted["avg_impact"],
+                colorscale="Viridis",
+                showscale=True,
+                colorbar=dict(title="Avg Impact", x=1.0, len=0.8),
+            ),
+            text=[f"{v:.1f}" for v in top15_sorted["avg_impact"]],
+            textposition="middle right",
+            textfont=dict(size=9),
+            showlegend=False,
+            hovertemplate="<b>%{y}</b><br>Avg: %{x:.1f}<extra></extra>",
+        ), row=1, col=2)
 
         fig.update_layout(
-            title="Player Impact Score — Batting vs Bowling Contribution",
+            title="Player Impact Score — All-Rounder Value",
             barmode="stack",
-            yaxis=dict(autorange="reversed"),
-            xaxis_title="Total Impact Score",
-            height=max(400, len(top) * 30),
-            legend=dict(x=0.7, y=0.01),
+            height=max(500, len(top15) * 35),
+            legend=dict(orientation="h", y=-0.12, x=0.25, xanchor="center"),
         )
+        fig.update_yaxes(autorange="reversed", row=1, col=1)
+        fig.update_xaxes(title_text="Total Impact", row=1, col=1)
+        fig.update_xaxes(title_text="Avg Impact / Match", row=1, col=2)
+
         return fig
