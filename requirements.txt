@@ -1,21 +1,20 @@
 # Cricket Analytics Platform — Core Dependencies
+# Pinned for reproducible deployment
 
-# Core
-pandas>=2.0
-duckdb>=1.0
+# Core data
+pandas==2.3.3
+duckdb==1.5.0
 pyyaml>=6.0
 
-# Ingestion
+# Ingestion (only needed for local data refresh)
 requests>=2.31
 beautifulsoup4>=4.12
 
 # Visualization
-plotly>=5.18
-matplotlib>=3.8
-seaborn>=0.13
+plotly==6.6.0
 
 # Dashboard
-streamlit>=1.30
+streamlit==1.55.0
 
 # CLI
 click>=8.1

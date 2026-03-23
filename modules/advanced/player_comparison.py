@@ -43,6 +43,7 @@ class PlayerComparison(BaseModule):
             WITH phase_stats AS (
                 SELECT
                     d.batter,
+                    d.match_id,
                     CASE
                         WHEN d.over_num BETWEEN 0 AND 5   THEN 'powerplay'
                         WHEN d.over_num BETWEEN 6 AND 14  THEN 'middle'
@@ -58,11 +59,11 @@ class PlayerComparison(BaseModule):
                 FROM deliveries d
                 JOIN matches m ON d.match_id = m.match_id
                 WHERE {where} {player_clauses}
-                GROUP BY d.batter, phase, d.match_id
+                GROUP BY d.batter, d.match_id, phase
             )
             SELECT
                 batter,
-                COUNT(*) AS innings,
+                COUNT(DISTINCT match_id) AS innings,
                 SUM(runs) AS total_runs,
                 MAX(runs) AS highest_score,
                 ROUND(SUM(runs) * 1.0 / NULLIF(SUM(was_out), 0), 2) AS average,

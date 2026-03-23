@@ -27,9 +27,11 @@ data/gold/*
 !data/clean/.gitkeep
 !data/gold/.gitkeep
 
-# DuckDB
-*.duckdb
+# DuckDB — exclude the full 474MB dev DB, track slim deployment DB via Git LFS
+cricket_analytics.duckdb
+cricket_analytics.duckdb.wal
 *.duckdb.wal
+# slim DB (96MB) is tracked via Git LFS — see .gitattributes
 
 # Jupyter
 .ipynb_checkpoints/

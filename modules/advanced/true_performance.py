@@ -41,14 +41,12 @@ class TruePerformance(BaseModule):
             player_clause = "AND d.batter ILIKE ?"
             values.append(f"%{params.player}%")
 
-        # We need the baseline values (no player filter) + player values
-        # Use the same competition/season/team filter for baseline
-        base_where, base_values = self._build_where_clauses(params, "m")
-        # Remove player from base (we want league average)
+        # Baseline = league average (same format/season, but no player/team filter)
         base_params = ModuleParams(format=params.format, season=params.season)
         base_where2, base_values2 = self._build_where_clauses(base_params, "m")
 
-        all_values = base_values2 + values + base_values2
+        # SQL has 2 parameterized sections: phase_baseline (base_where2) + player_phase (where)
+        all_values = base_values2 + values
 
         sql = f"""
         WITH phase_baseline AS (
@@ -136,7 +134,8 @@ class TruePerformance(BaseModule):
         base_params = ModuleParams(format=params.format, season=params.season)
         base_where, base_values = self._build_where_clauses(base_params, "m")
 
-        all_values = base_values + values + base_values
+        # SQL has 2 parameterized sections: phase_baseline (base_where) + bowler_phase (where)
+        all_values = base_values + values
 
         sql = f"""
         WITH phase_baseline AS (
@@ -226,15 +225,21 @@ class TruePerformance(BaseModule):
         top = df.head(20).copy()
 
         fig = make_subplots(
-            rows=1, cols=2, column_widths=[0.55, 0.45],
+            rows=2, cols=2,
+            row_heights=[0.55, 0.45],
+            column_widths=[0.55, 0.45],
             subplot_titles=[
-                "Raw SR vs True SR (green = boosted, red = deflated)",
-                "Phase-wise Strike Rate — Top 12"
+                "Raw SR vs True SR",
+                "SR Adjustment (+ = tougher situations)",
+                "Phase-wise Strike Rate — Top 10",
+                "True SR vs Balls Faced (bubble = runs)"
             ],
+            vertical_spacing=0.12, horizontal_spacing=0.1,
         )
 
-        # Left: dumbbell chart — raw SR vs true SR
         top15 = top.head(15).sort_values("true_sr", ascending=True)
+
+        # Top-Left: dumbbell chart — raw SR vs true SR
         for _, row in top15.iterrows():
             color = "#4CAF50" if row["true_sr"] > row["raw_sr"] else "#EF5350"
             fig.add_trace(go.Scatter(
@@ -242,37 +247,77 @@ class TruePerformance(BaseModule):
                 y=[row["batter"], row["batter"]],
                 mode="lines+markers",
                 line=dict(color=color, width=3),
-                marker=dict(size=[8, 12], color=[color, color]),
+                marker=dict(size=[6, 11], color=[color, color],
+                           symbol=["circle", "diamond"]),
                 showlegend=False,
                 hovertemplate=f"<b>{row['batter']}</b><br>Raw: {row['raw_sr']}<br>True: {row['true_sr']}<extra></extra>",
             ), row=1, col=1)
 
-        # Add reference annotations
-        fig.add_annotation(text="● Raw SR  ◆ True SR", x=0.25, y=-0.12,
-                          xref="paper", yref="paper", showarrow=False, font=dict(size=11))
+        # Top-Right: SR adjustment bar (waterfall-style)
+        top15_adj = top15.sort_values("sr_adjustment", ascending=True)
+        adj_colors = ["#4CAF50" if a > 0 else "#EF5350" for a in top15_adj["sr_adjustment"]]
+        fig.add_trace(go.Bar(
+            y=top15_adj["batter"], x=top15_adj["sr_adjustment"],
+            orientation="h", marker_color=adj_colors,
+            text=[f"{a:+.1f}" for a in top15_adj["sr_adjustment"]],
+            textposition="outside",
+            showlegend=False,
+            hovertemplate="<b>%{y}</b><br>Adjustment: %{x:+.1f}<extra></extra>",
+        ), row=1, col=2)
 
-        # Right: grouped bar — phase SR
-        top12 = top.head(12)
+        # Add zero line
+        fig.add_vline(x=0, line_dash="dash", line_color="#666", row=1, col=2)
+
+        # Bottom-Left: grouped bar — phase SR for top 10
+        top10 = top.head(10)
         phases = ["sr_powerplay", "sr_middle", "sr_death"]
-        phase_labels = ["Powerplay", "Middle", "Death"]
+        phase_labels = ["PP", "Middle", "Death"]
         phase_colors = ["#2196F3", "#FF9800", "#F44336"]
 
         for phase_col, label, color in zip(phases, phase_labels, phase_colors):
-            if phase_col in top12.columns:
+            if phase_col in top10.columns:
                 fig.add_trace(go.Bar(
-                    name=label, y=top12["batter"],
-                    x=top12[phase_col].fillna(0),
+                    name=label, y=top10["batter"],
+                    x=top10[phase_col].fillna(0),
                     orientation="h", marker_color=color,
-                ), row=1, col=2)
+                ), row=2, col=1)
+
+        # Bottom-Right: scatter — true SR vs balls, sized by runs
+        fig.add_trace(go.Scatter(
+            x=top["total_balls"], y=top["true_sr"],
+            mode="markers+text",
+            marker=dict(
+                size=top["total_runs"].clip(lower=50) / 15,
+                color=top["sr_adjustment"].fillna(0),
+                colorscale="RdYlGn", cmid=0,
+                showscale=True,
+                colorbar=dict(title="Adj", x=1.0, len=0.4, y=0.2),
+                line=dict(width=1, color="#333"),
+            ),
+            text=top["batter"].str.split().str[-1],
+            textposition="top center", textfont=dict(size=8),
+            showlegend=False,
+            hovertemplate="<b>%{text}</b><br>True SR: %{y}<br>Balls: %{x}<extra></extra>",
+        ), row=2, col=2)
+
+        title = "True Strike Rate — Context-Adjusted Batting"
+        if params.player:
+            title += f" — {params.player}"
+        if params.season:
+            title += f" ({params.season})"
 
         fig.update_layout(
-            title="True Strike Rate — Context-Adjusted Batting Performance",
-            barmode="group", height=max(500, len(top15) * 32),
-            legend=dict(orientation="h", y=-0.12, x=0.7, xanchor="center"),
+            title=title,
+            barmode="group", height=700,
+            legend=dict(orientation="h", y=-0.05, x=0.25, xanchor="center"),
         )
         fig.update_yaxes(autorange="reversed", row=1, col=2)
+        fig.update_yaxes(autorange="reversed", row=2, col=1)
         fig.update_xaxes(title_text="Strike Rate", row=1, col=1)
-        fig.update_xaxes(title_text="Strike Rate by Phase", row=1, col=2)
+        fig.update_xaxes(title_text="Adjustment", row=1, col=2)
+        fig.update_xaxes(title_text="Phase SR", row=2, col=1)
+        fig.update_xaxes(title_text="Balls Faced", row=2, col=2)
+        fig.update_yaxes(title_text="True SR", row=2, col=2)
 
         return fig
 
@@ -280,52 +325,97 @@ class TruePerformance(BaseModule):
         top = df.head(20).copy()
 
         fig = make_subplots(
-            rows=1, cols=2, column_widths=[0.55, 0.45],
+            rows=2, cols=2,
+            row_heights=[0.55, 0.45],
+            column_widths=[0.55, 0.45],
             subplot_titles=[
                 "Raw Economy vs True Economy",
-                "Phase-wise Economy — Top 12"
+                "Economy Adjustment (- = tougher situations)",
+                "Phase-wise Economy — Top 10",
+                "True Economy vs Wickets (bubble = overs)"
             ],
+            vertical_spacing=0.12, horizontal_spacing=0.1,
         )
 
-        # Left: dumbbell chart
         top15 = top.head(15).sort_values("true_economy", ascending=False)
+
+        # Top-Left: dumbbell chart
         for _, row in top15.iterrows():
-            # Lower true economy than raw = bowler is better than stats suggest (green)
             color = "#4CAF50" if row["true_economy"] < row["raw_economy"] else "#EF5350"
             fig.add_trace(go.Scatter(
                 x=[row["raw_economy"], row["true_economy"]],
                 y=[row["bowler"], row["bowler"]],
                 mode="lines+markers",
                 line=dict(color=color, width=3),
-                marker=dict(size=[8, 12], color=[color, color]),
+                marker=dict(size=[6, 11], color=[color, color],
+                           symbol=["circle", "diamond"]),
                 showlegend=False,
                 hovertemplate=f"<b>{row['bowler']}</b><br>Raw: {row['raw_economy']}<br>True: {row['true_economy']}<extra></extra>",
             ), row=1, col=1)
 
-        fig.add_annotation(text="● Raw Econ  ◆ True Econ", x=0.25, y=-0.12,
-                          xref="paper", yref="paper", showarrow=False, font=dict(size=11))
+        # Top-Right: adjustment bar
+        top15_adj = top15.sort_values("econ_adjustment", ascending=False)
+        adj_colors = ["#4CAF50" if a < 0 else "#EF5350" for a in top15_adj["econ_adjustment"]]
+        fig.add_trace(go.Bar(
+            y=top15_adj["bowler"], x=top15_adj["econ_adjustment"],
+            orientation="h", marker_color=adj_colors,
+            text=[f"{a:+.2f}" for a in top15_adj["econ_adjustment"]],
+            textposition="outside",
+            showlegend=False,
+            hovertemplate="<b>%{y}</b><br>Adjustment: %{x:+.2f}<extra></extra>",
+        ), row=1, col=2)
 
-        # Right: phase economy
-        top12 = top.head(12)
+        fig.add_vline(x=0, line_dash="dash", line_color="#666", row=1, col=2)
+
+        # Bottom-Left: phase economy for top 10
+        top10 = top.head(10)
         phases = ["econ_powerplay", "econ_middle", "econ_death"]
-        phase_labels = ["Powerplay", "Middle", "Death"]
+        phase_labels = ["PP", "Middle", "Death"]
         phase_colors = ["#2196F3", "#FF9800", "#F44336"]
 
         for phase_col, label, color in zip(phases, phase_labels, phase_colors):
-            if phase_col in top12.columns:
+            if phase_col in top10.columns:
                 fig.add_trace(go.Bar(
-                    name=label, y=top12["bowler"],
-                    x=top12[phase_col].fillna(0),
+                    name=label, y=top10["bowler"],
+                    x=top10[phase_col].fillna(0),
                     orientation="h", marker_color=color,
-                ), row=1, col=2)
+                ), row=2, col=1)
+
+        # Bottom-Right: scatter — true economy vs wickets, sized by overs
+        fig.add_trace(go.Scatter(
+            x=top["wickets"], y=top["true_economy"],
+            mode="markers+text",
+            marker=dict(
+                size=top["overs"].clip(lower=5) / 3,
+                color=top["econ_adjustment"].fillna(0),
+                colorscale="RdYlGn_r", cmid=0,
+                showscale=True,
+                colorbar=dict(title="Adj", x=1.0, len=0.4, y=0.2),
+                line=dict(width=1, color="#333"),
+            ),
+            text=top["bowler"].str.split().str[-1],
+            textposition="top center", textfont=dict(size=8),
+            showlegend=False,
+            hovertemplate="<b>%{text}</b><br>True Econ: %{y}<br>Wkts: %{x}<extra></extra>",
+        ), row=2, col=2)
+
+        title = "True Economy — Context-Adjusted Bowling"
+        if params.player:
+            title += f" — {params.player}"
+        if params.season:
+            title += f" ({params.season})"
 
         fig.update_layout(
-            title="True Economy — Context-Adjusted Bowling Performance",
-            barmode="group", height=max(500, len(top15) * 32),
-            legend=dict(orientation="h", y=-0.12, x=0.7, xanchor="center"),
+            title=title,
+            barmode="group", height=700,
+            legend=dict(orientation="h", y=-0.05, x=0.25, xanchor="center"),
         )
         fig.update_yaxes(autorange="reversed", row=1, col=2)
+        fig.update_yaxes(autorange="reversed", row=2, col=1)
         fig.update_xaxes(title_text="Economy Rate", row=1, col=1)
-        fig.update_xaxes(title_text="Economy by Phase", row=1, col=2)
+        fig.update_xaxes(title_text="Adjustment", row=1, col=2)
+        fig.update_xaxes(title_text="Phase Economy", row=2, col=1)
+        fig.update_xaxes(title_text="Wickets", row=2, col=2)
+        fig.update_yaxes(title_text="True Economy", row=2, col=2)
 
         return fig
