@@ -103,7 +103,8 @@ def load_to_db(format_key: str, data_dir: Path | None = None) -> int:
     con = get_connection()
 
     # Ball-by-ball CSVs (exclude _info files)
-    match_csvs = sorted(f for f in raw_dir.glob("*.csv") if not f.stem.endswith("_info"))
+    # Cricsheet league zips also contain all_matches.csv (every ball of every match); only numeric stems are matches
+    match_csvs = sorted(f for f in raw_dir.glob("*.csv") if f.stem.isdigit())
     if not match_csvs:
         logger.warning(f"No match CSVs found in {raw_dir}")
         con.close()
