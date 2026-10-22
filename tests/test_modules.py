@@ -5,7 +5,7 @@ from modules.base import BaseModule, ModuleParams, register_module, get_module, 
 
 def test_module_params_defaults():
     p = ModuleParams()
-    assert p.format == "T20"
+    assert p.format is None  # None = no filter (all formats), since b571e5a
     assert p.player is None
     assert p.output == "dataframe"
 
