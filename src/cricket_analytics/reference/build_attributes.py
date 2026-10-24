@@ -1,13 +1,18 @@
 """Build player_attributes.csv from deliveries/matches (read-only). Everything here is DERIVED from Cricsheet data.
 
+Only `role` (+ its confidence/source) is used as a fact. Every column starting `hint_` is a career-majority GUESS kept for
+internal gap-finding (who is missing from player_overrides.csv) and as a "usually ..." hint; it is never shown as a fact.
+Keeper, bowling type, pace/spin and batting hand are facts only when they are in player_overrides.csv. The real usage
+(batting position, phase) is computed per query in analysis/player_profile.py so it follows the filters.
+
     python -m cricket_analytics.reference.build_attributes --out src/cricket_analytics/reference/player_attributes.csv
 
 Rules (thresholds are module constants so they can be tuned in one place; docs/WORK_phase3_5.md explains each):
   role        batter / bowler / all-rounder from the player's share of his team's balls faced and bowled.
-  keeper      stumpings by the fielder (+ catch rate as a weaker, low-confidence signal).
-  bat_slot    opener / top order / middle / finisher / tail from the median order of first appearance in the innings.
-  bowl_phase_role  powerplay / middle / death / all-phase from where his balls fall.
-  bowl_kind   pace / spin GUESS from over distribution, stumpings off his bowling, extras and byes rates.
+  hint_keeper stumpings by the fielder (+ catch rate as a weaker, low-confidence signal). A guess, not a fact.
+  hint_bat_slot  opener / top order / middle / finisher / tail from the median order of first appearance in the innings.
+  hint_bowl_phase_role  powerplay / middle / death / all-phase from where his balls fall.
+  hint_bowl_kind  pace / spin GUESS from over distribution, stumpings off his bowling, extras and byes rates.
 Bowling type (leg spin, ...) and batting hand are NOT derivable from Cricsheet; they come from player_overrides.csv.
 """
 
@@ -58,11 +63,12 @@ def features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
         UNION ALL SELECT match_id, bowling_team, bowler FROM dd
         UNION ALL SELECT match_id, bowling_team, fielder FROM dd WHERE fielder IS NOT NULL
     ) WHERE player NOT LIKE '%(sub)%'""")
-    # batting order: rank of first appearance (as batter or non-striker) in each innings
+    # batting order: rank of first appearance (as batter or non-striker) in each innings. The opening pair share ball 1:
+    # the one on strike is No.1 (is_striker is taken AT the first appearance, not MAX over the innings, which tied them)
     con.execute("""
     CREATE TEMP TABLE order_ AS
     SELECT match_id, innings, player, ROW_NUMBER() OVER (PARTITION BY match_id, innings ORDER BY first_seq, is_striker DESC) AS pos
-    FROM (SELECT match_id, innings, player, MIN(ball_seq) AS first_seq, MAX(is_striker) AS is_striker FROM (
+    FROM (SELECT match_id, innings, player, MIN(ball_seq) AS first_seq, FIRST(is_striker ORDER BY ball_seq, is_striker DESC) AS is_striker FROM (
               SELECT match_id, innings, ball_seq, batter AS player, 1 AS is_striker FROM dd
               UNION ALL SELECT match_id, innings, ball_seq, non_striker, 0 FROM dd) GROUP BY ALL)""")
     # keepers for the caught-behind count: anyone with >= 3 stumpings (the rate rule in classify() is stricter)
@@ -143,23 +149,21 @@ def classify(df: pd.DataFrame) -> pd.DataFrame:
     sometimes = ~yes & (df.stumpings >= 2) & (rate >= KEEPER_RATE_SOMETIMES)
     o["stumpings"], o["catches"] = df.stumpings, df.catches
     o["catches_per_match"] = cpm.round(2)
-    o["keeper"] = np.select([yes, sometimes], ["yes", "sometimes"], "")
-    o["keeper_confidence"] = np.select([yes & (df.stumpings >= 10) & (rate >= KEEPER_RATE), yes, sometimes], ["high", "medium", "low"], "")
-    o["keeper_source"] = np.where(yes | sometimes, "derived", "")
+    o["hint_keeper"] = np.select([yes, sometimes], ["yes", "sometimes"], "")
+    o["hint_keeper_confidence"] = np.select([yes & (df.stumpings >= 10) & (rate >= KEEPER_RATE), yes, sometimes], ["high", "medium", "low"], "")
 
     # batting position and slot
     o["bat_innings"] = df.bat_innings
-    o["bat_position"] = df.bat_position.round(1)
+    o["hint_bat_position"] = df.bat_position.round(1)
     death = (df.faced_death / df.balls_faced.replace(0, np.nan)).fillna(0)
     pp = (df.faced_pp / df.balls_faced.replace(0, np.nan)).fillna(0)
     o["bat_death_share"] = death.round(3)
     has = (df.bat_innings >= MIN_MATCHES) & df.bat_position.notna()
     p = df.bat_position
-    o["bat_slot"] = np.select(
+    o["hint_bat_slot"] = np.select(
         [~has, p <= 2, p <= 4, (p <= 7) & (death >= FINISHER_DEATH_SHARE), p <= 6, p > 6],
         ["unknown", "opener", "top order", "finisher", "middle", "tail"], "unknown")
-    o["bat_slot_confidence"] = np.where(has, _conf(df.bat_innings), "")
-    o["bat_slot_source"] = "derived"
+    o["hint_bat_slot_confidence"] = np.where(has, _conf(df.bat_innings), "")
 
     # bowling: phase role
     bb = df.balls_bowled.replace(0, np.nan)
@@ -169,7 +173,7 @@ def classify(df: pd.DataFrame) -> pd.DataFrame:
     cand = pd.DataFrame({k: v.fillna(0) for k, v in (("powerplay", sp), ("middle", sm), ("death", sd))})
     meets = pd.DataFrame({k: cand[k] >= t for k, t in PHASE_ROLE_MIN.items()})
     best = (cand.where(meets, -1)).idxmax(axis=1)
-    o["bowl_phase_role"] = np.where(~ok, "", np.where(meets.any(axis=1), best, "all-phase"))
+    o["hint_bowl_phase_role"] = np.where(~ok, "", np.where(meets.any(axis=1), best, "all-phase"))
 
     # bowling: pace/spin guess. See spin_score().
     o["stumped_off"] = df.stumped_off
@@ -181,10 +185,9 @@ def classify(df: pd.DataFrame) -> pd.DataFrame:
     o["bye_rate"] = (df.byes / bb).round(4)
     o["first_over_share"] = (df.first_over_balls / bb).round(3)
     score = spin_score(o)
-    o["bowl_kind"] = np.select([~ok, score >= 2], ["", "spin"], "pace")
+    o["hint_bowl_kind"] = np.select([~ok, score >= 2], ["", "spin"], "pace")
     unsure = score.between(1, 2) | (df.balls_bowled < 600)    # scores 1-2 were right only ~50% of the time on the seed
-    o["bowl_kind_confidence"] = np.where(~ok, "", np.select([unsure, df.balls_bowled >= 1200], ["low", "high"], "medium"))
-    o["bowl_kind_source"] = np.where(ok, "derived", "")
+    o["hint_bowl_kind_confidence"] = np.where(~ok, "", np.select([unsure, df.balls_bowled >= 1200], ["low", "high"], "medium"))
     # bowl_type and bat_hand are not derivable; they come from player_overrides.csv, never from this script
     return o
 
