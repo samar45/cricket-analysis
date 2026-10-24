@@ -9,3 +9,4 @@ Score out of 10: correct 4, complete 2, honest 2, constraints 1, efficient 1. Sc
 | 2026-10-24 | researcher | Data + NLQ → `docs/RESEARCH_data_nlq.md` | 10 | Found the fielder_1 columns (lead verified), corrected our CLAUDE.md, labelled every claim |
 | 2026-10-24 | builder | Phase 1 loader + DB + verification | 10 | Lead re-ran key checks, all true. Found 2 extra old bugs (ball 4.10, outcome). Respected the one-DB-writer and no-tests rules |
 | 2026-10-24 | test-writer | `tests/test_ingest.py` + fixture | 9 | 10 tests, self-checking fixture numbers. Correctly flagged the stale test_db.py instead of editing it |
+| 2026-10-24 | researcher-2 | Ball-tracking sources → `docs/RESEARCH_ball_tracking.md` | 9 | Lead verified the HawkeyeStats repo. Corrected its own earlier unverified claim. -1: wagon/field-data wording slightly overstated |
