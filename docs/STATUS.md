@@ -23,3 +23,11 @@
 - Verified by the lead: 0 old matches missing, identical balls/runs/wickets for all old matches, Kohli IPL 9,346, 0 wrong batting teams. 16/16 tests, dashboard 0 errors.
 - `config.yaml` switched to the new DB. The .duckdb is not committed.
 - Samar asked for deeper research on line/length/catch data (official sites, vendors, how analysts do it). Worker running → `docs/RESEARCH_ball_tracking.md`.
+
+## 2026-10-24 Phase 2 done (1994dec, c850027)
+- New package `cricket_analytics`: `sql/fragments.py` (one definition per stat), `sql/filters.py` (exact names, season-year mapping, super overs off by default), registry + JSON schema, `api.run` with provenance, CLI `cricket run/schema/resolve/info/modules`.
+- 13 modules replace the old 15 (phase analysis and leaderboards folded into batting/bowling `group_by`; clutch renamed death_overs; pace_vs_spin marked experimental).
+- Verified by the lead: 126/126 tests; Kohli IPL 8,661 to 2025 (= ESPNcricinfo), 2024 741 @ 61.75, 2025 657 @ 54.75; Buttler 2022 863; Bumrah best 5/10; top IPL stand 229.
+- Old bugs found and fixed: super overs counted, non-striker run outs as not out, legal-ball and runs-conceded definitions, team side guessed, compare's per-phase highest score, impact NaN, true_performance sign flip.
+- setuptools installed in .venv (Samar OK); `cricket` CLI works anywhere.
+- Delete list for Phase 3 (needs Samar's yes): `modules/` (old 15, ~3,800 lines), `leagues.py`, empty `ingestion/` `preprocessing/` `notebooks/`, root `cricket_analytics.egg-info`, `requirements-ml.txt`, `requirements-nlp.txt`, unused pyproject extras/deps, unused config.yaml keys, sys.path hacks, `tests/test_modules.py`, stale README module tables.

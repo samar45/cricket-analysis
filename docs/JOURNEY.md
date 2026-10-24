@@ -13,13 +13,14 @@ The full plan and goals are in `docs/ROADMAP.md`. Mode: Heavy, Opus leads, 2-4 S
 | 2026-10-23 | First rebuild | Doubled league deliveries (all_matches.csv); fixed in 59e917b; rebuild stopped (sleep) |
 | 2026-10-24 | 3 audits + roadmap (47320d9), Phase 0 docs (62b4e98) | CSV2 already has batting team, fielders, gender: our loader dropped them |
 | 2026-10-24 | Phase 1 data foundation (318db73) | New DB: 10,418 matches through 2026-10-14, all 7,935 old matches identical, app switched |
+| 2026-10-24 | Phase 2 core rewrite (1994dec, c850027) | 15 old modules → 13 plot-free modules in `src/cricket_analytics/analysis/` + `viz/`; 126 tests; numbers now match official records |
 
 ## 3. What works
 - `data/cricket_analytics.duckdb` (253 MB, gitignored) built by `cricket ingest --db data/cricket_analytics.duckdb --no-download`.
   Has competition, gender, batting/bowling team, fielders, balls_per_over, primary keys, players table.
 - Verified: 0 old match_ids missing; balls/runs/wickets identical for all 7,935 old matches; Kohli IPL 9,346 (8,671 to 2025 + 675 in 2026);
   per-season Kohli runs match known figures for 2016/2023/2024/2025 (lead's memory, not re-checked online).
-- 16 tests pass (10 new loader tests on a 2-match fixture). Dashboard AppTest: 0 exceptions on the new DB.
+- 126 tests pass (loader, core, 13 modules, golden numbers vs known records). Dashboard AppTest: 0 exceptions on the new DB.
 
 ## 4. What failed (don't retry without a new reason)
 - First build doubled deliveries (all_matches.csv). Fixed.
@@ -31,11 +32,10 @@ The full plan and goals are in `docs/ROADMAP.md`. Mode: Heavy, Opus leads, 2-4 S
 - Check the raw file before trusting a "the format doesn't have it" fact. Our CLAUDE.md was wrong about fielders.
 
 ## 6. Next (resume here)
-1. Phase 2 core rewrite (see ROADMAP): sql/fragments + filters, plot-free analysis layer, registry, `api.run`, CLI JSON, golden tests.
-   Show Samar the delete list (AUDIT.md §7) before removing anything.
-2. Known data notes for Phase 2: IPL season labels are Cricsheet's ("2007/08", "2009/10", "2020/21"), add a `year`; caught-and-bowled has no fielder_1 (catcher = bowler);
-   5 matches have NULL result; Hundred phase SQL still assumes 6-ball overs; slim DB date is TIMESTAMP, new is DATE.
-3. Ball-tracking research: `docs/RESEARCH_ball_tracking.md` (worker running 2026-10-24).
+1. Phase 3: dashboard rebuilt on the registry (`api.run`, `viz/`), then delete the old code (list in STATUS 2026-10-24 "Phase 2 done"; needs Samar's yes).
+   Same phase: registry gets `bool`/`float` param kinds and an `experimental` category; loader stores super-over winners; repo `.claude/launch.json` uses `.venv`.
+2. Data notes: caught-and-bowled has no fielder_1 (catcher = bowler); 5 matches have NULL result; slim DB date is TIMESTAMP, new is DATE.
+3. Waiting on Samar: HawkeyeStats (legal risk) or hand-tag experiment (EXPERIMENTS.md).
 
 ## 7. Where things are
 - Branch `overhaul`, nothing pushed. `main` also has 1 unpushed commit (39e474c).
