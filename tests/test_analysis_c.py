@@ -277,7 +277,7 @@ def test_real_pace_vs_spin_kohli_ipl_and_coverage():
     assert k.runs.sum() == 9336 == api.run("batting", player="V Kohli", competition="ipl", db_path=REAL).data.total_runs[0]
     t = d[d.level == "type"]
     assert t.runs.sum() == 9336 and "Left-arm orthodox" in set(t.bowler_type)
-    assert t[t.bowler_type == "Unknown type"].runs.iloc[0] == 399   # kind unknown == type unknown: no derived guess
+    assert t[t.bowler_type == "Unknown type"].runs.iloc[0] == k.loc["Unknown", "runs"]   # kind unknown == type unknown: no derived guess
     cov = {}
     for comp in ("ipl", "t20i"):
         c = api.run("pace_vs_spin", competition=comp, mode="team_vs_type", min_balls=1, db_path=REAL).data
