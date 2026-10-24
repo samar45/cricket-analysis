@@ -1,4 +1,4 @@
-# cricket-analysis - roadmap (drafted 2026-10-24, waiting for Samar's "go")
+# cricket-analysis - roadmap (drafted 2026-10-24, approved by Samar the same day)
 
 Inputs: `docs/AUDIT.md` (code), `docs/AUDIT_video.md` (Edit Pipeline link), `docs/RESEARCH_data_nlq.md` (data + Ollama).
 Key facts below were spot-checked by the lead on 2026-10-24 (marked ✔).
