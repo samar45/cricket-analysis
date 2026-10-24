@@ -21,3 +21,9 @@ Score out of 10: correct 4, complete 2, honest 2, constraints 1, efficient 1. Sc
 | 2026-10-24 | attributes (3.5b) | Player attributes | 9 | 3 spot checks true; honest about manual-llm source. Samar later rejected derived keeper and pace/spin as facts |
 | 2026-10-24 | video charts (3.5d) | Reel chart set | 10 | Lead checked gallery screenshot: clear at a glance |
 | 2026-10-24 | rebuild (3.5c) | pace_vs_spin, death_overs, Video tab | 9 | Applied mid-task rule change; 288 tests. -1: derived pace/spin still shown in player_profile |
+| 2026-10-24 | list grower | Reviewed list 350 → 940 | 8 | Coverage numbers re-run; later sample found 11.7% wrong hands |
+| 2026-10-24 | verifier | 10% sample online + 48 IPL fills | 10 | Clear error tables with URLs, honest about source splits |
+| 2026-10-25 | FE-1 | dismissal_profile + chase_vs_set | 10 | Lead re-ran Kohli split: sums to 9,336 |
+| 2026-10-25 | FE-3 | pressure | 10 | Exact state rebuild, honest bias caveat |
+| 2026-10-25 | FE-2 | home_away | 9 | 100% venue coverage; used a private db helper (flagged) |
+| 2026-10-25 | hand re-check | 197 hands | 9 | 24 fixes; stopped at search cap with a resume list |

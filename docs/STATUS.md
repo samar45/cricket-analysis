@@ -70,3 +70,9 @@
 - `docs/HANDSHAKE_video.md` v1: how Edit Pipeline calls this app (CLI + JSON + video PNGs), what works today vs planned (`cricket facts`, `cricket chart`).
 - Running: online check of a 10% sample of the list + fill top-50 IPL gaps by web search (→ `docs/VERIFY_player_list.md`).
 - Open: famous keepers (Dhoni, Buttler, Pant, de Kock) are in original rows without a keeper flag; fill after the verifier finishes. Samar: tokens short, conserve.
+
+## 2026-10-25 Feature engineering done (4bd537d, ec8b994, 1cfb910), list checks (b6bca2c, 3cadb6f)
+- New modules: dismissal_profile, chase_vs_set, pressure (per-ball match state, exact on 17,688 innings), home_away (481 venues → country, 190 team homes). 18 modules total.
+- Reviewed list: 10% sample checked online (bowl_type 2.6% wrong, hands 11.7% wrong, all fixed); 48 IPL bowlers added by web search (IPL coverage 98.05%); 13 keepers flagged; 197 doubtful hands re-checked (24 fixed). 172 medium/low hands still unchecked (web-search cap) — resume list in docs/VERIFY_player_list.md.
+- 323 tests pass. Dashboard restarted.
+- Next: Phase 5 (`cricket facts`, `cricket chart`), Phase 4 (`cricket update` + CI), Phase 6 (NLQ).

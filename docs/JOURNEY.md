@@ -34,7 +34,8 @@ The full plan and goals are in `docs/ROADMAP.md`. Mode: Heavy, Opus leads, 2-4 S
 - Check the raw file before trusting a "the format doesn't have it" fact. Our CLAUDE.md was wrong about fielders.
 
 ## 6. Next (resume here)
-0. **Phase 3.5a-d done.** Next 3.5e (ROADMAP bottom): dynamic tags as filter-aware percentages; keeper + bowling type only from the reviewed list; grow it to ~1,000 bowlers.
+0. **Phase 3.5 + feature engineering done (2026-10-25)**: 18 modules incl. dismissal_profile, chase_vs_set, pressure, home_away; reviewed list 940+ players, partly web-verified. Next: Phase 5 facts/chart CLI, Phase 4 update+CI, Phase 6 NLQ. Unchecked hands: docs/VERIFY_player_list.md.
+   Older: **Phase 3.5a-d done.** Next 3.5e (ROADMAP bottom): dynamic tags as filter-aware percentages; keeper + bowling type only from the reviewed list; grow it to ~1,000 bowlers.
    Old note: **Phase 3.5 first** (Samar's dashboard feedback, see ROADMAP bottom): multi/range filters, player attributes (role, hand, bowling type), rebuild pace_vs_spin + death_overs, video-style charts.
 1. Phase 4: `cricket update` (pull Cricsheet "recently added" zip, load only new matches, run checks, swap DB safely while the dashboard may hold it open) + GitHub Actions running tests on a fixture DB.
 2. Phase 5 video bridge (`cricket facts`), Phase 6 NLQ, Phase 7 advanced stats (see ROADMAP).
