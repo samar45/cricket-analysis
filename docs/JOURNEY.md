@@ -29,11 +29,13 @@ The full plan and goals are in `docs/ROADMAP.md`. Mode: Heavy, Opus leads, 2-4 S
 - Line/length/shot/drops from free sources: none found (see EXPERIMENTS.md); deeper research running.
 
 ## 5. Lessons
+- Streamlit does not reload package code: after changing `src/`, restart the dashboard or users see old/new code mixed (caused a crash report on 2026-10-24).
 - "Ran without errors" ≠ correct. The doubling only showed up in the Kohli spot-check.
 - Check the raw file before trusting a "the format doesn't have it" fact. Our CLAUDE.md was wrong about fielders.
 
 ## 6. Next (resume here)
-0. **Phase 3.5 first** (Samar's dashboard feedback, see ROADMAP bottom): multi/range filters, player attributes (role, hand, bowling type), rebuild pace_vs_spin + death_overs, video-style charts.
+0. **Phase 3.5a-d done.** Next 3.5e (ROADMAP bottom): dynamic tags as filter-aware percentages; keeper + bowling type only from the reviewed list; grow it to ~1,000 bowlers.
+   Old note: **Phase 3.5 first** (Samar's dashboard feedback, see ROADMAP bottom): multi/range filters, player attributes (role, hand, bowling type), rebuild pace_vs_spin + death_overs, video-style charts.
 1. Phase 4: `cricket update` (pull Cricsheet "recently added" zip, load only new matches, run checks, swap DB safely while the dashboard may hold it open) + GitHub Actions running tests on a fixture DB.
 2. Phase 5 video bridge (`cricket facts`), Phase 6 NLQ, Phase 7 advanced stats (see ROADMAP).
 3. Known: Streamlit doesn't hot-reload package code; restart the server after changing `src/`. DB backups `data/cricket_analytics_prev_*.duckdb` are gitignored.

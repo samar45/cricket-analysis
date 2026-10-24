@@ -57,3 +57,9 @@
 - Running in parallel: 3.5a multi/range filters (filters, registry, api, cli, batting/bowling group_by, dashboard); 3.5b player attributes (new `reference/` CSVs + `player_profile` module, Wikidata coverage check with tiny queries only); 3.5d video chart set (`viz/video/`, gallery).
 - 3.5c (pace_vs_spin + death_overs rebuild) starts after 3.5b. Work log: `docs/WORK_phase3_5.md`.
 - If the session stops mid-way: uncommitted worker files may be in the tree; check `git status`, run `pytest -q`, and read `docs/WORK_phase3_5.md` MILESTONE lines before continuing.
+
+## 2026-10-24 Phase 3.5a-d done (7ec128b, 92be42b, f278737, a8492ed)
+- 3.5a multi/range filters; 3.5b player attributes; 3.5c pace_vs_spin on reviewed types (IPL coverage 83%, stays experimental), death-overs charts, player_profile chart, Video tab; 3.5d reel charts.
+- Samar hit a ConversionException: the dashboard server was started before 3.5a, so old package code ran with the new UI. Restarted; multi-season picker works. Lesson: restart Streamlit after any `src/` change.
+- Error messages now plain-language (warning for bad input, "couldn't run" + technical details expander, empty-result message lists the chosen filters).
+- 288 tests pass. Next: 3.5e (dynamic tags as percentages, grow reviewed list), needs Samar's yes on the list expansion and kaleido.

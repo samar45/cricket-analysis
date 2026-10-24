@@ -17,3 +17,7 @@ Score out of 10: correct 4, complete 2, honest 2, constraints 1, efficient 1. Sc
 | 2026-10-24 | dashboard (3A) | Dashboard rebuild, registry kinds, deletions | 9 | 27 AppTest cases; lead clicked through. -1: overwrote lead's launch.json entry (owned up, restored) |
 | 2026-10-24 | loader (3B) | Super-over winners, competition config, rebuild | 10 | Lead re-checked 76 winners / 0 other diffs. Corrected 2B's 729315 assumption from source data |
 | 2026-10-24 | chart-polish | 13 charts + layout | 9 | Lead checked batting chart in browser: clean. Self-checked with headless screenshots. -1: changed what by-season views mean (top-N) without asking first |
+| 2026-10-24 | filters (3.5a) | Multi/range filters | 9 | Golden sums re-run by lead. -1: edited teams.py outside its list (needed, reported) |
+| 2026-10-24 | attributes (3.5b) | Player attributes | 9 | 3 spot checks true; honest about manual-llm source. Samar later rejected derived keeper and pace/spin as facts |
+| 2026-10-24 | video charts (3.5d) | Reel chart set | 10 | Lead checked gallery screenshot: clear at a glance |
+| 2026-10-24 | rebuild (3.5c) | pace_vs_spin, death_overs, Video tab | 9 | Applied mid-task rule change; 288 tests. -1: derived pace/spin still shown in player_profile |
