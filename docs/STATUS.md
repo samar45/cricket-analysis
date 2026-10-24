@@ -52,3 +52,8 @@
 ## 2026-10-24 Samar's dashboard feedback recorded
 - Wants: glance-friendly video charts (bar/pie/donut, keep the current ones), better pace_vs_spin and death_overs, real bowler types and player roles via feature engineering, multi-select / last-N-years filters for every module.
 - Planned as Phase 3.5a-d in `docs/ROADMAP.md`; feature ideas in `docs/EXPERIMENTS.md`. Work starts when Samar says go (token budget).
+
+## 2026-10-24 Phase 3.5 started (Samar: go, run until tokens run out, resume after)
+- Running in parallel: 3.5a multi/range filters (filters, registry, api, cli, batting/bowling group_by, dashboard); 3.5b player attributes (new `reference/` CSVs + `player_profile` module, Wikidata coverage check with tiny queries only); 3.5d video chart set (`viz/video/`, gallery).
+- 3.5c (pace_vs_spin + death_overs rebuild) starts after 3.5b. Work log: `docs/WORK_phase3_5.md`.
+- If the session stops mid-way: uncommitted worker files may be in the tree; check `git status`, run `pytest -q`, and read `docs/WORK_phase3_5.md` MILESTONE lines before continuing.
