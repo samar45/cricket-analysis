@@ -267,23 +267,23 @@ def test_real_season_awards_and_pace_vs_spin():
 
 @real
 def test_real_pace_vs_spin_kohli_ipl_and_coverage():
-    """Golden numbers (measured 2026-10-24, types from the override list only): Kohli IPL 9,336 runs =
-    5,049 vs pace + 2,863 vs spin + 1,424 vs bowlers with no listed type."""
+    """Golden numbers (measured 2026-10-24 after the IPL tail was added, types from the override list only): Kohli IPL 9,336 runs =
+    5,734 vs pace + 3,203 vs spin + 399 vs bowlers with no listed type."""
     d = api.run("pace_vs_spin", player="V Kohli", competition="ipl", detail=True, db_path=REAL).data
     k = d[d.level == "kind"].set_index("bowler_type")
-    assert (k.loc["Pace", "runs"], k.loc["Pace", "balls"], k.loc["Pace", "dismissals"]) == (5049, 3607, 139)
-    assert (k.loc["Spin", "runs"], k.loc["Spin", "balls"], k.loc["Spin", "dismissals"]) == (2863, 2338, 49)
-    assert (k.loc["Unknown", "runs"], k.loc["Unknown", "balls"]) == (1424, 981)
+    assert (k.loc["Pace", "runs"], k.loc["Pace", "balls"], k.loc["Pace", "dismissals"]) == (5734, 4079, 157)
+    assert (k.loc["Spin", "runs"], k.loc["Spin", "balls"], k.loc["Spin", "dismissals"]) == (3203, 2584, 58)
+    assert (k.loc["Unknown", "runs"], k.loc["Unknown", "balls"]) == (399, 263)
     assert k.runs.sum() == 9336 == api.run("batting", player="V Kohli", competition="ipl", db_path=REAL).data.total_runs[0]
-    assert k.loc["Pace", "strike_rate"] == 139.98 and k.loc["Spin", "strike_rate"] == 122.46
+    assert k.loc["Pace", "strike_rate"] == 140.57 and k.loc["Spin", "strike_rate"] == 123.96
     t = d[d.level == "type"]
     assert t.runs.sum() == 9336 and "Left-arm orthodox" in set(t.bowler_type)
-    assert t[t.bowler_type == "Unknown type"].runs.iloc[0] == 1424   # kind unknown == type unknown: no derived guess
+    assert t[t.bowler_type == "Unknown type"].runs.iloc[0] == 399   # kind unknown == type unknown: no derived guess
     cov = {}
     for comp in ("ipl", "t20i"):
         c = api.run("pace_vs_spin", competition=comp, mode="team_vs_type", min_balls=1, db_path=REAL).data
         cov[comp] = c[c.bowler_type.isin(["Pace", "Spin"])].balls.sum() / c.balls.sum() * 100
-    assert 82 < cov["ipl"] < 84 and 23 < cov["t20i"] < 25           # measured 83.0% and 24.1%
+    assert 94 < cov["ipl"] < 96 and 35 < cov["t20i"] < 37           # measured 94.9% and 36.0%
     # the rule: experimental while IPL coverage is under 90% (the manual list is expanded to change this)
     assert registry.get("pace_vs_spin").category == ("advanced" if cov["ipl"] >= 90 else "experimental")
 

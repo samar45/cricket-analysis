@@ -20,8 +20,8 @@ _TYPE = "CASE WHEN pa.bowl_type IS NULL THEN 'Unknown type' ELSE upper(left(pa.b
 @module(
     id="pace_vs_spin",
     title="Bowling-type matchups (pace vs spin, and each bowling type)",
-    category="experimental",
-    description="EXPERIMENTAL until the bowler list is complete. How a batter (or a batting team) scores against pace and spin, and with "
+    category="advanced",
+    description="How a batter (or a batting team) scores against pace and spin, and with "
                 "detail=true against each bowling type (right-arm fast ... left-arm wrist spin). A bowler's type comes only from the hand-kept "
                 "list (player_overrides.csv); every other bowler is Unknown. Modes: batter_vs_type, team_vs_type, bowler_types "
                 "(the bowlers and their labels with source and confidence).",
@@ -33,10 +33,10 @@ _TYPE = "CASE WHEN pa.bowl_type IS NULL THEN 'Unknown type' ELSE upper(left(pa.b
         ParamSpec("min_balls", "int", help="Hide rows with fewer balls faced (default 20 per batter, 60 per team; not used by bowler_types)"),
     ],
     caveats=[
-        "EXPERIMENTAL: a bowler has a type only if he is in the hand-kept list (player_overrides.csv, source manual-llm = written from memory by "
+        "A bowler has a type only if he is in the hand-kept list (player_overrides.csv, source manual-llm = written from memory by "
         "Claude, each with a confidence; check bowler_types). Everyone else is 'Unknown' (the pace/spin guess derived from the data is NOT used). "
-        "The module stays experimental while IPL coverage is under 90% of balls.",
-        "Coverage (measured 2026-10-24, share of balls faced by the batters whose bowler has a type): IPL 83.0%, men's T20I 24.1%, all men's 40.5%, women's T20I 0.1% (the list is mostly men). "
+        "Bowlers outside the list count as Unknown; outside the IPL that share is large.",
+        "Coverage (measured 2026-10-24, share of balls faced by the batters whose bowler has a type): IPL 94.9%, men's T20I 36.1%, all men's 63.8%, women's T20I 22.9%. "
         "pct_of_balls is the share per row; read the Unknown row before quoting a split.",
         "Rows with level = kind are Pace / Spin / Unknown; rows with level = type (detail=true) are the finer types and cover the same balls again, so never add the two levels together. Pace = every fast / medium type; Spin = off spin, leg spin, orthodox, wrist spin.",
         "Teams use the real batting side of each ball, not 'innings 1 = team1'.",
