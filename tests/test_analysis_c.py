@@ -282,7 +282,7 @@ def test_real_pace_vs_spin_kohli_ipl_and_coverage():
     for comp in ("ipl", "t20i"):
         c = api.run("pace_vs_spin", competition=comp, mode="team_vs_type", min_balls=1, db_path=REAL).data
         cov[comp] = c[c.bowler_type.isin(["Pace", "Spin"])].balls.sum() / c.balls.sum() * 100
-    assert 94 < cov["ipl"] < 96 and 35 < cov["t20i"] < 37           # measured 94.9% and 36.0%
+    assert cov["ipl"] >= 94 and cov["t20i"] >= 35                  # floors: coverage only grows as the reviewed list grows (98.1% IPL on 2026-10-25)
     # the rule: experimental while IPL coverage is under 90% (the manual list is expanded to change this)
     assert registry.get("pace_vs_spin").category == ("advanced" if cov["ipl"] >= 90 else "experimental")
 
