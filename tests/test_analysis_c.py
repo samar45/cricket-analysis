@@ -269,7 +269,7 @@ def test_real_season_awards_and_pace_vs_spin():
 def test_real_pace_vs_spin_kohli_ipl_and_coverage():
     """Golden numbers (measured 2026-10-24 after the IPL tail was added, types from the override list only): Kohli IPL 9,336 runs =
     5,734 vs pace + 3,203 vs spin + 399 vs bowlers with no listed type."""
-    d = api.run("pace_vs_spin", player="V Kohli", competition="ipl", detail=True, db_path=REAL).data
+    d = api.run("pace_vs_spin", player="V Kohli", competition="ipl", detail=True, min_balls=1, db_path=REAL).data
     k = d[d.level == "kind"].set_index("bowler_type")
     # the split moves as the reviewed list grows, so check invariants, not exact pins
     assert k.loc["Unknown", "balls"] / k.balls.sum() < 0.05
