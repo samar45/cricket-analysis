@@ -63,3 +63,10 @@
 - Samar hit a ConversionException: the dashboard server was started before 3.5a, so old package code ran with the new UI. Restarted; multi-season picker works. Lesson: restart Streamlit after any `src/` change.
 - Error messages now plain-language (warning for bad input, "couldn't run" + technical details expander, empty-result message lists the chosen filters).
 - 288 tests pass. Next: 3.5e (dynamic tags as percentages, grow reviewed list), needs Samar's yes on the list expansion and kaleido.
+
+## 2026-10-24 3.5e done (c523d65), reviewed list 940 (3264647), handshake v1
+- Player profile shows filter-aware mixes ("usually No.5–6 (52%)"); keeper/type/hand only from the reviewed list.
+- Reviewed list 350 → 940; IPL bowl-type coverage 94.9% → pace_vs_spin now advanced. 291 tests pass.
+- `docs/HANDSHAKE_video.md` v1: how Edit Pipeline calls this app (CLI + JSON + video PNGs), what works today vs planned (`cricket facts`, `cricket chart`).
+- Running: online check of a 10% sample of the list + fill top-50 IPL gaps by web search (→ `docs/VERIFY_player_list.md`).
+- Open: famous keepers (Dhoni, Buttler, Pant, de Kock) are in original rows without a keeper flag; fill after the verifier finishes. Samar: tokens short, conserve.
