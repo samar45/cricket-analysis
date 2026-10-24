@@ -42,3 +42,6 @@ Thumbs.db
 
 # Environment
 .env
+
+# external, unlicensed data (local only)
+data/external/

@@ -13,3 +13,4 @@ Score out of 10: correct 4, complete 2, honest 2, constraints 1, efficient 1. Sc
 | 2026-10-24 | core-builder (2A) | Package, fragments, filters, registry, api, CLI | 9 | Lead re-ran tests and CLI; Buttler 2022 correct. Flagged super overs and non-striker run outs instead of guessing. -1: setuptools gap found late |
 | 2026-10-24 | porter (2B) | 6 modules + 2 core fixes | 9 | Golden numbers match known records. Found missing super-over winners. -1: overwrote 2C's log lines once (owned up) |
 | 2026-10-24 | porter (2C) | 6 advanced modules | 10 | Every old-vs-new difference explained; found 3 old bugs beyond the audit; stayed in its files |
+| 2026-10-24 | experimenter | HawkeyeStats join trial | 10 | Lead re-counted rows/matches, checked sizes and gitignore. Checked size before download, kept data out of git, clear verdict |

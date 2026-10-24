@@ -1,5 +1,0 @@
-# NLP dependencies (Phase 4+)
--r requirements.txt
-
-spacy>=3.7
-nltk>=3.8
