@@ -48,3 +48,7 @@
 - All work committed on `overhaul` (not pushed). CLAUDE.md project map and data facts refreshed for the new layout.
 - Dashboard preview stopped. Nothing running in the background.
 - Resume: read `docs/JOURNEY.md` §6 → Phase 4 (`cricket update` + CI) waits for Samar's "go".
+
+## 2026-10-24 Samar's dashboard feedback recorded
+- Wants: glance-friendly video charts (bar/pie/donut, keep the current ones), better pace_vs_spin and death_overs, real bowler types and player roles via feature engineering, multi-select / last-N-years filters for every module.
+- Planned as Phase 3.5a-d in `docs/ROADMAP.md`; feature ideas in `docs/EXPERIMENTS.md`. Work starts when Samar says go (token budget).

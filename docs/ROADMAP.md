@@ -45,3 +45,15 @@ Line / length / shot / drops stay **blocked** until a legal source exists. Ideas
 - Parallel workers touch different files. Only one worker writes to a .duckdb at a time.
 - Each phase ends with: lead review, pytest, real-number checks, a commit, STATUS + JOURNEY updated.
 - Deletions follow `docs/AUDIT.md` §7 and are shown to Samar before they happen.
+
+## Samar's feedback after checking the dashboard (2026-10-24) → new Phase 3.5, before Phase 4
+Keep every existing chart; only add. Order decided by the lead (Samar can change it):
+
+| # | Work | What "done" means | Size |
+|---|---|---|---|
+| 3.5a | **Multi-value and range filters everywhere** | `season` accepts a range or "last N years"; `venue`, `opposition`, `team` accept several values; dashboard uses multiselects; JSON schema uses arrays (NLQ-ready). "One year tells a story, five years show a pattern." | M |
+| 3.5b | **Player attributes table** | `players` gets role (batter / bowler / all-rounder / keeper), batting hand, bowling type (right-arm fast, medium, off spin, leg spin, left-arm orthodox, left-arm wrist spin). Sources: features derived from our own data first, then a legal open source for styles (Wikidata is CC0, needs checking), hand-fixed CSV for gaps | M/L |
+| 3.5c | **Rebuild pace_vs_spin and death_overs** | pace_vs_spin on real bowling types (split by type, not just pace/spin) and leaves "experimental"; new, simpler death-overs charts | M |
+| 3.5d | **Video charts ("understand at a glance")** | A second chart set per module: one message per chart, big numbers, bar / donut / pie / single-stat card, 1080×1920 and 1080×1080 friendly, transparent background, exportable (PNG needs `kaleido`, ask before installing). Different chart type per feature, not one style for all | M |
+
+Then Phase 4 (update + CI), 5 (video bridge, reuses 3.5d), 6 (NLQ, reuses 3.5a arrays), 7 (advanced).

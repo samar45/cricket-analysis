@@ -33,6 +33,7 @@ The full plan and goals are in `docs/ROADMAP.md`. Mode: Heavy, Opus leads, 2-4 S
 - Check the raw file before trusting a "the format doesn't have it" fact. Our CLAUDE.md was wrong about fielders.
 
 ## 6. Next (resume here)
+0. **Phase 3.5 first** (Samar's dashboard feedback, see ROADMAP bottom): multi/range filters, player attributes (role, hand, bowling type), rebuild pace_vs_spin + death_overs, video-style charts.
 1. Phase 4: `cricket update` (pull Cricsheet "recently added" zip, load only new matches, run checks, swap DB safely while the dashboard may hold it open) + GitHub Actions running tests on a fixture DB.
 2. Phase 5 video bridge (`cricket facts`), Phase 6 NLQ, Phase 7 advanced stats (see ROADMAP).
 3. Known: Streamlit doesn't hot-reload package code; restart the server after changing `src/`. DB backups `data/cricket_analytics_prev_*.duckdb` are gitignored.
