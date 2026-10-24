@@ -31,3 +31,7 @@
 - Old bugs found and fixed: super overs counted, non-striker run outs as not out, legal-ball and runs-conceded definitions, team side guessed, compare's per-phase highest score, impact NaN, true_performance sign flip.
 - setuptools installed in .venv (Samar OK); `cricket` CLI works anywhere.
 - Delete list for Phase 3 (needs Samar's yes): `modules/` (old 15, ~3,800 lines), `leagues.py`, empty `ingestion/` `preprocessing/` `notebooks/`, root `cricket_analytics.egg-info`, `requirements-ml.txt`, `requirements-nlp.txt`, unused pyproject extras/deps, unused config.yaml keys, sys.path hacks, `tests/test_modules.py`, stale README module tables.
+
+## 2026-10-24 Phase 3 started
+- Samar: go for Phase 3, delete list approved, HawkeyeStats approved as an experiment (local only, never committed or published).
+- Workers: 3A dashboard rebuild + registry kinds + deletions; 3B super-over winners at ingest + competition config in one place, rebuilt into `data/cricket_analytics_new.duckdb`; 3C Hawk-Eye join trial → `docs/EXPERIMENT_hawkeye.md`.
