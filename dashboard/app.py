@@ -90,7 +90,8 @@ def explore():
     if result.data.empty:
         st.info("No rows for these filters. Loosen a filter or lower a minimum.")
     else:
-        chart_tab, table_tab = st.tabs(["Chart", "Table"])
+        names = ["Chart", "Table"] + (["Video"] if ui.has_video(mod.id) else [])
+        chart_tab, table_tab, *video_tab = st.tabs(names)
         with chart_tab:
             fig = _figure(mod.id, result)
             if fig is None:
@@ -99,6 +100,9 @@ def explore():
                 st.plotly_chart(fig, width="stretch", theme=None)   # theme=None: keep our own template
         with table_tab:
             st.dataframe(result.data, hide_index=True, width="stretch")
+        for tab in video_tab:
+            with tab:
+                ui.video_tab(mod.id, result)
         c1, c2, _ = st.columns([1, 1, 4])
         c1.download_button("Download CSV", result.data.to_csv(index=False), f"{mod.id}.csv", "text/csv")
         c2.download_button("Download JSON", result.to_json(indent=2), f"{mod.id}.json", "application/json")

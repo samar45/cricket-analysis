@@ -1,10 +1,14 @@
 """Dashboard helpers: cached API calls and the widgets generated from a module's ParamSpecs."""
 
+import importlib.util
+
 import streamlit as st
+import streamlit.components.v1 as components
 
 from cricket_analytics import api, competitions
 from cricket_analytics.registry import Module, ParamSpec
 from cricket_analytics.sql.fragments import PHASES
+from cricket_analytics.viz import video
 
 # Filter-like params keep one session key across modules, so choosing "ipl" survives a module switch.
 SHARED = {"competition", "season", "team", "opposition", "venue", "player", "player2", "phase",
@@ -111,3 +115,37 @@ def param_form(mod: Module) -> dict:
             else:
                 values[p.name] = _widget(mod, p, values)
     return {k: v for k, v in values.items() if v is not None and v is not False and v != []}
+
+
+VIDEO_ASPECTS = {"9:16": 640, "1:1": 360}   # preview height in px; every preview is 360 px wide, like a phone screen
+_CHECKER = ("background-color:#1b1f26;background-image:linear-gradient(45deg,#272c35 25%,transparent 25%,transparent 75%,#272c35 75%),"
+            "linear-gradient(45deg,#272c35 25%,transparent 25%,transparent 75%,#272c35 75%);background-size:32px 32px;"
+            "background-position:0 0,16px 16px;")
+
+
+def has_video(module_id: str) -> bool:
+    return module_id in video.module_ids()
+
+
+def video_preview_html(fig, aspect: str) -> str:
+    """The 1080 px wide figure shrunk to 360 px wide on a checkerboard (so the transparency shows). Needs internet for plotly.js."""
+    inner = fig.to_html(full_html=False, include_plotlyjs="cdn", config=dict(staticPlot=True, displayModeBar=False))
+    return (f"<body style='margin:0'><div style='width:360px;height:{VIDEO_ASPECTS[aspect]}px;overflow:hidden;position:relative;{_CHECKER}'>"
+            f"<div style='transform:scale(.33333);transform-origin:0 0;width:1080px;position:absolute;left:0;top:0'>{inner}</div></div></body>")
+
+
+def video_tab(module_id: str, result) -> None:
+    """Preview of the module's video figure (viz/video/<id>.py) at phone width, plus downloads."""
+    a, b = st.columns([1, 2])
+    aspect = a.radio("Shape", list(VIDEO_ASPECTS), horizontal=True, key="video_aspect")
+    focus = b.text_input("Focus (optional)", key=f"video_focus_{module_id}", help="Picks one view in modules that have several: a player name, a phase, 'leaders'... Empty = the default view.")
+    fig = video.video_figure(module_id, result, aspect, focus or None)
+    components.html(video_preview_html(fig, aspect), width=380, height=VIDEO_ASPECTS[aspect] + 8)
+    name = f"{module_id}_{aspect.replace(':', 'x')}"
+    c1, c2, _ = st.columns([1, 1, 3])
+    c1.download_button("Download HTML", fig.to_html(include_plotlyjs="cdn"), f"{name}.html", "text/html", key="video_html")
+    if importlib.util.find_spec("kaleido"):
+        if c2.button("Make PNG", key="video_png_make"):   # exports at 1080 px wide (the figure's own size)
+            c2.download_button("Download PNG", fig.to_image(format="png"), f"{name}.png", "image/png", key="video_png")
+    else:
+        c2.caption("PNG needs kaleido: `pip install kaleido` (not installed).")

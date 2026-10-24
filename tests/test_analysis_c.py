@@ -57,7 +57,7 @@ def test_modules_registered_with_schema():
     for i in IDS:
         m = registry.get(i)
         assert registry.json_schema(i)["title"] == i and m.caveats
-    assert "EXPERIMENTAL" in registry.get("pace_vs_spin").description
+    assert registry.get("pace_vs_spin").spec("detail").kind == "bool"
     assert registry.get("compare").spec("player2").required
     assert "clutch" not in registry.get("death_overs").title.lower()
 
@@ -183,19 +183,33 @@ def test_death_overs_bowling(db, ipl):
 
 def test_pace_vs_spin_team_mode_uses_batting_side(db, ipl):
     d = api.run("pace_vs_spin", competition="ipl", mode="team_vs_type", min_balls=1, db_path=db).data
+    assert set(d.level) == {"kind"} and set(d.bowler_type) <= {"Pace", "Spin", "Unknown"}
     got = d.groupby("team").runs.sum()
     exp = ipl.groupby("batting_team").runs_off_bat.sum()   # (ingest renames Bangalore -> Bengaluru, so compare the numbers)
     assert sorted(got) == sorted(exp) and len(got) == 2    # F1: by the team that batted, not innings 1 = team1
-    assert set(d.bowler_type) == {"Unknown"}        # nobody has the 120 balls the guess needs in a 1-match DB
+    assert set(d.bowler_type) >= {"Pace", "Spin"}          # the fixture bowlers are in the attributes table
+    assert d.groupby("team").pct_of_balls.sum().round(0).eq(100).all()
 
 
-def test_pace_vs_spin_batter_mode(db, ipl):
+def test_pace_vs_spin_batter_mode_and_detail(db, ipl):
     d = api.run("pace_vs_spin", competition="ipl", min_balls=1, db_path=db).data
     runs, balls = bat(ipl, "Yuvraj Singh")
-    r = d[d.batter == "Yuvraj Singh"].iloc[0]
-    assert (r.runs, r.balls) == (runs, balls)
-    assert r.dismissals == ipl[(ipl.striker == "Yuvraj Singh") & ipl.wkt].shape[0]
-    assert api.run("pace_vs_spin", competition="ipl", mode="bowler_classification", db_path=db).data.empty
+    y = d[d.batter == "Yuvraj Singh"]
+    assert (y.runs.sum(), y.balls.sum()) == (runs, balls) and set(y.level) == {"kind"}
+    assert y.dismissals.sum() == ipl[(ipl.striker == "Yuvraj Singh") & ipl.wkt].shape[0]
+    assert y.pct_of_balls.sum().round(0) == 100
+    # detail=true adds the bowling-type rows: the same balls again, split finer
+    dd = api.run("pace_vs_spin", competition="ipl", player="Yuvraj Singh", detail=True, min_balls=1, db_path=db).data
+    k, t = dd[dd.level == "kind"], dd[dd.level == "type"]
+    assert (k.runs.sum(), k.balls.sum()) == (t.runs.sum(), t.balls.sum()) == (runs, balls)
+    assert set(dd.columns) >= {"runs", "balls", "strike_rate", "average", "dismissals", "dot_pct", "boundary_pct", "pct_of_balls"}
+    assert not any(x in ("Pace", "Spin", "Unknown") for x in t.bowler_type)
+
+
+def test_pace_vs_spin_bowler_types(db):
+    d = api.run("pace_vs_spin", competition="ipl", mode="bowler_types", db_path=db).data
+    assert {"bowler", "balls", "bowl_kind", "bowl_type", "kind_source", "kind_confidence"} <= set(d.columns)
+    assert d.balls.sum() > 0 and d.balls.is_monotonic_decreasing and set(d.bowl_kind) <= {"pace", "spin", "unknown"}
 
 
 # ── real DB ───────────────────────────────────────────────────────────────────
@@ -243,11 +257,45 @@ def test_real_season_awards_and_pace_vs_spin():
     assert s.runs == b.total_runs
     deb = api.run("season_awards", competition="ipl", season=2024, award="debutants", db_path=REAL).data
     assert "J Fraser-McGurk" in set(deb.player)
-    c = api.run("pace_vs_spin", competition="ipl", mode="bowler_classification", db_path=REAL).data.set_index("bowler")
-    assert c.loc["R Ashwin", "bowler_type"] == "Spin" and c.loc["JJ Bumrah", "bowler_type"] == "Pace"
+    c = api.run("pace_vs_spin", competition="ipl", mode="bowler_types", db_path=REAL).data.set_index("bowler")
+    assert (c.loc["R Ashwin", "bowl_kind"], c.loc["R Ashwin", "bowl_type"]) == ("spin", "right-arm off spin")
+    assert (c.loc["JJ Bumrah", "bowl_kind"], c.loc["JJ Bumrah", "bowl_type"]) == ("pace", "right-arm fast")
     t = api.run("pace_vs_spin", competition="ipl", season=2024, mode="team_vs_type", team="Royal Challengers Bengaluru",
                 min_balls=1, db_path=REAL).data
     assert set(t.team) == {"Royal Challengers Bengaluru"}
+
+
+@real
+def test_real_pace_vs_spin_kohli_ipl_and_coverage():
+    """Golden numbers (measured 2026-10-24, types from the override list only): Kohli IPL 9,336 runs =
+    5,049 vs pace + 2,863 vs spin + 1,424 vs bowlers with no listed type."""
+    d = api.run("pace_vs_spin", player="V Kohli", competition="ipl", detail=True, db_path=REAL).data
+    k = d[d.level == "kind"].set_index("bowler_type")
+    assert (k.loc["Pace", "runs"], k.loc["Pace", "balls"], k.loc["Pace", "dismissals"]) == (5049, 3607, 139)
+    assert (k.loc["Spin", "runs"], k.loc["Spin", "balls"], k.loc["Spin", "dismissals"]) == (2863, 2338, 49)
+    assert (k.loc["Unknown", "runs"], k.loc["Unknown", "balls"]) == (1424, 981)
+    assert k.runs.sum() == 9336 == api.run("batting", player="V Kohli", competition="ipl", db_path=REAL).data.total_runs[0]
+    assert k.loc["Pace", "strike_rate"] == 139.98 and k.loc["Spin", "strike_rate"] == 122.46
+    t = d[d.level == "type"]
+    assert t.runs.sum() == 9336 and "Left-arm orthodox" in set(t.bowler_type)
+    assert t[t.bowler_type == "Unknown type"].runs.iloc[0] == 1424   # kind unknown == type unknown: no derived guess
+    cov = {}
+    for comp in ("ipl", "t20i"):
+        c = api.run("pace_vs_spin", competition=comp, mode="team_vs_type", min_balls=1, db_path=REAL).data
+        cov[comp] = c[c.bowler_type.isin(["Pace", "Spin"])].balls.sum() / c.balls.sum() * 100
+    assert 82 < cov["ipl"] < 84 and 23 < cov["t20i"] < 25           # measured 83.0% and 24.1%
+    # the rule: experimental while IPL coverage is under 90% (the manual list is expanded to change this)
+    assert registry.get("pace_vs_spin").category == ("advanced" if cov["ipl"] >= 90 else "experimental")
+
+
+@real
+def test_real_death_overs_min_balls_default():
+    r = api.run("death_overs", competition="ipl", top=1000, db_path=REAL).data
+    assert len(r) > 100 and r.death_balls.min() >= 60                   # rankings hide tiny samples
+    b = api.run("death_overs", competition="ipl", role="bowling", top=1000, db_path=REAL).data
+    assert b.death_balls.min() >= 60
+    one = api.run("death_overs", player="V Kohli", competition="ipl", season=2024, db_path=REAL).data
+    assert len(one) == 1                                                  # a named player is never hidden
 
 
 # ── viz: every figure builds, also from an empty / tiny result ─────────────────
@@ -265,7 +313,17 @@ VIZ_CASES = [
     ("death_overs", dict(min_balls=1, role="bowling")),
     ("pace_vs_spin", dict(min_balls=1)),
     ("pace_vs_spin", dict(min_balls=1, mode="team_vs_type")),
-    ("pace_vs_spin", dict(mode="bowler_classification")),
+    ("pace_vs_spin", dict(mode="bowler_types")),
+    ("pace_vs_spin", dict(min_balls=1, detail=True)),
+    ("pace_vs_spin", dict(min_balls=1, detail=True, player="Yuvraj Singh")),
+    ("pace_vs_spin", dict(min_balls=1, mode="team_vs_type", detail=True, team="Sunrisers Hyderabad")),
+    ("pace_vs_spin", dict(player="Nobody X")),
+    ("death_overs", dict(player="Yuvraj Singh")),
+    ("death_overs", dict(player="B Kumar", role="bowling")),
+    ("death_overs", dict(player="Nobody X")),
+    ("player_profile", dict(player="Yuvraj Singh")),
+    ("player_profile", dict(min_matches=1)),
+    ("player_profile", dict(player="Nobody X")),
 ]
 
 

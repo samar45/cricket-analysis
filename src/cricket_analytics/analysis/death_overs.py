@@ -9,6 +9,8 @@ from ..sql.filters import Filters
 from ..sql.fragments import phase_sql
 from ..sql.innings import batter_innings
 
+MIN_BALLS = 60
+
 
 @module(
     id="death_overs",
@@ -20,17 +22,22 @@ from ..sql.innings import batter_innings
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue"),
         ParamSpec("role", "choice", default="batting", choices=("batting", "bowling")),
-        ParamSpec("min_balls", "int", help="Hide players with fewer death-overs balls than this (default 15 faced when batting, 30 legal when bowling)"),
+        ParamSpec("min_balls", "int", help="Hide players with fewer death-overs balls than this (default 60 in a ranking, about 10 overs; 1 when you pick one player)"),
         ParamSpec("top", "int", default=40, help="Rows to return (highest index first)"),
     ],
     caveats=[
         "This is NOT a pressure or clutch measure. It only compares the death overs (death = overs 16-20; The Hundred: the last 25 balls) with the same player's other overs. True pressure (target, wickets down, required rate) is a later module (Phase 7).",
         "Not baseline-adjusted: scoring is faster at the death for everyone, so a typical batter's index is well above 100. Compare players with each other, or use true_performance for a league-adjusted number.",
         "The player also needs at least 3x min_balls balls overall (so the overall rate is not just the death rate).",
+        "Small samples: a death strike rate over fewer than ~60 balls swings by about +/-13% from luck alone (about +/-26% at 15), so a ranking hides "
+        "players under 60 death-over balls by default (IPL: 180 of 367 batters and 209 of 363 bowlers remain, against 15-ball tiny samples topping the list). "
+        "Naming one player drops the minimum to 1: check death_balls before quoting.",
     ],
 )
 def death_overs(f: Filters, role: str = "batting", min_balls: int | None = None, top: int = 40) -> pd.DataFrame:
     ph = phase_sql()
+    if min_balls is None:   # 60 balls = 10 overs: noise of about 13% on the death rate; an explicitly chosen player is never hidden
+        min_balls = 1 if getattr(f, "player", None) else MIN_BALLS
     if role == "batting":
         inn, params = batter_innings(f, [(ph, "phase")])   # one row per batter x innings x phase
         sql = f"""
@@ -55,7 +62,7 @@ def death_overs(f: Filters, role: str = "batting", min_balls: int | None = None,
                {ratio("death_runs", "death_outs", 1.0, 1)} AS death_avg
         FROM a WHERE total_balls >= 3 * ? AND death_balls >= ?
         ORDER BY death_index DESC NULLS LAST, batter LIMIT ?"""
-        mb = int(min_balls if min_balls is not None else 15)
+        mb = int(min_balls)
         return query(sql, params + [mb, mb, int(top)])
 
     where, params = f.where("bowl")
@@ -76,5 +83,5 @@ def death_overs(f: Filters, role: str = "batting", min_balls: int | None = None,
            {ratio("death_wickets", "death_legal_balls", 6.0)} AS death_wickets_per_over
     FROM a WHERE legal_balls >= 3 * ? AND death_legal_balls >= ?
     ORDER BY death_index DESC NULLS LAST, bowler LIMIT ?"""
-    mb = int(min_balls if min_balls is not None else 30)
+    mb = int(min_balls)
     return query(sql, params + [mb, mb, int(top)])

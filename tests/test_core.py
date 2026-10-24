@@ -282,7 +282,7 @@ def test_impact_weights_are_floats_and_pace_vs_spin_is_experimental():
     p = {s.name: s for s in registry.get("impact").params}
     assert [(p[n].kind, p[n].default) for n in ("bat_weight", "wicket_points", "econ_par", "econ_weight")] == \
         [("float", 0.6), ("float", 20.0), ("float", 8.0), ("float", 0.4)]
-    assert registry.get("pace_vs_spin").category == "experimental"
+    assert registry.get("pace_vs_spin").category == "experimental"   # stays until >= 90% of IPL balls have a listed bowling type (83.0% on 2026-10-24)
     assert {m.category for m in registry.all_modules()} <= set(registry.CATEGORIES)
 
 

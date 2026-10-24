@@ -10,6 +10,7 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 from cricket_analytics import registry
+from cricket_analytics.viz import video
 
 APP = str(Path(__file__).parent.parent / "dashboard" / "app.py")
 REAL = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
@@ -63,8 +64,7 @@ def test_module_ipl_with_players(module_id):
         if p.name in names:
             at.selectbox(key=f"p_{p.name}").set_value(names[p.name]).run()
     assert_clean(at, module_id)
-    if module_id == "pace_vs_spin":
-        assert at.warning, "experimental modules show a banner"
+    assert bool(at.warning) == (mod.category == "experimental"), "only experimental modules show the banner"
     if module_id == "batting":
         at.toggle(key="batting_include_super_overs").set_value(True).run()
         assert_clean(at, module_id)
@@ -90,3 +90,26 @@ def test_multi_and_season_controls():
     at.selectbox(key="p_season_from").set_value(None).run()
     at.selectbox(key="batting_group_by").set_value("venue").run()
     assert_clean(at, "batting")
+
+
+@pytest.mark.parametrize("module_id", IDS)
+def test_video_tab(module_id):
+    """Every module with a result gets Chart / Table / Video tabs; the aspect toggle and the focus box rerun cleanly."""
+    at = open_module(new_app(), module_id)
+    at.selectbox(key="p_competition").set_value("ipl").run()
+    names = dict(PLAYERS, **({"player2": "JJ Bumrah"} if module_id == "matchup" else {}))
+    for p in registry.get(module_id).params:
+        if p.name in names:
+            at.selectbox(key=f"p_{p.name}").set_value(names[p.name]).run()
+    assert_clean(at, module_id)
+    assert at.tabs, f"{module_id} returned no rows for Kohli in the IPL, so its tabs cannot be checked"
+    assert [t.label for t in at.tabs] == ["Chart", "Table", "Video"]
+    assert module_id in video.module_ids()
+    assert at.radio(key="video_aspect").value == "9:16"
+    html = [e for e in at.get("download_button") if e.proto.label == "Download HTML"]
+    assert len(html) == 1
+    at.radio(key="video_aspect").set_value("1:1").run()
+    assert_clean(at, module_id)
+    assert at.radio(key="video_aspect").value == "1:1"
+    assert at.text_input(key=f"video_focus_{module_id}").value == ""
+    at.radio(key="video_aspect").set_value("9:16").run()
