@@ -316,7 +316,7 @@ def test_csk_ipl_wins():
 @real
 def test_super_over_matches_get_a_winner():
     t = api.run("teams", competition="ipl", db_path=REAL).data
-    assert t.tied.sum() == 2 * 1                       # one IPL tie still unresolved by a level super-over pair
+    assert t.tied.sum() == 0                           # ingest stores every super-over winner (729315 too: Cricsheet says RR)
     assert (t.won.sum(), t.lost.sum()) == (t.lost.sum(), t.won.sum())   # every decided match has one winner and one loser
 
 

@@ -11,7 +11,7 @@ import duckdb
 import pandas as pd
 import pytest
 
-from cricket_analytics.ingest.cricsheet import load_to_db
+from cricket_analytics.ingest.cricsheet import _parse_info, _parse_outcome, load_to_db
 
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
 IPL, HUN = "1082591", "1252666"
@@ -98,3 +98,22 @@ def test_players_table(con):
     n, = q(con, "SELECT count(*) FROM players")[0]
     assert n > 0
     assert q(con, "SELECT count(*) FROM players WHERE name = 'DA Warner'")[0][0] == 1
+
+
+def _outcome(tmp_path, *lines):
+    f = tmp_path / "x_info.csv"
+    f.write_text("\n".join(["version,2.3.0", "info,team,A", "info,team,B", *lines, ""]), encoding="utf-8")
+    return _parse_outcome(_parse_info(f))
+
+
+def test_outcome_super_over_tie_keeps_tie_and_stores_winner(tmp_path):
+    o = _outcome(tmp_path, "info,super_over,3", "info,outcome,tie", "info,eliminator,Mumbai Indians")
+    assert o == {"winner": "Mumbai Indians", "result": "tie", "result_margin": None, "outcome_method": "super over"}
+
+
+def test_outcome_bowl_out_and_plain_results(tmp_path):
+    assert _outcome(tmp_path, "info,outcome,tie", "info,bowl_out,India")["outcome_method"] == "bowl out"
+    assert _outcome(tmp_path, "info,outcome,tie")["winner"] is None                      # tie, no tie-break
+    assert _outcome(tmp_path, "info,outcome,no result")["winner"] is None
+    o = _outcome(tmp_path, "info,method,D/L", "info,winner,A", "info,winner_runs,12")
+    assert (o["winner"], o["result"], o["result_margin"], o["outcome_method"]) == ("A", "runs", 12, "D/L")

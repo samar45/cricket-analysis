@@ -28,8 +28,8 @@ _GROUPS = {
     ],
     caveats=[
         "win_pct = won / (won + lost): decided matches only. Ties without a winner and no-results are left out of the denominator.",
-        "Matches settled in a super over count as a win for the super-over winner (matches.winner is empty for them, "
-        "so the winner is the team with the higher total in the last super-over pair). If that pair was also level the match counts as tied.",
+        "Matches settled in a super over (or bowl-out) count as a win for the tie-break winner: ingest stores it in "
+        "matches.winner and keeps result = 'tie' (outcome_method says how). `tied` = tie with no tie-break winner.",
         "bat_first_* uses the team that batted in innings 1 (not team1, not the toss).",
         "Team names are as in the data; renamed franchises (e.g. Delhi Daredevils / Capitals) are separate unless ingest normalised them.",
         "team filters to that team's rows; opposition keeps matches against that side.",

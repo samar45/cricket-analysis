@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS matches (
     winner       VARCHAR,
     result       VARCHAR,        -- runs, wickets, tie, no result
     result_margin INTEGER,
+    outcome_method VARCHAR,      -- 'super over' / 'bowl out' (tie settled; winner = tie-break winner), D/L, Awarded, ...
     player_of_match VARCHAR,
     source       VARCHAR,        -- cricsheet
     ingested_at  TIMESTAMP DEFAULT current_timestamp,
@@ -96,6 +97,7 @@ def init_schema(db_path: Path | None = None) -> None:
     """Create all tables and indexes if they don't exist."""
     con = get_connection(db_path)
     con.execute(_SCHEMA_SQL)
+    con.execute("ALTER TABLE matches ADD COLUMN IF NOT EXISTS outcome_method VARCHAR")  # DBs built before it existed
     con.close()
 
 

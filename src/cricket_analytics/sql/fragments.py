@@ -52,21 +52,13 @@ def phase_sql(d: str = "d", m: str = "m") -> str:
 PHASES = ("powerplay", "middle", "death")
 
 
-# One row per match with the REAL winner and who batted first. Use as `WITH mo AS (<MATCH_OUTCOME>)`.
-#  - winner: matches.winner, or for super-over matches (winner is NULL there, the ingest does not store the
-#    eliminator) the team with the higher total in the last super-over pair; stays NULL if that pair is level.
+# One row per match with the winner and who batted first. Use as `WITH mo AS ({MATCH_OUTCOME})`.
+#  - winner: matches.winner. Ingest stores the tie-break winner (super over / bowl-out) there, with result = 'tie'
+#    and outcome_method = 'super over' / 'bowl out'. NULL only for no-results and ties with no tie-break.
 #  - bat_first: batting_team of innings 1 (NOT team1 and NOT derived from the toss).
 MATCH_OUTCOME = """
-    SELECT m.match_id, COALESCE(m.winner, so.winner) AS winner, i1.bat_first,
-           (m.winner IS NULL AND so.winner IS NOT NULL) AS super_over_decided
+    SELECT m.match_id, m.winner, i1.bat_first
     FROM matches m
     LEFT JOIN (SELECT match_id, any_value(batting_team) AS bat_first
                FROM deliveries WHERE innings = 1 GROUP BY match_id) i1 ON i1.match_id = m.match_id
-    LEFT JOIN (
-        SELECT match_id, CASE WHEN count(DISTINCT score) = 2 THEN arg_max(team, score) END AS winner
-        FROM (SELECT match_id, innings, any_value(batting_team) AS team, SUM(runs_total) AS score,
-                     max(innings) OVER (PARTITION BY match_id) AS last
-              FROM deliveries WHERE innings > 2 GROUP BY match_id, innings)
-        WHERE innings >= last - 1 GROUP BY match_id
-    ) so ON so.match_id = m.match_id
 """

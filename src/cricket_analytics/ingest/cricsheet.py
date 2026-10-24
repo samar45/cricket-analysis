@@ -15,19 +15,13 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from ..competitions import BY_FOLDER
 from ..config import load_config, get_path
 from ..db import get_connection, init_schema
 from .teams import normalise_team
 from .venues import normalise_venue
 
 logger = logging.getLogger(__name__)
-
-from ..leagues import (
-    CRICSHEET_URLS      as _FORMAT_URLS,
-    CRICSHEET_FORMAT_LABELS  as _FORMAT_LABELS,
-    CRICSHEET_TOURNAMENT_LABELS as _TOURNAMENT_LABELS,
-    COMPETITION_CODES   as _COMPETITION_CODES,
-)
 
 
 # ── Output DB ─────────────────────────────────────────────────────────────────
@@ -52,9 +46,9 @@ def download_cricsheet(format_key: str) -> Path:
     dest = get_path("raw") / "cricsheet" / format_key
     dest.mkdir(parents=True, exist_ok=True)
 
-    url = _FORMAT_URLS.get(format_key)
-    if not url:
-        raise ValueError(f"Unknown format: {format_key}. Choose from: {list(_FORMAT_URLS)}")
+    if format_key not in BY_FOLDER:
+        raise ValueError(f"Unknown format: {format_key}. Choose from: {list(BY_FOLDER)}")
+    url = BY_FOLDER[format_key].url
 
     ua = cfg.get("scraping", {}).get("user_agent", "CricketAnalytics/0.1")
     logger.info(f"Downloading {format_key} from {url} ...")
@@ -106,6 +100,34 @@ def _parse_info(info_path: Path) -> dict:
                     meta[key] = val
 
     return meta
+
+
+def _parse_outcome(meta: dict) -> dict:
+    """winner / result / result_margin / outcome_method from a parsed info dict.
+
+    Cricsheet CSV2 info lines that matter:
+      info,winner,<team>  + info,winner_runs,N | info,winner_wickets,N   normal result
+      info,outcome,tie    + info,eliminator,<team>   tie settled by a super over (the team named WON)
+      info,outcome,tie    + info,bowl_out,<team>     tie settled by a bowl-out (2 old T20Is)
+      info,outcome,no result                          no winner
+      info,method,D/L | Awarded | Lost fewer wickets  how the result was reached (any result type)
+    A tie keeps result='tie'; outcome_method says 'super over' / 'bowl out' and winner is the tie-break winner.
+    """
+    result = margin = None
+    if meta.get("winner_wickets"):
+        result, margin = "wickets", int(meta["winner_wickets"])
+    elif meta.get("winner_runs"):
+        result, margin = "runs", int(meta["winner_runs"])
+    elif meta.get("outcome") in ("tie", "no result", "draw"):
+        result = meta["outcome"]
+
+    winner = meta.get("winner")
+    method = meta.get("method")
+    if result == "tie":
+        for key, name in (("eliminator", "super over"), ("bowl_out", "bowl out")):
+            if meta.get(key):
+                winner, method = meta[key], name
+    return {"winner": winner, "result": result, "result_margin": margin, "outcome_method": method}
 
 
 # ── Ball-by-ball CSV -> deliveries frame ──────────────────────────────────────
@@ -180,9 +202,10 @@ def load_to_db(format_key: str, data_dir: Path | None = None, db_path: Path | No
         logger.warning(f"No match CSVs found in {raw_dir}")
         return 0
 
-    format_label     = _FORMAT_LABELS[format_key]
-    tournament_label = _TOURNAMENT_LABELS[format_key]
-    competition      = _COMPETITION_CODES[format_key]
+    if format_key not in BY_FOLDER:
+        raise ValueError(f"Unknown format: {format_key}. Choose from: {list(BY_FOLDER)}")
+    comp = BY_FOLDER[format_key]
+    format_label, tournament_label, competition = comp.format_label, comp.tournament_label, comp.competition
 
     all_deliveries = []
     match_rows = []
@@ -204,16 +227,7 @@ def load_to_db(format_key: str, data_dir: Path | None = None, db_path: Path | No
             teams = [normalise_team(t) for t in meta["teams"]]
             first_row = df.iloc[0]
 
-            result_margin = None
-            result_type = None
-            if meta.get("winner_wickets"):
-                result_type = "wickets"
-                result_margin = int(meta["winner_wickets"])
-            elif meta.get("winner_runs"):
-                result_type = "runs"
-                result_margin = int(meta["winner_runs"])
-            elif meta.get("outcome") in ("tie", "no result", "draw"):
-                result_type = meta["outcome"]
+            outcome = _parse_outcome(meta)
 
             raw_venue = str(first_row.get("venue", meta.get("venue", "")))
             match_rows.append({
@@ -228,9 +242,10 @@ def load_to_db(format_key: str, data_dir: Path | None = None, db_path: Path | No
                 "team2":           teams[1] if len(teams) > 1 else normalise_team(str(first_row.get("bowling_team", ""))),
                 "toss_winner":     normalise_team(meta.get("toss_winner")),
                 "toss_decision":   meta.get("toss_decision"),
-                "winner":          normalise_team(meta.get("winner")),
-                "result":          result_type,
-                "result_margin":   result_margin,
+                "winner":          normalise_team(outcome["winner"]),
+                "result":          outcome["result"],
+                "result_margin":   outcome["result_margin"],
+                "outcome_method":  outcome["outcome_method"],
                 "player_of_match": meta.get("player_of_match"),
                 "source":          "cricsheet",
                 "competition":     competition,
@@ -270,11 +285,11 @@ def load_to_db(format_key: str, data_dir: Path | None = None, db_path: Path | No
             INSERT INTO matches
                 (match_id, date, format, tournament, season, venue, city,
                  team1, team2, toss_winner, toss_decision, winner, result,
-                 result_margin, player_of_match, source,
+                 result_margin, outcome_method, player_of_match, source,
                  competition, gender, team_type, match_type, event, balls_per_over)
             SELECT match_id, CAST(date AS DATE), format, tournament, season, venue, city,
                    team1, team2, toss_winner, toss_decision, winner, result,
-                   result_margin, player_of_match, source,
+                   result_margin, outcome_method, player_of_match, source,
                    competition, gender, team_type, match_type, event, balls_per_over
             FROM _matches_staging
         """)

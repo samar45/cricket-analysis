@@ -5,6 +5,7 @@ by default (official records do): Kohli's IPL career is 9,336 (9,346 with the 10
 8,661 before the 2026 season, which matches the ESPNcricinfo figure.
 """
 
+import os
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,8 @@ from cricket_analytics import api, registry
 from cricket_analytics.db import query, use_db
 from cricket_analytics.sql.filters import Filters
 
-DB = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
+# CRICKET_TEST_DB=path points these tests at another DB file (e.g. a freshly built one)
+DB = Path(os.environ.get("CRICKET_TEST_DB") or Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb")
 pytestmark = pytest.mark.skipif(not DB.exists(), reason="real DB not built")
 
 
@@ -66,3 +68,11 @@ def test_hundred_phases_use_five_ball_sets():
     share = balls / balls.sum()
     assert 0.24 < share["powerplay"] < 0.29
     assert 0.18 < share["death"] < 0.26
+
+
+def test_super_over_ties_store_their_winner():
+    # 74 super-over ties (and 2 bowl-outs) keep result='tie' and carry the tie-break winner; 729315 KKR v RR 2014 -> RR
+    n = query("SELECT count(*) AS n, count(winner) AS w FROM matches WHERE result = 'tie' "
+              "AND outcome_method IN ('super over', 'bowl out')", db_path=DB)
+    assert (n.n[0], n.w[0]) == (76, 76)
+    assert query("SELECT winner FROM matches WHERE match_id = '729315'", db_path=DB).winner[0] == "Rajasthan Royals"
