@@ -1,75 +1,108 @@
-"""Batting figures (moved from the old B1 plot). Input: api.Result from run('batting', ...)."""
+"""Batting figures. Input: api.Result from run('batting', ...)."""
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from . import PALETTE as C
-from . import subtitle
+from . import bubble, empty, labels, style
+
+_PHASES = ["powerplay", "middle", "death"]
 
 
 def figure(result):
     df = result.data
     if df.empty:
-        return go.Figure().update_layout(title="No batting data for these filters")
+        return empty("No batting data for these filters")
     if "phase" in df.columns:
         return _by_phase(df, result)
     if "season" in df.columns:
         return _by_season(df, result)
     top = df.head(15)
     if len(top) == 1:
-        return _single(top.iloc[0])
+        return _single(top.iloc[0], result)
 
-    fig = make_subplots(rows=1, cols=2, column_widths=[0.55, 0.45],
-                        subplot_titles=["Strike rate vs average (size = innings)", "Where the runs come from (top 10)"])
+    fig = make_subplots(rows=2, cols=1, row_heights=[0.55, 0.45], vertical_spacing=0.17,
+                        subplot_titles=["Strike rate vs average (dot size = innings)", "Where the runs come from (top 10)"])
     fig.add_trace(go.Scatter(
         x=top["strike_rate"], y=top["average"], mode="markers+text", showlegend=False,
-        marker=dict(size=top["innings"].clip(lower=3) * 2, color=top["boundary_pct"], colorscale="YlOrRd",
-                    showscale=True, colorbar=dict(title="Boundary %", x=0.47, len=0.8), line=dict(width=1, color="#333")),
-        text=top["batter"].str.split().str[-1], textposition="top center", textfont=dict(size=9)), row=1, col=1)
+        marker=dict(**bubble(top["innings"]), color=C["primary"], opacity=0.75, line=dict(width=1, color="#0F131A")),
+        text=labels(top["batter"]), textposition="top center", textfont=dict(size=11),
+        customdata=top[["batter", "innings", "total_runs", "boundary_pct"]].values,
+        hovertemplate="<b>%{customdata[0]}</b><br>SR %{x}, avg %{y}<br>%{customdata[1]} inns, %{customdata[2]} runs"
+                      "<br>boundary %{customdata[3]}%<extra></extra>"), row=1, col=1)
     t10 = top.head(10)
     for name, vals, colour in (("Fours", t10["fours"] * 4, C["good"]), ("Sixes", t10["sixes"] * 6, C["bad"]),
                                ("Other", t10["total_runs"] - t10["fours"] * 4 - t10["sixes"] * 6, C["light"])):
-        fig.add_trace(go.Bar(name=name, y=t10["batter"], x=vals, orientation="h", marker_color=colour), row=1, col=2)
-    fig.update_layout(title=f"Batting stats ({subtitle(result)})", barmode="stack", height=550,
-                      legend=dict(orientation="h", y=-0.12, x=0.5, xanchor="center"))
-    fig.update_xaxes(title_text="Strike rate", row=1, col=1)
-    fig.update_yaxes(title_text="Average", row=1, col=1)
-    fig.update_yaxes(autorange="reversed", row=1, col=2)
-    return fig
+        fig.add_trace(go.Bar(name=name, y=t10["batter"], x=vals, orientation="h", marker_color=colour), row=2, col=1)
+    fig.update_layout(barmode="stack")
+    fig.update_xaxes(title_text="Strike rate (runs per 100 balls)", row=1, col=1)
+    fig.update_yaxes(title_text="Batting average (runs per dismissal)", row=1, col=1)
+    fig.update_xaxes(title_text="Runs", row=2, col=1)
+    fig.update_yaxes(autorange="reversed", row=2, col=1)
+    return style(fig, "Batting: top 15 by runs", result, height=900)
 
 
-def _single(row):
-    fig = make_subplots(rows=1, cols=2, column_widths=[0.45, 0.55], specs=[[{"type": "domain"}, {"type": "xy"}]],
-                        subplot_titles=["Run sources", "Key stats"])
+def _single(row, result):
+    fig = make_subplots(rows=2, cols=1, row_heights=[0.5, 0.5], vertical_spacing=0.12,
+                        specs=[[{"type": "domain"}], [{"type": "xy"}]],
+                        subplot_titles=["Where the runs come from", "Key stats"])
     r4, r6 = int(row["fours"]) * 4, int(row["sixes"]) * 6
     fig.add_trace(go.Pie(labels=["From 4s", "From 6s", "Running"], values=[r4, r6, int(row["total_runs"]) - r4 - r6],
-                         marker_colors=[C["good"], C["bad"], C["primary"]], hole=0.45, textinfo="label+percent"),
-                  row=1, col=1)
+                         marker_colors=[C["good"], C["bad"], C["primary"]], hole=0.5, textinfo="label+percent", textposition="outside", automargin=True,
+                         showlegend=False), row=1, col=1)
     vals = [float(row[k] or 0) for k in ("average", "strike_rate", "boundary_pct", "dot_pct")]
     fig.add_trace(go.Bar(y=["Average", "Strike rate", "Boundary %", "Dot %"], x=vals, orientation="h",
                          marker_color=[C["good"], C["secondary"], C["accent"], C["neutral"]],
-                         text=[str(v) for v in vals], textposition="outside", showlegend=False), row=1, col=2)
-    fig.update_layout(title=f"{row['batter']}: {int(row['total_runs'])} runs, {int(row['innings'])} inns, "
-                            f"{int(row['not_outs'])} NO, HS {int(row['highest'])}", height=400)
-    fig.update_yaxes(autorange="reversed", row=1, col=2)
-    return fig
+                         text=[str(v) for v in vals], textposition="outside", cliponaxis=False, showlegend=False),
+                  row=2, col=1)
+    fig.update_yaxes(autorange="reversed", row=2, col=1)
+    note = (f"{int(row['total_runs'])} runs in {int(row['innings'])} innings, {int(row['not_outs'])} not out, "
+            f"highest {int(row['highest'])}")
+    return style(fig, str(row["batter"]), result, note=note, height=720)
 
 
 def _by_phase(df, result):
-    fig = make_subplots(rows=1, cols=2, subplot_titles=["Strike rate by phase", "Boundary % vs dot %"])
-    fig.add_trace(go.Bar(x=df["phase"], y=df["strike_rate"], marker_color=C["phases"][: len(df)], showlegend=False),
-                  row=1, col=1)
-    fig.add_trace(go.Bar(name="Boundary %", x=df["phase"], y=df["boundary_pct"], marker_color=C["accent"]), row=1, col=2)
-    fig.add_trace(go.Bar(name="Dot %", x=df["phase"], y=df["dot_pct"], marker_color=C["neutral"]), row=1, col=2)
-    fig.update_layout(title=f"Batting by phase ({subtitle(result)})", barmode="group", height=420)
-    return fig
+    if df["batter"].nunique() > 1:   # many players: a heatmap of strike rate, players x phases
+        top = df.groupby("batter")["total_runs"].sum().nlargest(15).index
+        piv = df[df["batter"].isin(top)].pivot_table(index="batter", columns="phase", values="strike_rate")
+        piv = piv.reindex(index=top, columns=_PHASES)
+        fig = go.Figure(go.Heatmap(z=piv.values, x=["Powerplay", "Middle", "Death"], y=piv.index, text=piv.round(0).values,
+                                   texttemplate="%{text:.0f}", colorscale=[[0, "#1B2A3D"], [1, C["primary"]]],
+                                   showscale=False, xgap=3, ygap=3,
+                                   hovertemplate="%{y}, %{x}: SR %{z}<extra></extra>"))
+        fig.update_yaxes(autorange="reversed")
+        return style(fig, "Strike rate by phase: top 15 run-scorers", result,
+                     note="strike rate = runs per 100 balls; brighter = faster", height=170 + 28 * len(piv))
+    fig = make_subplots(rows=2, cols=1, vertical_spacing=0.16,
+                        subplot_titles=["Strike rate by phase", "Boundary % and dot % by phase"])
+    fig.add_trace(go.Bar(x=df["phase"].str.capitalize(), y=df["strike_rate"], marker_color=C["phases"][: len(df)], showlegend=False,
+                         text=df["strike_rate"], textposition="outside", cliponaxis=False), row=1, col=1)
+    fig.add_trace(go.Bar(name="Boundary %", x=df["phase"].str.capitalize(), y=df["boundary_pct"], marker_color=C["accent"]), row=2, col=1)
+    fig.add_trace(go.Bar(name="Dot %", x=df["phase"].str.capitalize(), y=df["dot_pct"], marker_color=C["neutral"]), row=2, col=1)
+    fig.update_layout(barmode="group")
+    fig.update_yaxes(title_text="Strike rate", row=1, col=1)
+    fig.update_yaxes(title_text="% of balls", row=2, col=1)
+    return style(fig, "Batting by phase", result, height=700)
 
 
 def _by_season(df, result):
-    x = df["competition"] + " " + df["season"] if df["competition"].nunique() > 1 else df["season"]
+    multi_comp = df["competition"].nunique() > 1
+    df = df.assign(x=df["competition"] + " " + df["season"] if multi_comp else df["season"])
+    if df["batter"].nunique() > 1:   # many players: runs per season for the six biggest run-scorers
+        fig = go.Figure()
+        for p in df.groupby("batter")["total_runs"].sum().nlargest(6).index:
+            s = df[df["batter"] == p]
+            fig.add_scatter(x=s["x"], y=s["total_runs"], name=p, mode="lines+markers",
+                            customdata=s[["strike_rate", "average"]].values,
+                            hovertemplate=f"<b>{p}</b> %{{x}}<br>%{{y}} runs, SR %{{customdata[0]}}, avg %{{customdata[1]}}<extra></extra>")
+        fig.update_xaxes(type="category", tickangle=-45)
+        fig.update_yaxes(title_text="Runs in the season")
+        return style(fig, "Runs per season: the six biggest run-scorers", result)
     fig = make_subplots(specs=[[{"secondary_y": True}]])
-    fig.add_trace(go.Bar(x=x, y=df["total_runs"], name="Runs", marker_color=C["primary"]), secondary_y=False)
-    fig.add_trace(go.Scatter(x=x, y=df["strike_rate"], name="Strike rate", mode="lines+markers",
+    fig.add_trace(go.Bar(x=df["x"], y=df["total_runs"], name="Runs", marker_color=C["primary"]), secondary_y=False)
+    fig.add_trace(go.Scatter(x=df["x"], y=df["strike_rate"], name="Strike rate", mode="lines+markers",
                              line=dict(color=C["secondary"])), secondary_y=True)
-    fig.update_layout(title=f"Batting by season ({subtitle(result)})", height=420)
-    return fig
+    fig.update_xaxes(type="category", tickangle=-45)
+    fig.update_yaxes(title_text="Runs", secondary_y=False)
+    fig.update_yaxes(title_text="Strike rate (runs per 100 balls)", secondary_y=True, showgrid=False)
+    return style(fig, f"{df['batter'].iloc[0]}: runs and strike rate by season", result)

@@ -1,28 +1,37 @@
-"""Partnership figures (moved from the old I2 plot). Input: api.Result from run('partnerships', ...)."""
+"""Partnership figures. Input: api.Result from run('partnerships', ...)."""
 
-import plotly.express as px
 import plotly.graph_objects as go
 
-from . import subtitle
+from . import PALETTE as C
+from . import bars_height, empty, style
 
 
 def figure(result):
     df = result.data
     if df.empty:
-        return go.Figure().update_layout(title="No partnerships for these filters")
+        return empty("No partnerships for these filters")
     if "batter1" not in df.columns:         # group_by=wicket
-        return px.bar(df, x="wicket_no", y="average_stand", hover_data=["stands", "highest_stand", "runs"],
-                      title=f"Average stand by wicket ({subtitle(result)})",
-                      labels={"wicket_no": "Wicket", "average_stand": "Average stand (runs)"})
-    top = df.head(15).copy()
+        fig = go.Figure(go.Bar(x=df["wicket_no"].astype(str), y=df["average_stand"], marker_color=C["primary"],
+                               text=df["average_stand"], textposition="outside", cliponaxis=False,
+                               customdata=df[["stands", "highest_stand", "runs"]].values,
+                               hovertemplate="wicket %{x}<br>average %{y}<br>%{customdata[0]} stands, highest "
+                                             "%{customdata[1]}<extra></extra>"))
+        fig.update_xaxes(title_text="Wicket that ended the stand")
+        fig.update_yaxes(title_text="Average stand (runs)", range=[0, df["average_stand"].max() * 1.15])
+        return style(fig, "Average partnership by wicket", result)
+    top = df.head(12).copy()
     top["pair"] = top["batter1"] + " & " + top["batter2"]
     if "highest_stand" in top.columns:      # group_by=pair
-        hover, title = ["stands", "highest_stand", "balls"], "Top partnerships by total runs"
+        title, cd = "Top 12 partnerships by total runs", ["stands", "highest_stand", "balls"]
+        hover = "%{customdata[0]} stands together, highest %{customdata[1]}<br>%{customdata[2]} balls"
     else:                                   # group_by=stand
-        top["pair"] += " (" + top["date"].astype(str) + ")"
-        hover, title = ["balls", "wicket_no", "team", "opposition"], "Highest individual stands"
-    fig = px.bar(top, x="pair", y="runs", color="strike_rate", color_continuous_scale="Greens", hover_data=hover,
-                 title=f"{title} ({subtitle(result)})",
-                 labels={"pair": "Partnership", "runs": "Runs", "strike_rate": "SR"})
-    fig.update_layout(xaxis_tickangle=-45, height=480)
-    return fig
+        top["pair"] += "<br>" + top["date"].astype(str) + " v " + top["opposition"]
+        title, cd = "Top 12 individual partnerships", ["balls", "wicket_no", "team"]
+        hover = "%{customdata[0]} balls, wicket %{customdata[1]}<br>%{customdata[2]}"
+    fig = go.Figure(go.Bar(
+        y=top["pair"], x=top["runs"], orientation="h", marker_color=C["primary"], customdata=top[cd].values,
+        text=[f"{r}  (SR {s:.0f})" for r, s in zip(top["runs"], top["strike_rate"])], textposition="outside",
+        cliponaxis=False, hovertemplate="<b>%{y}</b><br>%{x} runs<br>" + hover + "<extra></extra>"))
+    fig.update_xaxes(title_text="Runs together", range=[0, top["runs"].max() * 1.3])
+    fig.update_yaxes(autorange="reversed")
+    return style(fig, title, result, note="label = runs (strike rate)", height=bars_height(len(top), 34 if "date" in top else 28))

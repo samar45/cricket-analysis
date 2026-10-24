@@ -15,10 +15,12 @@ st.set_page_config(page_title="Cricket Analytics", page_icon="🏏", layout="wid
 
 
 def guarded(page):
-    """The one error boundary: show the real exception message instead of an empty page."""
+    """The one error boundary: ValueError = fix your input (info); anything else shows the real exception."""
     def wrapper():
         try:
             page()
+        except ValueError as e:   # bad or missing user input (e.g. matchup with no player): a hint, not a failure
+            st.info(str(e))
         except Exception as e:  # noqa: BLE001
             st.error(f"{type(e).__name__}: {e}")
     return wrapper
@@ -29,12 +31,13 @@ def overview():
     info = ui.data_info()
     st.title("Cricket analytics")
     st.caption(f"Ball-by-ball data from {info['source']}. Database updated {info['db_modified']}.")
-    cols = st.columns(3)   # plain text, not st.metric: metric values and labels are cut off in narrow cards
-    for i, c in enumerate(info["competitions"]):
-        with cols[i % 3], st.container(border=True):
-            st.markdown(f"**{ui.comp_label(c['competition'])}**")
-            st.markdown(f"##### {c['matches']:,} matches")
-            st.caption(f"{c['earliest']} to {c['latest']}")
+    comps = info["competitions"]
+    for start in range(0, len(comps), 3):   # rows of 3 fixed-height cards, so the grid is even
+        for col, c in zip(st.columns(3), comps[start:start + 3]):
+            with col, st.container(border=True, height=135):   # plain text, not st.metric: it cuts off in narrow cards
+                st.markdown(f"**{ui.comp_label(c['competition'])}**")
+                st.markdown(f"##### {c['matches']:,} matches")
+                st.caption(f"{c['earliest']} to {c['latest']}")
 
     st.subheader("Leaders")
     keys = [c["competition"] for c in info["competitions"] if c["competition"] in competitions.COMPETITIONS]
@@ -93,7 +96,7 @@ def explore():
             if fig is None:
                 st.caption("This module has no chart yet.")
             else:
-                st.plotly_chart(fig, width="stretch")
+                st.plotly_chart(fig, width="stretch", theme=None)   # theme=None: keep our own template
         with table_tab:
             st.dataframe(result.data, hide_index=True, width="stretch")
         c1, c2, _ = st.columns([1, 1, 4])
