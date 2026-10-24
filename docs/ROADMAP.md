@@ -57,3 +57,9 @@ Keep every existing chart; only add. Order decided by the lead (Samar can change
 | 3.5d | **Video charts ("understand at a glance")** | A second chart set per module: one message per chart, big numbers, bar / donut / pie / single-stat card, 1080×1920 and 1080×1080 friendly, transparent background, exportable (PNG needs `kaleido`, ask before installing). Different chart type per feature, not one style for all | M |
 
 Then Phase 4 (update + CI), 5 (video bridge, reuses 3.5d), 6 (NLQ, reuses 3.5a arrays), 7 (advanced).
+
+### 3.5e (Samar, 2026-10-24): dynamic tags are distributions, not labels
+- Fixed facts stay as tags: bowling type, batting hand, keeper (yes/sometimes), broad role.
+- Usage facts become **shares that follow the filters** (season, last N years, competition), computed at query time, not one career label:
+  batting position mix (e.g. Dhoni IPL: No.3–4 in 31% of innings, No.5–6 in 52%, No.7+ in 17%), bowling phase mix (Kuldeep IPL: 3% powerplay, 81% middle, 17% death), death-overs batting share.
+- The CSV keeps the career-majority label only as a hint ("usually ..."), shown next to the full mix. Size M, after 3.5c.
