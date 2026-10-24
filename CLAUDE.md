@@ -86,24 +86,25 @@ If a task is bigger or riskier than the mode suggests, say so in one line and su
 
 ---
 
-## Project map (checked 2026-10-23; full audit in `docs/AUDIT.md`)
+## Project map (updated 2026-10-24, after Phase 3; full plan in `docs/ROADMAP.md`, resume from `docs/JOURNEY.md` §6)
 
-**Flow:** Cricsheet CSV2 zips → `ingestion/cricsheet.py` → `data/raw/cricsheet/<key>/` → DuckDB `matches` + `deliveries` → `modules/*` (SQL via `db.query`, read-only) → `dashboard/app.py`.
+**Flow:** Cricsheet CSV2 zips → `cricket ingest` (`src/cricket_analytics/ingest/`) → `data/raw/cricsheet/<key>/` → DuckDB `data/cricket_analytics.duckdb` (matches, deliveries, players) → `analysis/*` modules via `api.run()` → dashboard / CLI JSON.
 
 | Path | Role |
 |---|---|
-| `src/cricket_analytics/` | `cli.py` (`cricket setup / ingest / modules / run`), `config.py` (paths from `config.yaml`, absolute, so it doesn't depend on the working directory), `db.py` (6-table schema, `query()`), `leagues.py` (8 competitions, Cricsheet URLs, SQL filters) |
-| `ingestion/cricsheet.py` | Downloads the zips and loads the CSVs. Skips the download if the raw folder isn't empty. `INSERT OR IGNORE` on match_id |
-| `preprocessing/` | Team and venue alias maps. Only venues get normalised at ingest |
-| `modules/` | 15 analysis modules: basic B1–B6, intermediate I1–I4, advanced A1–A5. Each is a `BaseModule` subclass registered with `@register_module`. Params are in `modules/base.py` (`format=None` means no filter) |
-| `dashboard/app.py` | 753 lines. Adding a module means touching `MODULE_NAV`, `MODULE_DESC` and a `_filters_XX` function |
-| `data/cricket_analytics_slim.duckdb` | 96 MB, Git LFS. Only `matches` (7,935) + `deliveries` (1.8M), **with no primary key**. Nothing in the repo builds it |
+| `src/cricket_analytics/` | One installed package (`pip install -e .`). `api.py` (`run`, `Result` with provenance, `choices`, `resolve_player`, `data_info`), `registry.py` (`@module`, `ParamSpec`, JSON schema), `competitions.py` (9 keys incl. `t20i_women`, URLs), `cli.py` (`cricket ingest/modules/run/schema/resolve/info`), `db.py` (cached read-only `query`, raises) |
+| `src/cricket_analytics/sql/` | `fragments.py` (one definition per stat, phases per balls_per_over), `filters.py` (exact names, season-year mapping, super overs off by default), `innings.py`, `extra.py` |
+| `src/cricket_analytics/analysis/` | 13 modules, one file each, auto-discovered: batting, bowling, teams, venues, matchup, partnerships, form, impact, true_performance, season_awards, compare, death_overs, pace_vs_spin (experimental) |
+| `src/cricket_analytics/viz/` | `figure(result)` per module + shared dark template |
+| `dashboard/` | `app.py` + `ui.py` (~190 lines), generated from the registry. Preview: `cricket-dashboard` (port 8503) in `.claude/launch.json`. Restart after changing `src/` (no hot reload) |
+| `tests/` | 156 tests: loader fixture, core, modules, golden numbers, dashboard AppTest |
+| `experiments/` | Hawk-Eye join trial (data local-only in gitignored `data/external/`), chart gallery script |
+| `data/` | `cricket_analytics.duckdb` (253 MB, gitignored, rebuilt locally), `_slim` (old LFS reference, never overwrite), `_prev_*` backups (gitignored) |
 
-## Known facts about the data (measured 2026-10-23)
-- Latest match: **2026-03-20**. IPL ends at **2025-06-03**. BBL / SA20 end at 2026-01-25, CPL at 2025-09-21, PSL at 2025-05-25, Hundred at 2025-08-31.
-- **T20 Blast has 0 matches** in the slim DB; the raw download has about 1,571.
-- IPL is stored as `format='T20'`. The "T20 International" filter therefore also returns IPL, 1,844 women's matches, and associate-nation series. There is no gender column.
-- `deliveries.fielder` is NULL in all 1.8M rows because the loader read a column that doesn't exist. **Correction (2026-10-24, checked):** CSV2 does have `fielder_1..3`, `batting_team`, `bowling_team`, and the info file has `gender`, `team_type`, `event`, `balls_per_over`. The slim DB has no batting_team, so modules guess it (right in only 42% of matches).
-- Phase SQL (overs 0–5 / 6–14 / 15–19) is copy-pasted in about 8 modules and assumes 20 overs, so The Hundred is probably wrong.
-- A full Cricsheet refresh is about **42 MB** (8 zips, Last-Modified 2026-10-07 to 10-14). `recently_added_30_male_csv2.zip` is about 1 MB, for incremental updates.
-- Open bugs: `modules/basic/team_performance.py:62` title shows "None"; 8× deprecated `use_container_width` in `app.py`; `except Exception: return []` hides DB errors (`app.py:108–179`); tournament names look garbled ("Men�s") but the DB has 0 bad characters, so it's probably only the Windows console.
+## Known facts about the data (measured 2026-10-24)
+- 10,418 matches, 2.38M balls, latest 2026-10-14. IPL through 2026-05-31 (IPL 2026 = 74 matches). Blast 1,570. Women's T20I 2,183 (own competition).
+- Golden checks: Kohli IPL 8,661 runs to 2025 (= ESPNcricinfo), 9,336 incl. 2026; Buttler IPL 2022 863; Bumrah best 5/10; top IPL stand 229.
+- Super-over innings (innings > 2) are excluded by default; 76 tie-break winners stored in `matches.winner` with `outcome_method`.
+- Caught-and-bowled has no fielder_1 (catcher = bowler). No line/length/shot/drop data from any free legal source (see `docs/EXPERIMENTS.md`).
+- Season labels are Cricsheet's ("2007/08" = IPL 2008); filters accept a 4-digit year and map it.
+- Pace/spin is guessed from over distribution (no bowling-style data), so that module is experimental.

@@ -43,3 +43,8 @@
 - Registry: bool/float params, experimental category, `include_super_overs` toggle; `api.choices` for dropdowns.
 - Hawk-Eye trial: 627/628 IPL matches join, 2012–2021 only, no licence → local-only experiment.
 - Lead verified: 156/156 tests, dashboard checked in the browser (Overview, Explore batting chart), new DB vs old (76 winners added, 0 other changes).
+
+## 2026-10-24 Paused after Phase 3 (Samar: save everything, save tokens)
+- All work committed on `overhaul` (not pushed). CLAUDE.md project map and data facts refreshed for the new layout.
+- Dashboard preview stopped. Nothing running in the background.
+- Resume: read `docs/JOURNEY.md` §6 → Phase 4 (`cricket update` + CI) waits for Samar's "go".
