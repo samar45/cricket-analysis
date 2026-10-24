@@ -17,3 +17,9 @@
 - Big correction: CSV2 already has batting_team, bowling_team, fielder_1..3, gender, balls_per_over. Our loader dropped them. No JSON switch needed.
 - Phase 0: CLAUDE.md → Heavy mode + corrected facts; new `docs/EXPERIMENTS.md`, `docs/AGENTS.md`.
 - Phase 1 running: builder worker (loader + schema + fresh download + new DB + verification), test worker (`tests/test_ingest.py`).
+
+## 2026-10-24 Phase 1 done (318db73)
+- New DB `data/cricket_analytics.duckdb`: 10,418 matches (old 7,935), 2.38M balls, data through 2026-10-14. IPL 2026 (74 matches) and Blast (1,570) now in.
+- Verified by the lead: 0 old matches missing, identical balls/runs/wickets for all old matches, Kohli IPL 9,346, 0 wrong batting teams. 16/16 tests, dashboard 0 errors.
+- `config.yaml` switched to the new DB. The .duckdb is not committed.
+- Samar asked for deeper research on line/length/catch data (official sites, vendors, how analysts do it). Worker running → `docs/RESEARCH_ball_tracking.md`.

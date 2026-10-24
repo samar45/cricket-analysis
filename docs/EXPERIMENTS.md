@@ -9,3 +9,4 @@ Blocked ideas stay here with the reason, so nobody retries them without a new re
 | 2026-10-24 | Catches per fielder from CSV2 | Lead opened raw IPL file: `fielder_1` filled on caught rows | Measured: works for 1 file; worker says ~100% across comps | Keep → Phase 1 loader, Phase 7 fielding stats |
 | 2026-10-24 | Switch to Cricsheet JSON | Research compared formats | JSON adds only DRS, replacements, powerplays, stage (claimed by Cricsheet docs) | Later (Phase 8), only if those extras are wanted |
 | 2026-10-24 | Local NLQ with `nemotron-3.5-bolt:e4b` | `ollama list`: present, 7.9 GB, tools capability | Won't fit 4 GB VRAM; speed unknown (guess: slow) | Test in Phase 6 with a 50-question eval |
+| 2026-10-24 | Where analysts get line/length/shot/drops: official sites (BCCI/IPL, ICC), vendors (CricViz, Opta, Sportradar…), forums, DIY video/commentary | Research worker → `docs/RESEARCH_ball_tracking.md` | Running | Pending |
