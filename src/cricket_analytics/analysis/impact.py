@@ -18,12 +18,11 @@ from ..sql.fragments import BALL_FACED, BOWLER_WICKET, IS_DOT, IS_FOUR, IS_SIX, 
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
         ParamSpec("min_matches", "int", default=3, help="Hide players with fewer matches than this"),
         ParamSpec("top", "int", default=30, help="Rows to return (best total impact first)"),
-        ParamSpec("bat_weight_pct", "int", default=60,
-                  help="Batting points per match = runs * strike_rate/100 * this/100"),
-        ParamSpec("wicket_points", "int", default=20, help="Bowling points per wicket"),
-        ParamSpec("econ_par", "int", default=8,
-                  help="Par economy. Bowling points also get (par - economy) * overs * econ_weight_pct/100 (never below 0)"),
-        ParamSpec("econ_weight_pct", "int", default=40, help="Weight of the economy bonus, in percent"),
+        ParamSpec("bat_weight", "float", default=0.6, help="Batting points per match = runs * strike_rate/100 * this"),
+        ParamSpec("wicket_points", "float", default=20.0, help="Bowling points per wicket"),
+        ParamSpec("econ_par", "float", default=8.0,
+                  help="Par economy. Bowling points also get (par - economy) * overs * econ_weight (never below 0)"),
+        ParamSpec("econ_weight", "float", default=0.4, help="Weight of the economy bonus"),
     ],
     caveats=[
         "The score is an invented blend, not a standard statistic. Defaults: batting 0.6, wicket 20 points, par economy 8, economy weight 0.4.",
@@ -31,8 +30,8 @@ from ..sql.fragments import BALL_FACED, BOWLER_WICKET, IS_DOT, IS_FOUR, IS_SIX, 
         "The match-level score has no context (target, pitch, opposition), only the player's own batting and bowling.",
     ],
 )
-def impact(f: Filters, min_matches: int = 3, top: int = 30, bat_weight_pct: int = 60, wicket_points: int = 20,
-           econ_par: int = 8, econ_weight_pct: int = 40) -> pd.DataFrame:
+def impact(f: Filters, min_matches: int = 3, top: int = 30, bat_weight: float = 0.6, wicket_points: float = 20.0,
+           econ_par: float = 8.0, econ_weight: float = 0.4) -> pd.DataFrame:
     wb, pb = f.where("bat")
     wo, po = f.where("bowl")
     sql = f"""
@@ -89,5 +88,5 @@ def impact(f: Filters, min_matches: int = 3, top: int = 30, bat_weight_pct: int 
     ORDER BY total_impact DESC, player
     LIMIT ?
     """
-    weights = [bat_weight_pct / 100.0, wicket_points, econ_par, econ_weight_pct / 100.0]
+    weights = [bat_weight, wicket_points, econ_par, econ_weight]
     return query(sql, pb + po + weights + [int(min_matches), int(top)])

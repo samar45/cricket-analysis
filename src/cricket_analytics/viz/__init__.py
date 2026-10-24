@@ -17,5 +17,5 @@ PALETTE = {
 
 def subtitle(result) -> str:
     """'ipl, 2024, V Kohli' from the params the module ran with (group_by/min_balls/window left out)."""
-    skip = {"group_by", "min_balls", "window", "role", "min_stands", "top"}
+    skip = {"group_by", "min_balls", "window", "role", "min_stands", "top", "include_super_overs"}
     return ", ".join(str(v) for k, v in result.meta["params"].items() if k not in skip)

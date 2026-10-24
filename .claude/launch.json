@@ -2,8 +2,19 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "cricket-dashboard",
+      "runtimeExecutable": ".venv\\Scripts\\streamlit.exe",
+      "runtimeArgs": [
+        "run",
+        "dashboard/app.py",
+        "--server.port", "8503",
+        "--server.headless", "true"
+      ],
+      "port": 8503
+    },
+    {
       "name": "Streamlit Dashboard",
-      "runtimeExecutable": "streamlit",
+      "runtimeExecutable": ".venv\\Scripts\\streamlit.exe",
       "runtimeArgs": [
         "run",
         "dashboard/app.py",
@@ -13,12 +24,12 @@
       "port": 8501
     },
     {
-      "name": "Cricket CLI (interactive)",
-      "runtimeExecutable": "python",
+      "name": "Cricket CLI (modules)",
+      "runtimeExecutable": ".venv\\Scripts\\python.exe",
       "runtimeArgs": [
         "-m",
-        "src.cricket_analytics.cli",
-        "--help"
+        "cricket_analytics.cli",
+        "modules"
       ],
       "port": 0
     }

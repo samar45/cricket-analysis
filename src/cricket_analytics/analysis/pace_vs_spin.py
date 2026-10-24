@@ -35,7 +35,7 @@ def _type_cte(where: str) -> str:
 @module(
     id="pace_vs_spin",
     title="Pace vs spin (EXPERIMENTAL, bowler type is guessed)",
-    category="advanced",   # registry has no 'experimental' category yet; see the caveats
+    category="experimental",
     description="EXPERIMENTAL. The data has no bowling style, so each bowler is labelled Pace or Spin from WHEN he bowls "
                 "(spin = more than half his balls in the middle overs and under 20% at the death; fewer than 120 legal "
                 "balls = Unknown). Modes: batter_vs_type, team_vs_type, bowler_classification.",

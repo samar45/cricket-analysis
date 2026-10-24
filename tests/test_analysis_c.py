@@ -77,7 +77,7 @@ def test_impact_hand_calc(db, ipl):
 
 def test_impact_weights_are_parameters(db):
     a = api.run("impact", competition="ipl", min_matches=1, db_path=db).data.set_index("player")
-    b = api.run("impact", competition="ipl", min_matches=1, bat_weight_pct=120, wicket_points=0, econ_weight_pct=0, db_path=db).data.set_index("player")
+    b = api.run("impact", competition="ipl", min_matches=1, bat_weight=1.2, wicket_points=0, econ_weight=0, db_path=db).data.set_index("player")
     assert (b.bat_impact - 2 * a.bat_impact).abs().max() < 0.2   # 120% / 60%, up to 1-dp rounding
     assert (b.bowl_impact == 0).all()
     assert api.run("impact", competition="ipl", min_matches=2, db_path=db).data.empty   # one match only

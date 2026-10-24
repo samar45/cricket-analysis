@@ -1,0 +1,13 @@
+# Phase 3 work log
+- MILESTONE: 18:38 3A registry upgrades (bool/float kinds, experimental category, std() adds include_super_overs, api.choices, impact float weights)
+- MILESTONE: 18:41 3A new dashboard (app.py + ui.py + .streamlit/config.toml) and tests/test_dashboard.py written, AppTest green
+
+## 3B (loader: super-over winners, one competition config, rebuilt DB)
+- MILESTONE: 3B Cricsheet encodes tie-breaks as `info,outcome,tie` + `info,eliminator,<winner>` (74 matches) or `info,bowl_out,<winner>` (2 old T20Is). Loader now stores that team in `matches.winner`, keeps `result='tie'`, new column `matches.outcome_method` ('super over' / 'bowl out' / D/L / Awarded / Lost fewer wickets). Match 729315 (KKR v RR 2014) is NOT level in Cricsheet's eyes: eliminator = Rajasthan Royals, so 74/74 resolved (2B derived only 73).
+- MILESTONE: 3B `MATCH_OUTCOME` is now just `matches.winner` + bat_first (no super-over derivation); `competitions.py` holds URL/folder/format label/tournament label per competition (`BY_FOLDER` for the loader); loader no longer imports `leagues.py`. Still importing `leagues`: dashboard/app.py, modules/base.py (old code, 3A/lead).
+- MILESTONE: 3B `data/cricket_analytics_new.duckdb` built with `cricket ingest --no-download --db ...` in 2m03s, 0 warnings. `init_schema` also adds `outcome_method` to older DBs (`ALTER ... IF NOT EXISTS`, tested on a copy).
+- Verified new vs current DB: 10,418 = 10,418 match_ids (none missing/added), 2,377,586 = 2,377,586 deliveries, 0 rows differ in any delivery column, players 10,103 = 10,103. In `matches` only `winner` differs (76 rows: 74 super over + 2 bowl out, all previously NULL) plus the new `outcome_method` column.
+- Team records that move vs 2B's derived values (all competitions compared): IPL KKR lost 133->134, tied 1->0; RR won 124->125, tied 1->0 (729315). T20I: India won +1, NZ won +1 (the two bowl-outs, matches 237242 and 287862), Pakistan lost +1, West Indies lost +1; those two ties were `tied` before. Everything else identical. CSK IPL unchanged: 266 played, 148 won, 117 lost, 0 tied, 1 no result, win% 55.8.
+- `tests/test_analysis_b.py::test_super_over_matches_get_a_winner` now expects tied.sum() == 0 (was 2); it fails on the CURRENT DB until the lead swaps in the new one. Golden tests accept `CRICKET_TEST_DB=<path>`; new golden test checks 76/76 tie-break winners + 729315.
+- MILESTONE: 18:42 overview cards fixed (3 cols, plain text); launch.json fixed (lead's cricket-dashboard entry kept); headless run on 8502 served HTTP 200, stopped
+- MILESTONE: 18:43 Part 4 deletions done via git rm; README rewritten (66 lines); pytest 3 failed (3B's outcome_method/teams work) 153 passed; AppTest 27 passed

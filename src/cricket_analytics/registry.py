@@ -5,7 +5,8 @@ from typing import Callable
 
 from .sql.fragments import PHASES
 
-KINDS = ("player", "player2", "team", "opposition", "competition", "season", "venue", "phase", "int", "choice")
+CATEGORIES = ("basic", "intermediate", "advanced", "experimental")
+KINDS = ("player", "player2", "team", "opposition", "competition", "season", "venue", "phase", "int", "float", "bool", "choice")
 
 
 @dataclass(frozen=True)
@@ -39,8 +40,14 @@ _STD = {
 }
 
 
-def std(*names: str) -> list[ParamSpec]:
-    return [_STD[n] for n in names]
+_SUPER_OVERS = ParamSpec("include_super_overs", "bool",
+                         help="Count super-over innings (innings 3+); off by default, as in official records")
+
+
+def std(*names: str, super_overs: bool = True) -> list[ParamSpec]:
+    """Ready-made specs for Filters fields, plus `include_super_overs` (pass super_overs=False for modules
+    that never read deliveries)."""
+    return [_STD[n] for n in names] + ([_SUPER_OVERS] if super_overs else [])
 
 
 @dataclass
@@ -63,7 +70,7 @@ _REGISTRY: dict[str, Module] = {}
 def module(*, id: str, title: str, category: str, description: str,
            params: list[ParamSpec], caveats: list[str] | None = None):
     """Register `fn(f: Filters, **extra) -> DataFrame` as an analysis module."""
-    if category not in ("basic", "intermediate", "advanced"):
+    if category not in CATEGORIES:
         raise ValueError(f"module {id}: bad category {category!r}")
 
     def deco(fn):
@@ -92,7 +99,8 @@ def all_modules() -> list[Module]:
 
 def _prop(p: ParamSpec) -> dict:
     from .competitions import COMPETITIONS
-    t = dict({"int": {"type": "integer"}, "season": {"type": ["string", "integer"]}}.get(p.kind, {"type": "string"}))
+    t = dict({"int": {"type": "integer"}, "float": {"type": "number"}, "bool": {"type": "boolean"},
+              "season": {"type": ["string", "integer"]}}.get(p.kind, {"type": "string"}))
     if p.kind == "competition":
         t["enum"] = list(COMPETITIONS)
     elif p.kind == "phase":

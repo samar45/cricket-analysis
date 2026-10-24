@@ -248,3 +248,50 @@ def test_resolve_and_info(db):
         assert api.resolve_team("sunrisers")[0]["name"] == "Sunrisers Hyderabad"
         info = api.data_info()
     assert {c["competition"] for c in info["competitions"]} == {"ipl", "hundred"}
+
+
+# ── bool / float kinds, experimental category, choices ─────────────────────────
+
+def test_bool_and_float_params(db):
+    spec = registry.ParamSpec("flag", "bool")
+    assert api._coerce(spec, "TRUE") is True and api._coerce(spec, "no") is False and api._coerce(spec, True) is True
+    with pytest.raises(ValueError, match="true or false"):
+        api._coerce(spec, "maybe")
+    fl = registry.ParamSpec("w", "float")
+    assert api._coerce(fl, "0.5") == 0.5 and api._coerce(fl, 2) == 2.0
+    with pytest.raises(ValueError, match="number"):
+        api._coerce(fl, "heavy")
+    props = registry.json_schema("impact")["properties"]
+    assert props["bat_weight"] == {"type": "number", "description": props["bat_weight"]["description"], "default": 0.6}
+    assert registry.json_schema("batting")["properties"]["include_super_overs"]["type"] == "boolean"
+    with pytest.raises(ValueError, match="kind"):
+        registry.ParamSpec("x", "decimal")
+
+
+def test_include_super_overs_is_a_param(db):
+    r = api.run("batting", competition="ipl", include_super_overs="true", db_path=db)
+    assert r.meta["params"]["include_super_overs"] is True
+    assert "include_super_overs" not in api.run("batting", competition="ipl", db_path=db).meta["params"]
+    from cricket_analytics.cli import _parse_extra
+    assert _parse_extra(["--include_super_overs", "--top", "5"]) == {"include_super_overs": "true", "top": "5"}
+
+
+def test_impact_weights_are_floats_and_pace_vs_spin_is_experimental():
+    p = {s.name: s for s in registry.get("impact").params}
+    assert [(p[n].kind, p[n].default) for n in ("bat_weight", "wicket_points", "econ_par", "econ_weight")] == \
+        [("float", 0.6), ("float", 20.0), ("float", 8.0), ("float", 0.4)]
+    assert registry.get("pace_vs_spin").category == "experimental"
+    assert {m.category for m in registry.all_modules()} <= set(registry.CATEGORIES)
+
+
+def test_choices(db):
+    with use_db(db):
+        assert "DA Warner" in api.choices("player", "ipl") and "Sunrisers Hyderabad" in api.choices("team", "ipl")
+        assert api.choices("player2", "hundred") != api.choices("player", "ipl")
+        assert api.choices("season", "ipl") == sorted(set(api.choices("season", "ipl")), reverse=True)
+        assert len(api.choices("venue", "ipl")) == 1
+        assert api.choices("team", "ipl", "1999") == []
+        with pytest.raises(ValueError, match="kind"):
+            api.choices("colour")
+        with pytest.raises(ValueError, match="Unknown competition"):
+            api.choices("team", "xyz")

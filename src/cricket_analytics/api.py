@@ -6,6 +6,7 @@
 """
 
 import datetime as dt
+import functools
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,6 +20,7 @@ from .sql.fragments import PHASES
 
 SOURCE = "Cricsheet (ODC-BY)"
 _FILTER_FIELDS = set(Filters.__dataclass_fields__)
+_TRUE, _FALSE = {"true", "1", "yes", "y", "on"}, {"false", "0", "no", "n", "off"}
 
 
 @dataclass
@@ -41,6 +43,17 @@ def _coerce(spec: registry.ParamSpec, value):
             return int(value)
         except (TypeError, ValueError):
             raise ValueError(f"{spec.name} must be an integer, got {value!r}") from None
+    if k == "float":
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"{spec.name} must be a number, got {value!r}") from None
+    if k == "bool":
+        if isinstance(value, str) and value.strip().lower() in _TRUE | _FALSE:
+            return value.strip().lower() in _TRUE
+        if isinstance(value, (bool, int)) and value in (0, 1):
+            return bool(value)
+        raise ValueError(f"{spec.name} must be true or false, got {value!r}")
     if k == "competition":
         competitions.get(value)
     elif k == "phase" and value not in PHASES:
@@ -165,3 +178,45 @@ def data_info() -> dict:
     return {"db_path": str(path),
             "db_modified": dt.datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="seconds"),
             "source": SOURCE, "competitions": rows}
+
+
+@functools.lru_cache(maxsize=256)
+def _choices(db: str, mtime: float, kind: str, competition: str | None, season: str | None) -> tuple[str, ...]:
+    # db and mtime are only cache keys: a rebuilt DB file gets fresh lists
+    where, p = Filters(competition=competition, season=season).where("match")
+    if kind == "season":   # every season of the competition, newest first (a season filter would hide the others)
+        where, p = Filters(competition=competition).where("match")
+        sql = (f"SELECT m.season AS name FROM matches m WHERE {where} AND m.season IS NOT NULL "
+               "GROUP BY 1 ORDER BY min(m.date) DESC")
+    elif kind == "team":
+        sql = (f"SELECT name FROM (SELECT m.team1 AS name FROM matches m WHERE {where} UNION ALL "
+               f"SELECT m.team2 FROM matches m WHERE {where}) WHERE name IS NOT NULL GROUP BY 1 ORDER BY 1")
+        p = p + p
+    elif kind == "venue":
+        sql = (f"SELECT m.venue AS name FROM matches m WHERE {where} AND m.venue IS NOT NULL "
+               "GROUP BY 1 ORDER BY count(*) DESC, 1")
+    else:   # player: most matches first, so familiar names lead the dropdown
+        sql = (f"SELECT name FROM (SELECT d.match_id, d.batter AS name FROM deliveries d JOIN matches m USING (match_id) "
+               f"WHERE {where} UNION SELECT d.match_id, d.bowler FROM deliveries d JOIN matches m USING (match_id) "
+               f"WHERE {where}) WHERE name IS NOT NULL GROUP BY 1 ORDER BY count(*) DESC, 1")
+        p = p + p
+    return tuple(query(sql, p)["name"].tolist())
+
+
+_CHOICE_KINDS = {"player": "player", "player2": "player", "team": "team", "opposition": "team",
+                 "venue": "venue", "season": "season"}
+
+
+def choices(kind: str, competition: str | None = None, season: str | int | None = None) -> list[str]:
+    """Values for a dropdown: kind = player | player2 | team | opposition | venue | season.
+
+    Limited to `competition` (None = all men's) and `season`. Players: most matches first; seasons: newest first;
+    venues: most matches first; teams: A-Z. Cached per DB file version.
+    """
+    if kind not in _CHOICE_KINDS:
+        raise ValueError(f"choices kind must be one of {', '.join(_CHOICE_KINDS)}, got {kind!r}")
+    if competition:
+        competitions.get(competition)
+    path = current_db_path()
+    return list(_choices(str(path), path.stat().st_mtime, _CHOICE_KINDS[kind], competition or None,
+                         None if season in (None, "") else str(season)))

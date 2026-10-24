@@ -65,7 +65,7 @@ def modules_cmd():
 
 
 def _parse_extra(args: list[str]) -> dict:
-    """['--player', 'V Kohli', '--min_balls=50'] -> {'player': 'V Kohli', 'min_balls': '50'}"""
+    """['--player', 'V Kohli', '--min_balls=50', '--include_super_overs'] -> strings; api.run converts them by type"""
     out, i = {}, 0
     while i < len(args):
         a = args[i]
@@ -73,10 +73,11 @@ def _parse_extra(args: list[str]) -> dict:
             raise click.UsageError(f"Unexpected argument {a!r}; params look like --name value")
         key, eq, val = a[2:].partition("=")
         if not eq:
-            if i + 1 >= len(args):
-                raise click.UsageError(f"--{key} needs a value")
-            i += 1
-            val = args[i]
+            if i + 1 < len(args) and not args[i + 1].startswith("--"):
+                i += 1
+                val = args[i]
+            else:
+                val = "true"   # bare flag such as --include_super_overs; non-bool params reject it with a clear message
         out[key.replace("-", "_")] = val
         i += 1
     return out
