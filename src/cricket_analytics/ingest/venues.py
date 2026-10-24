@@ -7,7 +7,7 @@ Problems we solve:
   4. Abbreviation variants  (PCA Stadium → Punjab Cricket Association IS Bindra Stadium)
 
 Usage:
-  from preprocessing.venues import normalise_venue
+  from cricket_analytics.ingest.venues import normalise_venue
 
   clean_name = normalise_venue("Feroz Shah Kotla")   # → "Arun Jaitley Stadium"
 """
@@ -208,7 +208,7 @@ def migrate_venues(db_path=None) -> int:
 
     Returns the number of rows updated.
     """
-    from src.cricket_analytics.db import get_connection
+    from ..db import get_connection
     con = get_connection(db_path)
 
     total_updated = 0

@@ -6,7 +6,7 @@ from pathlib import Path
 import duckdb
 import pytest
 
-from src.cricket_analytics.db import get_connection, init_schema, query
+from cricket_analytics.db import get_connection, init_schema, query
 
 
 @pytest.fixture

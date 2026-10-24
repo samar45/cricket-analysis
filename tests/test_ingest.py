@@ -11,7 +11,7 @@ import duckdb
 import pandas as pd
 import pytest
 
-from ingestion.cricsheet import load_to_db
+from cricket_analytics.ingest.cricsheet import load_to_db
 
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
 IPL, HUN = "1082591", "1252666"

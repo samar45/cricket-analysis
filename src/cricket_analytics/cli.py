@@ -1,16 +1,14 @@
-"""CLI entry point — run modules, ingest data, manage the platform.
+"""Command line: `cricket modules | run | schema | resolve | setup | ingest`.
 
-Usage:
-    cricket setup              # Init database
-    cricket ingest             # Download & load all Cricsheet data into data/cricket_analytics.duckdb
-    cricket ingest --format ipl --db data/new.duckdb  # Load IPL only into another file
-    cricket modules            # List available modules
-    cricket run B1             # Run batting stats
-    cricket run B1 --player "Kohli" --format T20
+    cricket modules
+    cricket run batting --player "V Kohli" --competition ipl --group_by season --json
+    cricket schema --json
+    cricket resolve kohli
+    cricket ingest --db data/new.duckdb --no-download
 """
 
+import json
 import logging
-import sys
 from pathlib import Path
 
 import click
@@ -20,15 +18,14 @@ import click
 @click.option("-v", "--verbose", is_flag=True, help="Enable debug logging")
 def cli(verbose: bool):
     """Cricket Analytics Platform."""
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(level=level, format="%(levelname)s | %(message)s")
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(levelname)s | %(message)s")
 
 
 @cli.command()
 def setup():
     """Initialise the database schema and normalise existing venue names."""
-    from src.cricket_analytics.db import init_schema
-    from preprocessing.venues import migrate_venues
+    from .db import init_schema
+    from .ingest.venues import migrate_venues
     init_schema()
     click.echo("Database schema initialised.")
     n = migrate_venues()
@@ -42,78 +39,120 @@ def setup():
 @click.option("--no-download", "skip_download", is_flag=True, default=False, help="Skip download, load existing files only")
 @click.option("--db", "db_path", type=click.Path(dir_okay=False, path_type=Path), default=None,
               help="Output DuckDB file (default data/cricket_analytics.duckdb; the slim DB is refused)")
-def ingest(fmt: str | None, redownload: bool, skip_download: bool, db_path: Path | None):
+def ingest(fmt, redownload, skip_download, db_path):
     """Ingest Cricsheet data into DuckDB."""
-    from ingestion.cricsheet import ingest as run_ingest, default_db_path, get_path
+    from .ingest.cricsheet import ingest as run_ingest, default_db_path, get_path
     db_path = db_path or default_db_path()
     click.echo(f"Writing to {db_path}")
-    formats = [fmt] if fmt else None
-
     if redownload and fmt:
         import shutil
         raw_dir = get_path("raw") / "cricsheet" / fmt
         if raw_dir.exists():
             shutil.rmtree(raw_dir)
             click.echo(f"Cleared {raw_dir}")
-
-    results = run_ingest(formats=formats, download=not skip_download, db_path=db_path)
+    results = run_ingest(formats=[fmt] if fmt else None, download=not skip_download, db_path=db_path)
     for f, count in results.items():
         click.echo(f"{f}: {count:,} deliveries loaded")
 
 
 @cli.command("modules")
-def list_modules_cmd():
-    """List all registered analysis modules."""
-    import modules.basic  # noqa: F401 — triggers registration
-    from modules.base import list_modules
-    mods = list_modules()
-    if not mods:
-        click.echo("No modules registered.")
-        return
-    click.echo(f"{'ID':<6} {'Category':<14} Name")
-    click.echo("-" * 50)
-    for m in mods:
-        click.echo(f"{m['id']:<6} {m['category']:<14} {m['name']}")
+def modules_cmd():
+    """List analysis modules."""
+    from . import api
+    click.echo(f"{'ID':<12} {'Category':<13} {'Title':<28} Params")
+    for m in api.list_modules():
+        click.echo(f"{m['id']:<12} {m['category']:<13} {m['title']:<28} {', '.join(m['params'])}")
+
+
+def _parse_extra(args: list[str]) -> dict:
+    """['--player', 'V Kohli', '--min_balls=50'] -> {'player': 'V Kohli', 'min_balls': '50'}"""
+    out, i = {}, 0
+    while i < len(args):
+        a = args[i]
+        if not a.startswith("--"):
+            raise click.UsageError(f"Unexpected argument {a!r}; params look like --name value")
+        key, eq, val = a[2:].partition("=")
+        if not eq:
+            if i + 1 >= len(args):
+                raise click.UsageError(f"--{key} needs a value")
+            i += 1
+            val = args[i]
+        out[key.replace("-", "_")] = val
+        i += 1
+    return out
+
+
+@cli.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+@click.argument("module_id")
+@click.option("--json", "as_json", is_flag=True, help='Print {"meta": ..., "data": [...]}')
+@click.option("--out", type=click.Path(dir_okay=False, path_type=Path), help="Write output to a file (.json, else CSV)")
+@click.option("--limit", default=20, show_default=True, help="Rows to show in table mode")
+@click.pass_context
+def run(ctx, module_id, as_json, out, limit):
+    """Run a module. Any module param works as --name value (see `cricket schema`)."""
+    from . import api
+    try:
+        r = api.run(module_id, **_parse_extra(ctx.args))
+    except ValueError as e:
+        raise click.ClickException(str(e))
+    if out:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        if as_json or out.suffix == ".json":
+            out.write_text(r.to_json(indent=2), encoding="utf-8")
+        else:
+            r.data.to_csv(out, index=False)
+        click.echo(f"Wrote {len(r.data)} rows to {out}")
+    elif as_json:
+        click.echo(r.to_json())
+    else:
+        m = r.meta
+        click.echo(f"{m['title']} | data through {m['data_through']} | {m['row_count']} rows | params {m['params']}")
+        click.echo(r.data.head(limit).to_string(index=False) if len(r.data) else "No rows for these filters.")
+        for c in m["caveats"]:
+            click.echo(f"note: {c}")
 
 
 @cli.command()
-@click.argument("module_id")
-@click.option("--player", default=None)
-@click.option("--team", default=None)
-@click.option("--season", default=None, type=int)
-@click.option("--format", "fmt", default="T20")
-@click.option("--venue", default=None)
-@click.option("--opposition", default=None)
-@click.option("--phase", default=None, type=click.Choice(["powerplay", "middle", "death"]))
-@click.option("--output", "out", default="dataframe", type=click.Choice(["dataframe", "plot"]))
-@click.option("--limit", default=20, help="Max rows to display")
-def run(module_id, player, team, season, fmt, venue, opposition, phase, out, limit):
-    """Run an analysis module. Example: cricket run B1 --player Kohli"""
-    import modules.basic  # noqa: F401
-    from modules.base import get_module, ModuleParams
+@click.option("--json", "as_json", is_flag=True, help="Print JSON Schema tool definitions for every module")
+def schema(as_json):
+    """Describe module params (JSON Schema with --json, usable as LLM tool definitions)."""
+    from . import api, registry
+    if as_json:
+        click.echo(json.dumps(api.schema(), indent=2))
+        return
+    for m in registry.all_modules():
+        click.echo(f"{m.id}: {m.title}\n  {m.description}")
+        for p in m.params:
+            extra = f" choices={list(p.choices)}" if p.choices else ""
+            dflt = f" default={p.default}" if p.default is not None else ""
+            click.echo(f"  --{p.name:<12} {p.kind}{extra}{dflt}{'  (required)' if p.required else ''}")
 
-    params = ModuleParams(
-        player=player, team=team, season=season, format=fmt,
-        venue=venue, opposition=opposition, phase=phase, output=out,
-    )
 
-    module = get_module(module_id)
-    click.echo(f"Running [{module.module_id}] {module.module_name}...\n")
+@cli.command()
+@click.argument("name")
+@click.option("--competition", default=None, help="Limit to one competition key")
+@click.option("--team", "is_team", is_flag=True, help="Look up a team name instead of a player")
+@click.option("--limit", default=5, show_default=True)
+def resolve(name, competition, is_team, limit):
+    """Find the exact data name for a loose spelling: cricket resolve kohli."""
+    from . import api
+    try:
+        rows = (api.resolve_team if is_team else api.resolve_player)(name, competition, limit)
+    except ValueError as e:
+        raise click.ClickException(str(e))
+    for r in rows:
+        extra = "" if is_team else f"  {r['matches']:>4} matches, last {r['last_match']}"
+        click.echo(f"{r['score']:.3f}  {r['name']}{extra}")
 
-    result = module.execute(params)
 
-    if out == "plot":
-        if result:
-            result.show()
-        else:
-            click.echo("No data to plot.")
-    else:
-        if result.empty:
-            click.echo("No results found for the given filters.")
-        else:
-            click.echo(result.head(limit).to_string(index=False))
-            if len(result) > limit:
-                click.echo(f"\n... showing {limit} of {len(result)} rows")
+@cli.command("info")
+def info_cmd():
+    """Show what is in the database (matches and latest date per competition)."""
+    from . import api
+    d = api.data_info()
+    click.echo(f"{d['db_path']} (modified {d['db_modified']})")
+    for c in d["competitions"]:
+        click.echo(f"{c['competition']:<11} {c['matches']:>6} matches  {c['earliest']} .. {c['latest']}")
 
 
 if __name__ == "__main__":

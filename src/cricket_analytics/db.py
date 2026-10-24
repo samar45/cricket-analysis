@@ -1,9 +1,13 @@
 """Database layer — DuckDB schema creation and connection management."""
 
-import duckdb
+import threading
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
-from src.cricket_analytics.config import get_db_path
+import duckdb
+
+from .config import get_db_path
 
 _SCHEMA_SQL = """
 -- Matches: one row per match
@@ -95,14 +99,50 @@ def init_schema(db_path: Path | None = None) -> None:
     con.close()
 
 
-def query(sql: str, params: list | None = None, db_path: Path | None = None):
-    """Run a query and return results as a pandas DataFrame."""
-    con = get_connection(db_path, read_only=True)
+_DB_OVERRIDE: ContextVar[Path | None] = ContextVar("db_override", default=None)
+
+
+@contextmanager
+def use_db(db_path: Path | None):
+    """Point query() at another DB file inside a `with` block (tests, `api.run(db_path=...)`)."""
+    token = _DB_OVERRIDE.set(Path(db_path) if db_path else None)
     try:
-        if params:
-            result = con.execute(sql, params).fetchdf()
-        else:
-            result = con.execute(sql).fetchdf()
-        return result
+        yield
     finally:
-        con.close()
+        _DB_OVERRIDE.reset(token)
+
+
+def current_db_path(db_path: Path | None = None) -> Path:
+    return Path(db_path or _DB_OVERRIDE.get() or get_db_path())
+
+
+_READERS: dict[str, duckdb.DuckDBPyConnection] = {}
+_LOCK = threading.Lock()
+
+
+def _reader(db_path: Path | None) -> duckdb.DuckDBPyConnection:
+    """One cached read-only connection per DB file (opened on first use)."""
+    path = str(current_db_path(db_path).resolve())
+    with _LOCK:
+        if path not in _READERS:
+            if not Path(path).exists():
+                raise FileNotFoundError(f"Database not found: {path}. Run `cricket ingest` first.")
+            _READERS[path] = duckdb.connect(path, read_only=True)
+        return _READERS[path]
+
+
+def close_readers() -> None:
+    """Close cached connections (call before writing to a DB file from this process)."""
+    with _LOCK:
+        for con in _READERS.values():
+            con.close()
+        _READERS.clear()
+
+
+def query(sql: str, params: list | None = None, db_path: Path | None = None):
+    """Run a read-only query and return a pandas DataFrame. Errors raise; they are never hidden."""
+    cur = _reader(db_path).cursor()  # cursor = own state, safe across Streamlit threads
+    try:
+        return cur.execute(sql, params or []).fetchdf()
+    finally:
+        cur.close()

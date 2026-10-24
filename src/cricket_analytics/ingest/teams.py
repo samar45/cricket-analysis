@@ -6,7 +6,7 @@ Problems we solve:
   3. Typo variants  (Rising Pune Supergiant → Rising Pune Supergiants)
 
 Usage:
-  from preprocessing.teams import normalise_team
+  from cricket_analytics.ingest.teams import normalise_team
 
   clean_name = normalise_team("Delhi Daredevils")   # → "Delhi Capitals"
 """
@@ -62,7 +62,7 @@ def migrate_teams(db_path=None) -> int:
     Updates team1, team2, and winner columns.
     Returns the number of rows updated.
     """
-    from src.cricket_analytics.db import get_connection
+    from ..db import get_connection
     con = get_connection(db_path)
 
     total_updated = 0

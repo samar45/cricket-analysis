@@ -15,14 +15,14 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-from src.cricket_analytics.config import load_config, get_path
-from src.cricket_analytics.db import get_connection, init_schema
-from preprocessing.teams import normalise_team
-from preprocessing.venues import normalise_venue
+from ..config import load_config, get_path
+from ..db import get_connection, init_schema
+from .teams import normalise_team
+from .venues import normalise_venue
 
 logger = logging.getLogger(__name__)
 
-from src.cricket_analytics.leagues import (
+from ..leagues import (
     CRICSHEET_URLS      as _FORMAT_URLS,
     CRICSHEET_FORMAT_LABELS  as _FORMAT_LABELS,
     CRICSHEET_TOURNAMENT_LABELS as _TOURNAMENT_LABELS,

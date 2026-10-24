@@ -48,15 +48,14 @@ dev = [
 all = ["cricket-analytics[ml,nlp,scraping,dev]"]
 
 [project.scripts]
-cricket = "src.cricket_analytics.cli:cli"
+cricket = "cricket_analytics.cli:cli"
 
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["src*", "ingestion*", "modules*", "dashboard*"]
+where = ["src"]
 
 [tool.ruff]
 line-length = 100
@@ -64,4 +63,4 @@ target-version = "py310"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "src"]
