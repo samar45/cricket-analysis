@@ -20,9 +20,12 @@ def guarded(page):
         try:
             page()
         except ValueError as e:   # bad or missing user input (e.g. matchup with no player): a hint, not a failure
-            st.info(str(e))
+            st.warning(f"Check your filters: {e}")
         except Exception as e:  # noqa: BLE001
-            st.error(f"{type(e).__name__}: {e}")
+            st.error("This filter combination couldn't be run. Try removing one filter at a time; "
+                     "if it keeps failing, it's a bug worth reporting.")
+            with st.expander("Technical details"):
+                st.code(f"{type(e).__name__}: {e}")
     return wrapper
 
 
@@ -88,7 +91,9 @@ def explore():
     meta = result.meta
     st.caption(f"{meta['row_count']:,} rows | data through {meta['data_through']} | source: {meta['source']}")
     if result.data.empty:
-        st.info("No rows for these filters. Loosen a filter or lower a minimum.")
+        chosen = ", ".join(f"{k} = {v}" for k, v in meta["params"].items() if v not in (None, [], False, 0, ""))
+        st.warning(f"No data for this combination ({chosen}). For example, the player may not have played "
+                   "for that team, at that venue or in those seasons. Remove a filter or lower a minimum.")
     else:
         names = ["Chart", "Table"] + (["Video"] if ui.has_video(mod.id) else [])
         chart_tab, table_tab, *video_tab = st.tabs(names)
