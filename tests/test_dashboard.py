@@ -69,3 +69,24 @@ def test_module_ipl_with_players(module_id):
         at.toggle(key="batting_include_super_overs").set_value(True).run()
         assert_clean(at, module_id)
         assert any(r.get("total_runs") == 9346 for r in at.dataframe[0].value.to_dict("records")), "Kohli IPL runs with super overs"
+
+
+def test_multi_and_season_controls():
+    at = open_module(new_app(), "batting")
+    at.selectbox(key="p_competition").set_value("ipl").run()
+    at.selectbox(key="p_player").set_value("V Kohli").run()
+    at.multiselect(key="p_venue").set_value(["M Chinnaswamy Stadium", "Wankhede Stadium"]).run()
+    assert_clean(at, "batting")
+    assert at.dataframe[0].value.total_runs.iloc[0] == 4139           # two venues, summed
+    at.radio(key="p_season_mode").set_value("Last N seasons").run()
+    at.number_input(key="p_last_n_years").set_value(5).run()
+    at.multiselect(key="p_venue").set_value([]).run()
+    assert_clean(at, "batting")
+    assert at.dataframe[0].value.total_runs.iloc[0] == 3053           # IPL 2022..2026
+    at.radio(key="p_season_mode").set_value("Year range").run()
+    at.selectbox(key="p_season_from").set_value(2024).run()
+    assert_clean(at, "batting")
+    assert at.dataframe[0].value.total_runs.iloc[0] == 741 + 657 + 675
+    at.selectbox(key="p_season_from").set_value(None).run()
+    at.selectbox(key="batting_group_by").set_value("venue").run()
+    assert_clean(at, "batting")

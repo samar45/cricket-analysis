@@ -14,6 +14,9 @@ _GROUPS = {
     "season": ([("m.competition", "competition"), ("m.season", "season")], "batter, MIN(date)"),
     "phase": ([(phase_sql(), "phase")],
               "batter, MIN(CASE phase WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END)"),
+    "year": ([("year(m.date)", "year")], "batter, year"),
+    "venue": ([("m.venue", "venue")], "batter, total_runs DESC"),
+    "opposition": ([("d.bowling_team", "opposition")], "batter, total_runs DESC"),
 }
 
 
@@ -22,11 +25,12 @@ _GROUPS = {
     title="Batting stats",
     category="basic",
     description="Per-batter innings, runs, average, strike rate, 50s/100s, ducks, 4s/6s, dot% and boundary%, "
-                "grouped by player, by season or by phase of the innings.",
+                "grouped by player, season, phase of the innings, calendar year, venue or opposition.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
         ParamSpec("group_by", "choice", default="player", choices=tuple(_GROUPS),
-                  help="player = one row per batter; season = per batter per season; phase = per batter per phase"),
+                  help="player = one row per batter; season / phase / year (calendar year of the match) / venue / opposition "
+                       "= one row per batter per group, to compare side by side"),
         ParamSpec("min_balls", "int", default=0, help="Hide rows with fewer balls faced than this"),
     ],
     caveats=[
@@ -34,6 +38,8 @@ _GROUPS = {
         "He has an innings even if he never faced a ball; a batter left not out at the non-striker's end "
         "without facing a ball has none.",
         "With group_by=phase, innings/not_outs/highest are per phase: an innings counts in each phase the batter faced a ball or was dismissed.",
+        "group_by=year is the calendar year of the match date (a BBL season spanning December-January splits into two years); "
+        "season is the competition's own season label.",
         "Super-over innings (innings 3+) are excluded, as in official records.",
         "Retired hurt / retired not out are not outs; 'retired out' is.",
     ],

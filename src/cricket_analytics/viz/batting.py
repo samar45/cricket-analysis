@@ -17,6 +17,9 @@ def figure(result):
         return _by_phase(df, result)
     if "season" in df.columns:
         return _by_season(df, result)
+    for col in ("year", "venue", "opposition"):
+        if col in df.columns:
+            return _by_group(df, result, col)
     top = df.head(15)
     if len(top) == 1:
         return _single(top.iloc[0], result)
@@ -106,3 +109,14 @@ def _by_season(df, result):
     fig.update_yaxes(title_text="Runs", secondary_y=False)
     fig.update_yaxes(title_text="Strike rate (runs per 100 balls)", secondary_y=True, showgrid=False)
     return style(fig, f"{df['batter'].iloc[0]}: runs and strike rate by season", result)
+
+
+def _by_group(df, result, col):
+    """group_by = year / venue / opposition: the season chart with that column on the x axis (top 15 groups for venue/opposition)."""
+    if col != "year":
+        keep = df.groupby(col)["total_runs"].sum().nlargest(15).index
+        df = df[df[col].isin(keep)]
+    df = df.assign(**{"season": df[col].astype(str), "competition": ""})
+    fig = _by_season(df, result)
+    fig.update_layout(title_text=fig.layout.title.text.replace("by season", f"by {col}").replace("per season", f"per {col}"))
+    return fig

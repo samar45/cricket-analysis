@@ -7,6 +7,7 @@ from .sql.fragments import PHASES
 
 CATEGORIES = ("basic", "intermediate", "advanced", "experimental")
 KINDS = ("player", "player2", "team", "opposition", "competition", "season", "venue", "phase", "int", "float", "bool", "choice")
+MULTI_KINDS = ("team", "opposition", "season", "venue")
 
 
 @dataclass(frozen=True)
@@ -17,28 +18,41 @@ class ParamSpec:
     default: object = None
     choices: tuple | None = None
     help: str = ""
+    multi: bool = False   # accepts one value or a list (JSON schema: an array)
 
     def __post_init__(self):
         if self.kind not in KINDS:
             raise ValueError(f"ParamSpec {self.name}: kind {self.kind!r} not in {KINDS}")
         if self.kind == "choice" and not self.choices:
             raise ValueError(f"ParamSpec {self.name}: kind 'choice' needs choices")
+        if self.multi and self.kind not in MULTI_KINDS:
+            raise ValueError(f"ParamSpec {self.name}: multi is only for {MULTI_KINDS}")
         if self.choices is not None:
             object.__setattr__(self, "choices", tuple(self.choices))
 
 
 # The standard Filters fields as ready-made specs: params=[*std("player", "competition"), ...]
+# "season" brings its range and last-N siblings with it, so a module that takes seasons takes all three ways.
 _STD = {
     "player":      ParamSpec("player", "player", help="Exact player name as in the data, e.g. 'V Kohli' (use resolve first)"),
     "player2":     ParamSpec("player2", "player2", help="Second player (e.g. the bowler in a matchup)"),
     "competition": ParamSpec("competition", "competition", help="Competition key; omit for all (men's)"),
-    "season":      ParamSpec("season", "season", help="Cricsheet season label or a year, e.g. 2024"),
-    "team":        ParamSpec("team", "team", help="Exact team name"),
-    "opposition":  ParamSpec("opposition", "opposition", help="Exact opposition team name"),
-    "venue":       ParamSpec("venue", "venue", help="Exact venue name"),
+    "season":      ParamSpec("season", "season", multi=True,
+                             help="Cricsheet season label or a year, e.g. 2024; several allowed"),
+    "team":        ParamSpec("team", "team", multi=True, help="Exact team name; several allowed"),
+    "opposition":  ParamSpec("opposition", "opposition", multi=True,
+                             help="Exact opposition team name; several allowed"),
+    "venue":       ParamSpec("venue", "venue", multi=True,
+                             help="Exact venue name; several allowed (names contain commas, so pass a list)"),
     "phase":       ParamSpec("phase", "phase", help="powerplay | middle | death"),
 }
 
+
+_SEASON_RANGE = [
+    ParamSpec("season_from", "int", help="First year, inclusive (a season's year = year of its first match)"),
+    ParamSpec("season_to", "int", help="Last year, inclusive"),
+    ParamSpec("last_n_years", "int", help="The N most recent seasons of each competition (seasons, not calendar years)"),
+]
 
 _SUPER_OVERS = ParamSpec("include_super_overs", "bool",
                          help="Count super-over innings (innings 3+); off by default, as in official records")
@@ -47,7 +61,8 @@ _SUPER_OVERS = ParamSpec("include_super_overs", "bool",
 def std(*names: str, super_overs: bool = True) -> list[ParamSpec]:
     """Ready-made specs for Filters fields, plus `include_super_overs` (pass super_overs=False for modules
     that never read deliveries)."""
-    return [_STD[n] for n in names] + ([_SUPER_OVERS] if super_overs else [])
+    out = [s for n in names for s in ([_STD[n], *_SEASON_RANGE] if n == "season" else [_STD[n]])]
+    return out + ([_SUPER_OVERS] if super_overs else [])
 
 
 @dataclass
@@ -107,6 +122,8 @@ def _prop(p: ParamSpec) -> dict:
         t["enum"] = list(PHASES)
     elif p.kind == "choice":
         t["enum"] = list(p.choices)
+    if p.multi:
+        t = {"type": "array", "items": t}
     if p.help:
         t["description"] = p.help
     if p.default is not None:

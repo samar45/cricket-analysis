@@ -172,9 +172,11 @@ def test_json_schema_shape():
     props = s["properties"]
     assert "t20i_women" in props["competition"]["enum"] and "ipl" in props["competition"]["enum"]
     assert props["phase"]["enum"] == ["powerplay", "middle", "death"]
-    assert props["group_by"]["enum"] == ["player", "season", "phase"]
+    assert props["group_by"]["enum"] == ["player", "season", "phase", "year", "venue", "opposition"]
     assert props["min_balls"]["type"] == "integer"
-    assert props["season"]["type"] == ["string", "integer"]
+    assert props["season"]["type"] == "array" and props["season"]["items"]["type"] == ["string", "integer"]
+    assert props["venue"]["type"] == "array" and props["venue"]["items"] == {"type": "string"}
+    assert all(props[k]["type"] == "integer" for k in ("season_from", "season_to", "last_n_years"))
     assert s["required"] == []
     tools = api.schema()
     assert tools[0]["name"] == "batting" and tools[0]["parameters"] == s

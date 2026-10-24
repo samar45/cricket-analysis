@@ -2,6 +2,8 @@
 
     cricket modules
     cricket run batting --player "V Kohli" --competition ipl --group_by season --json
+    cricket run batting --player "V Kohli" --competition ipl --last_n_years 5
+    cricket run batting --player "V Kohli" --venue "Wankhede Stadium" --venue "Eden Gardens"
     cricket schema --json
     cricket resolve kohli
     cricket ingest --db data/new.duckdb --no-download
@@ -65,7 +67,8 @@ def modules_cmd():
 
 
 def _parse_extra(args: list[str]) -> dict:
-    """['--player', 'V Kohli', '--min_balls=50', '--include_super_overs'] -> strings; api.run converts them by type"""
+    """['--player', 'V Kohli', '--min_balls=50', '--include_super_overs'] -> strings; api.run converts them by type.
+    A flag given twice or more becomes a list: --venue A --venue B -> {'venue': ['A', 'B']}."""
     out, i = {}, 0
     while i < len(args):
         a = args[i]
@@ -78,9 +81,25 @@ def _parse_extra(args: list[str]) -> dict:
                 val = args[i]
             else:
                 val = "true"   # bare flag such as --include_super_overs; non-bool params reject it with a clear message
-        out[key.replace("-", "_")] = val
+        key = key.replace("-", "_")
+        if key in out:
+            out[key] = [*out[key], val] if isinstance(out[key], list) else [out[key], val]
+        else:
+            out[key] = val
         i += 1
     return out
+
+
+def _split_commas(module_id: str, given: dict) -> dict:
+    """--team "A, B" -> ['A', 'B'] for multi params, except venues: their names contain commas (repeat --venue)."""
+    from . import registry
+    mod = registry.get(module_id)
+    for key, val in given.items():
+        spec = mod.spec(key)
+        if spec and spec.multi and spec.kind != "venue":
+            vals = val if isinstance(val, list) else [val]
+            given[key] = [x.strip() for v in vals for x in v.split(",") if x.strip()]
+    return given
 
 
 @cli.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
@@ -93,7 +112,7 @@ def run(ctx, module_id, as_json, out, limit):
     """Run a module. Any module param works as --name value (see `cricket schema`)."""
     from . import api
     try:
-        r = api.run(module_id, **_parse_extra(ctx.args))
+        r = api.run(module_id, **_split_commas(module_id, _parse_extra(ctx.args)))
     except ValueError as e:
         raise click.ClickException(str(e))
     if out:
@@ -124,7 +143,7 @@ def schema(as_json):
     for m in registry.all_modules():
         click.echo(f"{m.id}: {m.title}\n  {m.description}")
         for p in m.params:
-            extra = f" choices={list(p.choices)}" if p.choices else ""
+            extra = (f" choices={list(p.choices)}" if p.choices else "") + (" (repeatable)" if p.multi else "")
             dflt = f" default={p.default}" if p.default is not None else ""
             click.echo(f"  --{p.name:<12} {p.kind}{extra}{dflt}{'  (required)' if p.required else ''}")
 

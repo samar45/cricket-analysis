@@ -40,10 +40,11 @@ def teams(f: Filters, group_by: str = "team", min_matches: int = 0) -> pd.DataFr
     where, wp = f.where("match")
     # unpivot team1/team2 to one row per team per match; `team` / `opposition` then narrow the rows
     narrow, np_ = "", []
-    if f.team:
-        narrow, np_ = " AND t.team = ?", [f.team]
-    elif f.opposition:
-        narrow, np_ = " AND t.team <> ?", [f.opposition]
+    team, opp = f.values("team"), f.values("opposition")
+    if team:
+        narrow, np_ = f" AND t.team IN ({', '.join('?' * len(team))})", team
+    elif opp:
+        narrow, np_ = f" AND t.team NOT IN ({', '.join('?' * len(opp))})", opp
     sql = f"""
     WITH mo AS ({MATCH_OUTCOME}),
     t AS (

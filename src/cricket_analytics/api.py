@@ -37,6 +37,13 @@ class Result:
 
 
 def _coerce(spec: registry.ParamSpec, value):
+    """Validate one param. A multi param takes a value or a list; a list stays a list, a scalar stays a scalar."""
+    if spec.multi and isinstance(value, (list, tuple)):
+        return [_coerce_one(spec, v) for v in value]
+    return _coerce_one(spec, value)
+
+
+def _coerce_one(spec: registry.ParamSpec, value):
     k = spec.kind
     if k == "int":
         try:
@@ -68,7 +75,7 @@ def _coerce(spec: registry.ParamSpec, value):
 def run(module_id: str, *, db_path: Path | None = None, **params) -> Result:
     """Run one analysis module. Unknown params, bad choices or missing required params raise ValueError."""
     mod = registry.get(module_id)
-    params = {k: v for k, v in params.items() if v is not None}
+    params = {k: v for k, v in params.items() if v is not None and not (isinstance(v, (list, tuple)) and not v)}
     unknown = set(params) - {p.name for p in mod.params}
     if unknown:
         raise ValueError(f"Module {module_id!r} has no param(s) {sorted(unknown)}. "
@@ -181,7 +188,7 @@ def data_info() -> dict:
 
 
 @functools.lru_cache(maxsize=256)
-def _choices(db: str, mtime: float, kind: str, competition: str | None, season: str | None) -> tuple[str, ...]:
+def _choices(db: str, mtime: float, kind: str, competition: str | None, season: tuple[str, ...]) -> tuple[str, ...]:
     # db and mtime are only cache keys: a rebuilt DB file gets fresh lists
     where, p = Filters(competition=competition, season=season).where("match")
     if kind == "season":   # every season of the competition, newest first (a season filter would hide the others)
@@ -207,10 +214,10 @@ _CHOICE_KINDS = {"player": "player", "player2": "player", "team": "team", "oppos
                  "venue": "venue", "season": "season"}
 
 
-def choices(kind: str, competition: str | None = None, season: str | int | None = None) -> list[str]:
+def choices(kind: str, competition: str | None = None, season: str | int | list | None = None) -> list[str]:
     """Values for a dropdown: kind = player | player2 | team | opposition | venue | season.
 
-    Limited to `competition` (None = all men's) and `season`. Players: most matches first; seasons: newest first;
+    Limited to `competition` (None = all men's) and `season` (one or several). Players: most matches first; seasons: newest first;
     venues: most matches first; teams: A-Z. Cached per DB file version.
     """
     if kind not in _CHOICE_KINDS:
@@ -219,4 +226,4 @@ def choices(kind: str, competition: str | None = None, season: str | int | None 
         competitions.get(competition)
     path = current_db_path()
     return list(_choices(str(path), path.stat().st_mtime, _CHOICE_KINDS[kind], competition or None,
-                         None if season in (None, "") else str(season)))
+                         tuple(str(x) for x in Filters(season=season).values("season"))))

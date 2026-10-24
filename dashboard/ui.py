@@ -7,8 +7,11 @@ from cricket_analytics.registry import Module, ParamSpec
 from cricket_analytics.sql.fragments import PHASES
 
 # Filter-like params keep one session key across modules, so choosing "ipl" survives a module switch.
-SHARED = {"competition", "season", "team", "opposition", "venue", "player", "player2", "phase"}
+SHARED = {"competition", "season", "team", "opposition", "venue", "player", "player2", "phase",
+          "season_from", "season_to", "last_n_years"}
 ORDER = ("competition", "season")   # drawn first: the player/team/venue lists depend on them
+SEASON_EXTRAS = ("season_from", "season_to", "last_n_years")   # drawn by the season control, not one by one
+SEASON_MODES = ("Single seasons", "Year range", "Last N seasons")
 
 
 @st.cache_data(ttl=3600, show_spinner="Running...")
@@ -17,7 +20,7 @@ def run(module_id: str, params: dict) -> api.Result:
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def choices(kind: str, competition: str | None, season: str | None) -> list[str]:
+def choices(kind: str, competition: str | None, season: list | None) -> list[str]:
     return api.choices(kind, competition, season)
 
 
@@ -46,6 +49,32 @@ def select(key: str, label: str, options: list, *, none_label: str | None = None
                         format_func=fmt)
 
 
+def multiselect(key: str, label: str, options: list, *, help: str | None = None, placeholder: str = "All"):
+    """multiselect that drops stored values no longer in `options`; nothing selected = no filter."""
+    if key in st.session_state:
+        st.session_state[key] = [v for v in st.session_state[key] if v in options]
+    return st.multiselect(label, options, key=key, help=help or None, placeholder=placeholder)
+
+
+def season_control(mod: Module, ctx: dict) -> dict:
+    """Season mode (single seasons / year range / last N seasons) -> the season, season_from, season_to, last_n_years params."""
+    mode = st.radio("Seasons", SEASON_MODES, horizontal=True, key="p_season_mode",
+                    help="One season tells a story, several show a pattern. Last N counts seasons of each competition.")
+    if mode == SEASON_MODES[0]:
+        opts = choices("season", ctx.get("competition"), None)
+        return {"season": multiselect("p_season", "Season", opts, help=mod.spec("season").help, placeholder="Any season")}
+    if mode == SEASON_MODES[1]:
+        years = sorted({int(s[:4]) for s in choices("season", ctx.get("competition"), None)})
+        a, b = st.columns(2)
+        with a:
+            lo = select("p_season_from", "From year", years, none_label="Earliest", help=mod.spec("season_from").help)
+        with b:
+            hi = select("p_season_to", "To year", years, none_label="Latest", help=mod.spec("season_to").help)
+        return {"season_from": lo, "season_to": hi}
+    n = st.number_input("Last N seasons", min_value=1, value=5, step=1, key="p_last_n_years", help=mod.spec("last_n_years").help)
+    return {"last_n_years": int(n)}
+
+
 def _widget(mod: Module, p: ParamSpec, ctx: dict):
     key = f"p_{p.name}" if p.name in SHARED else f"{mod.id}_{p.name}"
     label, help = p.name.replace("_", " ").capitalize(), p.help
@@ -53,11 +82,11 @@ def _widget(mod: Module, p: ParamSpec, ctx: dict):
     if k == "competition":
         return select(key, label, list(competitions.COMPETITIONS), none_label=comp_label(None), help=help,
                       format_func=comp_label)
-    if k == "season":
-        return select(key, label, choices("season", ctx.get("competition"), None), none_label="Any season", help=help)
-    if k in ("player", "player2", "team", "opposition", "venue"):
-        opts = choices(k, ctx.get("competition"), ctx.get("season") if k in ("player", "player2") else None)
-        return select(key, label, opts, none_label=None if p.required else f"Any {k.rstrip('2')}", help=help)
+    if k in ("team", "opposition", "venue"):
+        return multiselect(key, label, choices(k, ctx.get("competition"), None), help=help, placeholder=f"Any {k}")
+    if k in ("player", "player2"):
+        opts = choices(k, ctx.get("competition"), ctx.get("season"))
+        return select(key, label, opts, none_label=None if p.required else "Any player", help=help)
     if k == "phase":
         return select(key, label, list(PHASES), none_label="All phases", help=help)
     if k == "choice":
@@ -71,9 +100,14 @@ def _widget(mod: Module, p: ParamSpec, ctx: dict):
 
 def param_form(mod: Module) -> dict:
     """One widget per ParamSpec; returns only the params the user set (unset / off ones are left out)."""
-    ordered = sorted(mod.params, key=lambda p: ORDER.index(p.name) if p.name in ORDER else len(ORDER))
+    has_season = mod.spec("season") is not None and all(mod.spec(n) for n in SEASON_EXTRAS)
+    shown = [p for p in mod.params if not (has_season and p.name in SEASON_EXTRAS)]
+    ordered = sorted(shown, key=lambda p: ORDER.index(p.name) if p.name in ORDER else len(ORDER))
     cols, values = st.columns(3), {}
     for i, p in enumerate(ordered):
         with cols[i % 3]:
-            values[p.name] = _widget(mod, p, values)
-    return {k: v for k, v in values.items() if v is not None and v is not False}
+            if p.name == "season" and has_season:
+                values.update(season_control(mod, values))
+            else:
+                values[p.name] = _widget(mod, p, values)
+    return {k: v for k, v in values.items() if v is not None and v is not False and v != []}

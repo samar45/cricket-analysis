@@ -13,6 +13,9 @@ _GROUPS = {
     "season": ([("m.competition", "competition"), ("m.season", "season")], "bowler, MIN(first_date)"),
     "phase": ([(phase_sql(), "phase")],
               "bowler, MIN(CASE phase WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END)"),
+    "year": ([("year(m.date)", "year")], "bowler, year"),
+    "venue": ([("m.venue", "venue")], "bowler, wickets DESC"),
+    "opposition": ([("d.batting_team", "opposition")], "bowler, wickets DESC"),
 }
 
 
@@ -21,11 +24,12 @@ _GROUPS = {
     title="Bowling stats",
     category="basic",
     description="Per-bowler wickets, runs conceded, economy, average, strike rate, dot%, boundaries conceded, "
-                "wides, no-balls, 3-/5-wicket hauls and best figures, grouped by player, season or phase.",
+                "wides, no-balls, 3-/5-wicket hauls and best figures, grouped by player, season, phase, calendar year, venue or opposition.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
         ParamSpec("group_by", "choice", default="player", choices=tuple(_GROUPS),
-                  help="player = one row per bowler; season = per bowler per season; phase = per bowler per phase"),
+                  help="player = one row per bowler; season / phase / year (calendar year of the match) / venue / opposition "
+                       "= one row per bowler per group, to compare side by side"),
         ParamSpec("min_balls", "int", default=0, help="Hide rows with fewer legal balls bowled than this"),
     ],
     caveats=[
@@ -36,6 +40,8 @@ _GROUPS = {
         "wides / no_balls are runs from those extras (a wide that also ran 4 counts 5).",
         "A 'haul' is per innings bowled: three_plus = 3 or more wickets, five_plus = 5 or more.",
         "team = the bowler's own side. With group_by=phase an innings counts in each phase the bowler bowled.",
+        "group_by=year is the calendar year of the match date (a BBL season spanning December-January splits into two years); "
+        "season is the competition's own season label.",
         "Super-over innings (innings 3+) are excluded, as in official records.",
     ],
 )
