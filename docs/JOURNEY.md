@@ -42,4 +42,4 @@ The full plan and goals are in `docs/ROADMAP.md`. Mode: Heavy, Opus leads, 2-4 S
 - `config.yaml` → `data/cricket_analytics.duckdb`. Old `data/cricket_analytics_slim.duckdb` untouched (reference only).
 - Raw data: `data/raw/cricsheet/<key>/`, zips of 2026-10-24 in `data/raw/_zips_2026-10-24/`.
 - Docs: ROADMAP, STATUS, EXPERIMENTS, AGENTS, AUDIT, AUDIT_video, RESEARCH_data_nlq, WORK_data-refresh.
-- Dashboard launch: `cricket-dashboard` in `D:\Claude projects\MY_SYSTEM\.claude\launch.json` (it uses bare `python`/`streamlit`, which resolve to Anaconda 3.9; fix pending).
+- Dashboard launch: `cricket-dashboard` in `D:\Claude projects\MY_SYSTEM\.claude\launch.json` (uses the absolute `.venv` streamlit.exe, fine). The repo's own `.claude/launch.json` uses bare `streamlit`/`python`, which resolve to Anaconda 3.9; fix pending.
