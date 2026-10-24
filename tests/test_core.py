@@ -94,7 +94,8 @@ def test_filters_bind_every_value(side):
 
 def test_filters_empty_is_men_only():
     sql, params = Filters().where("bat")
-    assert sql == "1=1 AND m.gender = ?" and params == ["male"]
+    assert sql == "1=1 AND m.gender = ? AND d.innings <= 2" and params == ["male"]  # super overs off by default
+    assert Filters(include_super_overs=True).where("bat")[0] == "1=1 AND m.gender = ?"
 
 
 def test_filters_sides():

@@ -5,14 +5,14 @@ import pandas as pd
 from ..db import query
 from ..registry import ParamSpec, module, std
 from ..sql.filters import Filters
-from ..sql.fragments import BALL_FACED, BATTER_OUT, IS_DOT, IS_FOUR, IS_SIX, phase_sql
+from ..sql.fragments import phase_sql
+from ..sql.innings import batter_innings
 
-# group_by -> (extra SELECT expressions, their output names, ORDER BY of the final query)
+# group_by -> (group keys as (SQL expr, output name), ORDER BY of the final query)
 _GROUPS = {
-    "player": ([], [], "total_runs DESC"),
-    "season": (["m.competition AS competition", "m.season AS season"], ["competition", "season"],
-               "batter, MIN(first_date)"),
-    "phase": ([f"{phase_sql()} AS phase"], ["phase"],
+    "player": ([], "total_runs DESC"),
+    "season": ([("m.competition", "competition"), ("m.season", "season")], "batter, MIN(date)"),
+    "phase": ([(phase_sql(), "phase")],
               "batter, MIN(CASE phase WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END)"),
 }
 
@@ -30,29 +30,20 @@ _GROUPS = {
         ParamSpec("min_balls", "int", default=0, help="Hide rows with fewer balls faced than this"),
     ],
     caveats=[
-        "A non-striker run out is not counted as an out for anyone (Cricsheet puts player_out on the non-striker).",
-        "With group_by=phase, innings/not_outs/highest are per phase: an innings counts in each phase the batter faced a ball.",
-        "Super-over innings (innings 3+) are included.",
+        "Dismissals are taken from player_out, so a non-striker run out counts as an out for that batter. "
+        "He has an innings even if he never faced a ball; a batter left not out at the non-striker's end "
+        "without facing a ball has none.",
+        "With group_by=phase, innings/not_outs/highest are per phase: an innings counts in each phase the batter faced a ball or was dismissed.",
+        "Super-over innings (innings 3+) are excluded, as in official records.",
+        "Retired hurt / retired not out are not outs; 'retired out' is.",
     ],
 )
 def batting(f: Filters, group_by: str = "player", min_balls: int = 0) -> pd.DataFrame:
-    exprs, names, order = _GROUPS[group_by]
-    gsel = "".join(f", {e}" for e in exprs)
-    ggrp = "".join(f", {n}" for n in names)
-    where, params = f.where("bat")
+    keys, order = _GROUPS[group_by]
+    ggrp = "".join(f", {n}" for _, n in keys)
+    inn, params = batter_innings(f, keys)
     sql = f"""
-    WITH inn AS (
-        SELECT d.batter{gsel}, d.match_id, d.innings, MIN(m.date) AS first_date,
-               SUM(d.runs_batter) AS runs,
-               COUNT(*) FILTER (WHERE {BALL_FACED}) AS balls,
-               COUNT(*) FILTER (WHERE {IS_FOUR}) AS fours,
-               COUNT(*) FILTER (WHERE {IS_SIX}) AS sixes,
-               COUNT(*) FILTER (WHERE {IS_DOT}) AS dots,
-               MAX(CASE WHEN {BATTER_OUT} THEN 1 ELSE 0 END) AS out
-        FROM deliveries d JOIN matches m ON d.match_id = m.match_id
-        WHERE {where}
-        GROUP BY d.batter{ggrp}, d.match_id, d.innings
-    )
+    WITH inn AS ({inn})
     SELECT batter{ggrp},
            COUNT(*)::INTEGER AS innings,
            SUM(1 - out)::INTEGER AS not_outs,
@@ -61,9 +52,9 @@ def batting(f: Filters, group_by: str = "player", min_balls: int = 0) -> pd.Data
            MAX(runs)::INTEGER AS highest,
            ROUND(SUM(runs) * 1.0 / NULLIF(SUM(out), 0), 2) AS average,
            ROUND(SUM(runs) * 100.0 / NULLIF(SUM(balls), 0), 2) AS strike_rate,
-           COUNT(*) FILTER (WHERE runs BETWEEN 50 AND 99) AS fifties,
-           COUNT(*) FILTER (WHERE runs >= 100) AS hundreds,
-           COUNT(*) FILTER (WHERE runs = 0 AND out = 1) AS ducks,
+           COUNT(*) FILTER (WHERE runs BETWEEN 50 AND 99)::INTEGER AS fifties,
+           COUNT(*) FILTER (WHERE runs >= 100)::INTEGER AS hundreds,
+           COUNT(*) FILTER (WHERE runs = 0 AND out = 1)::INTEGER AS ducks,
            SUM(fours)::INTEGER AS fours,
            SUM(sixes)::INTEGER AS sixes,
            ROUND(SUM(dots) * 100.0 / NULLIF(SUM(balls), 0), 1) AS dot_pct,

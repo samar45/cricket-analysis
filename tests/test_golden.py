@@ -1,15 +1,16 @@
 """Golden numbers against the real DB (skipped when data/cricket_analytics.duckdb is missing).
 
-Kohli 973 runs / 4 hundreds in IPL 2016 is the well-known record season; the career totals were
-checked against the raw Cricsheet files by the Phase 1 builder (docs/STATUS.md).
+Kohli 973 runs / 4 hundreds in IPL 2016 is the well-known record season. Super-over innings are excluded
+by default (official records do): Kohli's IPL career is 9,336 (9,346 with the 10 super-over runs) and
+8,661 before the 2026 season, which matches the ESPNcricinfo figure.
 """
 
 from pathlib import Path
 
 import pytest
 
-from cricket_analytics import api
-from cricket_analytics.db import query
+from cricket_analytics import api, registry
+from cricket_analytics.db import query, use_db
 from cricket_analytics.sql.filters import Filters
 
 DB = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
@@ -18,13 +19,16 @@ pytestmark = pytest.mark.skipif(not DB.exists(), reason="real DB not built")
 
 def test_kohli_ipl_career_runs():
     d = api.run("batting", player="V Kohli", competition="ipl", db_path=DB).data
+    assert list(d.total_runs) == [9336]
+    with use_db(DB):  # opt in to super overs: +10 runs in two super-over innings
+        d = registry.get("batting").fn(Filters(player="V Kohli", competition="ipl", include_super_overs=True))
     assert list(d.total_runs) == [9346]
 
 
 def test_kohli_ipl_runs_before_2026():
     d = api.run("batting", player="V Kohli", competition="ipl", group_by="season", db_path=DB).data
-    assert d.total_runs.sum() == 9346
-    assert d[d.season != "2026"].total_runs.sum() == 8671
+    assert d.total_runs.sum() == 9336
+    assert d[d.season != "2026"].total_runs.sum() == 8661
 
 
 def test_kohli_2016_by_year_and_label():

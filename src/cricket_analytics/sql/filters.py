@@ -21,6 +21,10 @@ class Filters:
                  identical label.
     team, opposition, venue, player: exact match (never LIKE). Use api.resolve_player() first.
     phase:       powerplay | middle | death (ignored for side='match').
+    include_super_overs: False (default) drops super-over innings (innings 3+ in these limited-overs
+                 matches; measured: every innings > 2 belongs to a tied match, 74 matches), as official
+                 records do. For side='bat'/'bowl' the condition is inside .where(); modules that read
+                 deliveries with side='match' add `f.innings_sql()` themselves.
     """
     competition: str | None = None
     season: str | int | None = None
@@ -29,6 +33,11 @@ class Filters:
     venue: str | None = None
     phase: str | None = None
     player: str | None = None
+    include_super_overs: bool = False
+
+    def innings_sql(self, d: str = "d") -> str:
+        """'d.innings <= 2' unless super overs are included; always a valid boolean expression."""
+        return "1=1" if self.include_super_overs else f"{d}.innings <= 2"
 
     def where(self, side: Side, d: str = "d", m: str = "m") -> tuple[str, list]:
         """Build the WHERE body (always starts with `1=1`).
@@ -72,6 +81,8 @@ class Filters:
                     p += [t, t]
             return " AND ".join(c), p
 
+        if not self.include_super_overs:
+            c.append(self.innings_sql(d))
         mine, other, who = (("batting_team", "bowling_team", "batter") if side == "bat"
                             else ("bowling_team", "batting_team", "bowler"))
         if self.team:
