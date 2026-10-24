@@ -2,8 +2,8 @@
 
 Usage:
     cricket setup              # Init database
-    cricket ingest             # Download & load all Cricsheet data
-    cricket ingest --format ipl  # Download & load IPL only
+    cricket ingest             # Download & load all Cricsheet data into data/cricket_analytics.duckdb
+    cricket ingest --format ipl --db data/new.duckdb  # Load IPL only into another file
     cricket modules            # List available modules
     cricket run B1             # Run batting stats
     cricket run B1 --player "Kohli" --format T20
@@ -11,6 +11,7 @@ Usage:
 
 import logging
 import sys
+from pathlib import Path
 
 import click
 
@@ -36,12 +37,16 @@ def setup():
 
 
 @cli.command()
-@click.option("--format", "fmt", default=None, help="Format: ipl, t20s, odis, tests")
+@click.option("--format", "fmt", default=None, help="Cricsheet key: t20s, ipl, bbl, psl, cpl, sa20, hundred, blast")
 @click.option("--redownload", is_flag=True, default=False, help="Force re-download even if data exists")
 @click.option("--no-download", "skip_download", is_flag=True, default=False, help="Skip download, load existing files only")
-def ingest(fmt: str | None, redownload: bool, skip_download: bool):
+@click.option("--db", "db_path", type=click.Path(dir_okay=False, path_type=Path), default=None,
+              help="Output DuckDB file (default data/cricket_analytics.duckdb; the slim DB is refused)")
+def ingest(fmt: str | None, redownload: bool, skip_download: bool, db_path: Path | None):
     """Ingest Cricsheet data into DuckDB."""
-    from ingestion.cricsheet import ingest as run_ingest, download_cricsheet, get_path
+    from ingestion.cricsheet import ingest as run_ingest, default_db_path, get_path
+    db_path = db_path or default_db_path()
+    click.echo(f"Writing to {db_path}")
     formats = [fmt] if fmt else None
 
     if redownload and fmt:
@@ -51,7 +56,7 @@ def ingest(fmt: str | None, redownload: bool, skip_download: bool):
             shutil.rmtree(raw_dir)
             click.echo(f"Cleared {raw_dir}")
 
-    results = run_ingest(formats=formats, download=not skip_download)
+    results = run_ingest(formats=formats, download=not skip_download, db_path=db_path)
     for f, count in results.items():
         click.echo(f"{f}: {count:,} deliveries loaded")
 

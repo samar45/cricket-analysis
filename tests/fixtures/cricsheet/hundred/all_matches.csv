@@ -1,0 +1,3 @@
+match_id,season,start_date,venue,innings,ball,actual_delivery,batting_team,bowling_team,striker,non_striker,bowler,runs_off_bat,extras,wides,noballs,byes,legbyes,penalty,non_boundary,wicket_type,player_dismissed,other_wicket_type,other_player_dismissed,fielder_1,fielder_2,fielder_3
+999999,2021,2021-07-22,"Kennington Oval, London",1,0.1,0.1,Oval Invincibles,Manchester Originals,JJ Roy,SM Curran,TW Hartley,0,0,,,,,,,,,,,,,
+999999,2021,2021-07-22,"Kennington Oval, London",1,0.2,0.2,Oval Invincibles,Manchester Originals,JJ Roy,SM Curran,TW Hartley,1,0,,,,,,,,,,,,,

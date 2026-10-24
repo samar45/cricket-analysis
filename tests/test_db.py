@@ -25,9 +25,6 @@ def test_init_schema_creates_tables(temp_db):
     assert "matches" in tables
     assert "deliveries" in tables
     assert "players" in tables
-    assert "venues" in tables
-    assert "seasons" in tables
-    assert "player_match" in tables
 
 
 def test_init_schema_is_idempotent(temp_db):
@@ -36,4 +33,4 @@ def test_init_schema_is_idempotent(temp_db):
     con = get_connection(temp_db)
     tables = con.execute("SHOW TABLES").fetchdf()["name"].tolist()
     con.close()
-    assert len(tables) >= 5
+    assert sorted(tables) == ["deliveries", "matches", "players"]

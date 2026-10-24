@@ -10,7 +10,7 @@ paths:
   raw: "data/raw"
   clean: "data/clean"
   gold: "data/gold"
-  database: "data/cricket_analytics_slim.duckdb"   # slim = T20 only, 96MB (deployment DB)
+  database: "data/cricket_analytics.duckdb"   # built locally by `cricket ingest`; slim DB kept as the old reference
 
 # --- Data sources ---
 sources:

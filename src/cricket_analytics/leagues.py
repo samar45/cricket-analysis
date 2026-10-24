@@ -27,10 +27,11 @@ CRICSHEET_URLS = {
     "blast":   "https://cricsheet.org/downloads/ntb_male_csv2.zip",    # NatWest/Vitality T20 Blast = "ntb"
 }
 
-# What format label to store in the matches table for each key
+# Value of the legacy matches.format column for each key. Kept identical to the old DB
+# (IPL was stored as "T20"). The correct labels are matches.competition + matches.gender.
 CRICSHEET_FORMAT_LABELS = {
     "t20s":    "T20",
-    "ipl":     "IPL",
+    "ipl":     "T20",
     "bbl":     "BBL",
     "psl":     "PSL",
     "cpl":     "CPL",
@@ -38,6 +39,9 @@ CRICSHEET_FORMAT_LABELS = {
     "hundred": "Hundred",
     "blast":   "Blast",
 }
+
+# Cricsheet key -> matches.competition value (only t20s differs)
+COMPETITION_CODES = {k: ("t20i" if k == "t20s" else k) for k in CRICSHEET_URLS}
 
 CRICSHEET_TOURNAMENT_LABELS = {
     "t20s":    "T20I",
@@ -71,56 +75,63 @@ COMPETITIONS: list[Competition] = [
         label="T20 International",
         emoji="🌍",
         cricsheet_key="t20s",
-        sql_filter="{p}format = 'T20'",
-        description="All international T20 matches between national teams",
+        sql_filter="({p}competition = 't20i' AND {p}gender = 'male')",
+        description="Men's international T20 matches between national teams",
+    ),
+    Competition(
+        label="T20 International (Women)",
+        emoji="🌍",
+        cricsheet_key="t20s",
+        sql_filter="({p}competition = 't20i' AND {p}gender = 'female')",
+        description="Women's international T20 matches between national teams",
     ),
     Competition(
         label="IPL",
         emoji="🏏",
         cricsheet_key="ipl",
-        sql_filter="({p}format = 'IPL' OR {p}tournament ILIKE '%Indian Premier%')",
+        sql_filter="({p}competition = 'ipl' AND {p}gender = 'male')",
         description="Indian Premier League",
     ),
     Competition(
         label="BBL",
         emoji="🦘",
         cricsheet_key="bbl",
-        sql_filter="({p}format = 'BBL' OR {p}tournament ILIKE '%Big Bash%')",
+        sql_filter="({p}competition = 'bbl' AND {p}gender = 'male')",
         description="KFC Big Bash League (Australia)",
     ),
     Competition(
         label="PSL",
         emoji="🟢",
         cricsheet_key="psl",
-        sql_filter="({p}format = 'PSL' OR {p}tournament ILIKE '%Pakistan Super%')",
+        sql_filter="({p}competition = 'psl' AND {p}gender = 'male')",
         description="HBL Pakistan Super League",
     ),
     Competition(
         label="CPL",
         emoji="🌴",
         cricsheet_key="cpl",
-        sql_filter="({p}format = 'CPL' OR {p}tournament ILIKE '%Caribbean Premier%')",
+        sql_filter="({p}competition = 'cpl' AND {p}gender = 'male')",
         description="Republic Bank Caribbean Premier League",
     ),
     Competition(
         label="SA20",
         emoji="🦁",
         cricsheet_key="sa20",
-        sql_filter="({p}format = 'SA20' OR {p}tournament ILIKE '%SA20%')",
+        sql_filter="({p}competition = 'sa20' AND {p}gender = 'male')",
         description="Betway SA20 (South Africa)",
     ),
     Competition(
         label="The Hundred",
         emoji="💯",
         cricsheet_key="hundred",
-        sql_filter="({p}format = 'Hundred' OR {p}tournament ILIKE '%Hundred%')",
+        sql_filter="({p}competition = 'hundred' AND {p}gender = 'male')",
         description="The Hundred (England & Wales)",
     ),
     Competition(
         label="T20 Blast",
         emoji="💥",
         cricsheet_key="blast",
-        sql_filter="({p}format = 'Blast' OR {p}tournament ILIKE '%T20 Blast%' OR {p}tournament ILIKE '%Vitality Blast%')",
+        sql_filter="({p}competition = 'blast' AND {p}gender = 'male')",
         description="Vitality T20 Blast (England & Wales)",
     ),
 ]
