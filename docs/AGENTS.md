@@ -14,3 +14,6 @@ Score out of 10: correct 4, complete 2, honest 2, constraints 1, efficient 1. Sc
 | 2026-10-24 | porter (2B) | 6 modules + 2 core fixes | 9 | Golden numbers match known records. Found missing super-over winners. -1: overwrote 2C's log lines once (owned up) |
 | 2026-10-24 | porter (2C) | 6 advanced modules | 10 | Every old-vs-new difference explained; found 3 old bugs beyond the audit; stayed in its files |
 | 2026-10-24 | experimenter | HawkeyeStats join trial | 10 | Lead re-counted rows/matches, checked sizes and gitignore. Checked size before download, kept data out of git, clear verdict |
+| 2026-10-24 | dashboard (3A) | Dashboard rebuild, registry kinds, deletions | 9 | 27 AppTest cases; lead clicked through. -1: overwrote lead's launch.json entry (owned up, restored) |
+| 2026-10-24 | loader (3B) | Super-over winners, competition config, rebuild | 10 | Lead re-checked 76 winners / 0 other diffs. Corrected 2B's 729315 assumption from source data |
+| 2026-10-24 | chart-polish | 13 charts + layout | 9 | Lead checked batting chart in browser: clean. Self-checked with headless screenshots. -1: changed what by-season views mean (top-N) without asking first |

@@ -35,3 +35,11 @@
 ## 2026-10-24 Phase 3 started
 - Samar: go for Phase 3, delete list approved, HawkeyeStats approved as an experiment (local only, never committed or published).
 - Workers: 3A dashboard rebuild + registry kinds + deletions; 3B super-over winners at ingest + competition config in one place, rebuilt into `data/cricket_analytics_new.duckdb`; 3C Hawk-Eye join trial → `docs/EXPERIMENT_hawkeye.md`.
+
+## 2026-10-24 Phase 3 done
+- Dashboard rebuilt on the registry (app.py 753 → 111 lines + ui.py 79): Overview + Explore, filters generated from module params, CSV/JSON download, provenance panel, experimental banner. Charts restyled (shared dark template, stacked panels, top-N).
+- Deleted (Samar approved): old `modules/`, `leagues.py`, unused deps/extras/config keys, empty folders, old tests. All recoverable from git.
+- Loader stores super-over/bowl-out winners (76 matches) + `outcome_method`; DB rebuilt and swapped in, previous kept as `data/cricket_analytics_prev_2026-10-24.duckdb`.
+- Registry: bool/float params, experimental category, `include_super_overs` toggle; `api.choices` for dropdowns.
+- Hawk-Eye trial: 627/628 IPL matches join, 2012–2021 only, no licence → local-only experiment.
+- Lead verified: 156/156 tests, dashboard checked in the browser (Overview, Explore batting chart), new DB vs old (76 winners added, 0 other changes).
