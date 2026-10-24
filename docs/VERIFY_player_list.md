@@ -246,3 +246,66 @@ Filled 48 players in order of balls bowled (46 in a first pass, then Shashank Si
 Not filled: RR Raje (Rohan Raje: Wikipedia mirror right-arm medium vs Wisden fast-medium - left blank); S Ladda (search found no profile - left blank).
 
 Caveats: (1) Where sources split on pace tier I used the primary/majority label and still wrote 'high': Sakib Hussain, R Shukla, P Amarnath, Ashok Sharma, A Choudhary, Valthaty, RV Gomez, Shashank Singh, KR Sen, AG Murtaza (the Source column shows the split). Treat those as medium in practice. (2) Some of the 48 already had a row holding only a bat_hand (e.g. V Kohli, RG Sharma, TM Dilshan, AK Markram, WG Jacks): bat_hand was set from the web and `source` changed to `web-verified`. (3) New rows have empty `role` and `keeper`.
+
+
+## bat_hand re-check (2026-10-25)
+
+Scope: rows with bat_hand_confidence medium/low and no verified/web note (369 rows), ranked by balls faced in the DB (innings 1-2 only). One web search per player; Wikipedia / ESPNcricinfo / Wisden / club or board profile snippets. Searches stopped when the tool's per-session cap (200 searches) ran out, not because the list was finished.
+
+| Result | Count |
+|---|---|
+| Checked | 197 of 369 |
+| Confirmed (set high, note `web: <domain> 2026-10-25`) | 173 |
+| bat_hand fixed (same note) | 24 |
+| Blanked (sources split or not found) | 0 |
+| bowl_type also fixed | 9 |
+| Not yet checked | 172 |
+
+The 24 fixes are 24 of the 197 checked rows (12%), all left/right flips, in line with the 10% sample. Rate by confidence band was not split out. Weak spots: Hassan Khan rests on one squad table (Wikipedia, Melbourne Renegades 2025-26). RP Singh: the DB team is USA, which does not match either Indian RP Singh found; both are right-handed, so right was set, but identity is uncertain. Several initials were matched by team and role (S Snater = Shane Snater, SW Currie = Scott Currie, H Kerr = Hayden Kerr, A Reddy = Arundhati Reddy, A Hunter = Amy Hunter); these were not checked against the DB beyond team and years.
+
+### bat_hand fixes
+
+| Player | Change | Source |
+|---|---|---|
+| JA Simpson | right -> left | wikipedia.org |
+| JN Frylinck | right -> left | wikipedia.org |
+| JM Coles | left -> right | espncricinfo.com |
+| GH Dockrell | left -> right | espncricinfo.com |
+| Rumana Ahmed | left -> right | wikipedia.org |
+| Wahab Riaz | left -> right | espncricinfo.com |
+| SM Whiteman | right -> left | wikipedia.org |
+| Rohan Mustafa | right -> left | wikipedia.org |
+| GG Wagg | left -> right | wikipedia.org |
+| Hassan Khan | left -> right | wikipedia.org (Melbourne Renegades squad table; single source) |
+| LP Goldsworthy | left -> right | wikipedia.org |
+| RP Singh | left -> right | espncricinfo.com (Rudra Pratap Singh; may be a different RP Singh, low certainty) |
+| KV Sharma | right -> left | espncricinfo.com |
+| DC Drakes | right -> left | wikipedia.org |
+| BC Fortuin | left -> right | wikipedia.org |
+| R Trumpelmann | left -> right | wikipedia.org |
+| Taskin Ahmed | right -> left | wisden.com |
+| S Ismail | right -> left | wikipedia.org |
+| OC McCoy | right -> left | wisden.com |
+| JS Patel | left -> right | wikipedia.org |
+| JP Behrendorff | left -> right | wikipedia.org |
+| K Santokie | right -> left | wikipedia.org |
+| Bipul Sharma | right -> left | wikipedia.org |
+| V Permaul | left -> right | wikipedia.org |
+
+### bowl_type fixes made on the way
+
+| Player | Change | Source |
+|---|---|---|
+| AM Lilley | left-arm orthodox -> right-arm off spin | wikipedia.org (Arron Lilley) |
+| BGF Green | right-arm off spin -> right-arm fast-medium | wikipedia.org |
+| CP Wood | right-arm fast-medium -> left-arm fast-medium | wikipedia.org |
+| H Kerr | right-arm fast-medium -> left-arm fast-medium | espncricinfo.com (Hayden Kerr) |
+| DC Drakes | right-arm fast-medium -> left-arm fast-medium | wikipedia.org |
+| TMJ Smith | right-arm leg spin -> left-arm orthodox | wikipedia.org (hand was already right; bowl fixed) |
+| OC McCoy | right-arm fast-medium -> left-arm fast-medium | wisden.com |
+| R Rampaul | left-arm fast-medium -> right-arm fast-medium | wikipedia.org |
+| K Santokie | right-arm fast-medium -> left-arm fast-medium | wikipedia.org |
+
+### Resume point
+
+Unchecked rows still carry their old bat_hand and confidence (they are exactly the medium/low rows without a `web:` note). Skipped inside the checked range (8 rows, rank in brackets): JB Cracknell (#31), CL Tryon (#32), Mohammad Nawaz (#33), MJ Richardson (#34), TT Bresnan (#35), JA Thompson (#36), LJ Hill (#37), R Sharma (#156). After rank 205 nothing was searched: resume at Saeed Ajmal (#206), then Diana Baig, S Glenn, DS Kulkarni, B Doggett, B Muzarabani, R Ngarava, Noor Ahmad, M Kartik and down the rank order. Total unchecked: 172.
