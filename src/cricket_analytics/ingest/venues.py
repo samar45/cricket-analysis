@@ -132,7 +132,6 @@ VENUE_ALIASES: dict[str, str] = {
     # ── India (more duplicates found) ──────────────────────────────────────
     "M.Chinnaswamy Stadium":                 "M Chinnaswamy Stadium",
     "M Chinnaswamy Stadium, Bangalore":      "M Chinnaswamy Stadium",
-    "M Chinnaswamy Stadium, Bengaluru":      "M Chinnaswamy Stadium",
 
     "Brabourne Stadium, Mumbai":             "Brabourne Stadium",
 
@@ -157,7 +156,6 @@ VENUE_ALIASES: dict[str, str] = {
 
     "Nehru Stadium, Indore":                 "Holkar Cricket Stadium, Indore",
 
-    "Sawai Mansingh Stadium, Jaipur":        "Sawai Mansingh Stadium",
 
     # ── South Africa ───────────────────────────────────────────────────────
     "Newlands, Cape Town":                   "Newlands",

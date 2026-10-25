@@ -12,7 +12,7 @@ from streamlit.testing.v1 import AppTest
 from cricket_analytics import api, applog
 from cricket_analytics import ask as A
 from cricket_analytics.cli import cli
-from tests.conftest import REAL_DB, requires_real_db
+from tests.conftest import requires_real_db
 
 APP = str(Path(__file__).parent.parent / "dashboard" / "app.py")
 sys.path.insert(0, str(Path(APP).parent))   # the app does `import health`

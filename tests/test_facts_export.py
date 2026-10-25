@@ -11,12 +11,11 @@ from click.testing import CliRunner
 from cricket_analytics import api, facts, export
 from cricket_analytics.cli import cli
 from cricket_analytics.ingest.cricsheet import load_to_db
+from tests.conftest import requires_real_db
 
 warnings.filterwarnings("ignore")
 ROOT = Path(__file__).parent.parent
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-from tests.conftest import requires_real_db
-from tests.conftest import REAL_DB as REAL
 real = requires_real_db
 
 

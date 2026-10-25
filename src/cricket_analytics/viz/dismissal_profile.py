@@ -3,7 +3,6 @@
 import plotly.graph_objects as go
 
 from ..analysis.dismissal_profile import KINDS
-from . import PALETTE as C
 from . import empty, style
 
 COLOUR = dict(zip(KINDS, ["#2196F3", "#EF5350", "#FF9800", "#FFC107", "#4CAF50", "#9E9E9E", "#E91E63", "#607D8B"]))

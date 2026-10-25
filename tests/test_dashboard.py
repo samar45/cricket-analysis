@@ -11,10 +11,9 @@ from streamlit.testing.v1 import AppTest
 
 from cricket_analytics import registry
 from cricket_analytics.viz import video
+from tests.conftest import requires_real_db
 
 APP = str(Path(__file__).parent.parent / "dashboard" / "app.py")
-from tests.conftest import requires_real_db
-from tests.conftest import REAL_DB as REAL
 pytestmark = requires_real_db
 
 IDS = [m.id for m in registry.all_modules()]

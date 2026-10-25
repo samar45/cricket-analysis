@@ -1,7 +1,6 @@
 """Form for video: a plain line of the last 15 innings (batters: runs; bowlers: economy per spell) with a dashed
 average line, every point labelled. The last innings is the amber dot."""
 
-import plotly.graph_objects as go
 
 from . import AMBER, INK, MUTE, _text, message_card, new_fig, num, scope_text, source_note
 

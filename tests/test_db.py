@@ -1,12 +1,9 @@
 """Tests for database schema and connection."""
 
-import tempfile
-from pathlib import Path
 
-import duckdb
 import pytest
 
-from cricket_analytics.db import get_connection, init_schema, query
+from cricket_analytics.db import get_connection, init_schema
 
 
 @pytest.fixture

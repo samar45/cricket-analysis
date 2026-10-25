@@ -1,7 +1,6 @@
 """Multi-value and range filters: SQL binding, season rules, schema arrays, CLI flags, and golden numbers on the real DB."""
 
 import json
-from pathlib import Path
 
 import duckdb
 import pytest
@@ -13,7 +12,6 @@ from cricket_analytics.db import init_schema, query, use_db
 from cricket_analytics.sql.filters import Filters
 
 from tests.conftest import requires_real_db
-from tests.conftest import REAL_DB as REAL
 needs_real = requires_real_db
 
 

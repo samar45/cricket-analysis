@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from cricket_analytics import api
@@ -11,10 +10,9 @@ from cricket_analytics.db import query, use_db
 from cricket_analytics.ingest.cricsheet import load_to_db
 from cricket_analytics.sql.filters import Filters
 from cricket_analytics.viz import home_away as vha, video
+from tests.conftest import requires_real_db
 
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-from tests.conftest import requires_real_db
-from tests.conftest import REAL_DB as REAL
 real = requires_real_db
 
 

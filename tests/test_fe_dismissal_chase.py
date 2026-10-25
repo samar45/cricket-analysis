@@ -6,13 +6,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import pytest
 
-from cricket_analytics import api, registry
+from cricket_analytics import api
 from cricket_analytics.ingest.cricsheet import load_to_db
 from cricket_analytics.viz import chase_vs_set as vchase, dismissal_profile as vdis, video
+from tests.conftest import requires_real_db
 
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-from tests.conftest import requires_real_db
-from tests.conftest import REAL_DB as REAL
 IPL = "1082591"
 real = requires_real_db
 

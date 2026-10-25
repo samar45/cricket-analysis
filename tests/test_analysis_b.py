@@ -16,10 +16,10 @@ from cricket_analytics.ingest.cricsheet import load_to_db
 from cricket_analytics.sql.filters import Filters
 from cricket_analytics.viz import batting as vbat, bowling as vbowl, form as vform
 from cricket_analytics.viz import matchup as vmatch, partnerships as vpart, teams as vteams, venues as vven
-
-FIX = Path(__file__).parent / "fixtures" / "cricsheet"
 from tests.conftest import requires_real_db
 from tests.conftest import REAL_DB as REAL
+
+FIX = Path(__file__).parent / "fixtures" / "cricsheet"
 IPL = "1082591"
 VIZ = {"batting": vbat, "bowling": vbowl, "teams": vteams, "venues": vven, "matchup": vmatch,
        "partnerships": vpart, "form": vform}

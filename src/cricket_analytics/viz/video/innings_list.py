@@ -1,7 +1,7 @@
 """Innings list for video. One batting row = a card (runs, balls, opponent, how out); one bowling row = the figures.
 Several rows = bars in date order, labelled with the opposition's initials, the latest in amber."""
 
-from . import AMBER, INK, big_number_card, columns, message_card, num, scope_text, short_name, source_note
+from . import big_number_card, columns, message_card, num, scope_text, short_name, source_note
 
 
 def _abbr(team: str) -> str:

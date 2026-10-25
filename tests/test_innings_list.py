@@ -51,7 +51,8 @@ def test_bad_params(db):
 
 @requires_real_db
 def test_golden_real_db():
-    run = lambda **k: api.run("innings_list", **k).data
+    def run(**k):
+        return api.run("innings_list", **k).data
     d = run(player="Naman Dhir", competition="ipl", order="first", n=1).iloc[0]
     assert (str(d.date)[:10], d.runs, d.balls, d.opposition) == ("2024-03-24", 20, 10, "Gujarat Titans")
     k = run(player="V Kohli", competition="ipl", order="first", n=1).iloc[0]

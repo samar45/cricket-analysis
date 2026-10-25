@@ -3,7 +3,6 @@
 import warnings
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from cricket_analytics import api
@@ -13,11 +12,10 @@ from cricket_analytics.sql.filters import Filters
 from cricket_analytics.sql.state import LEVELS, ball_state, pressure_cond
 from cricket_analytics.viz import video
 from cricket_analytics.viz import pressure as pviz
+from tests.conftest import requires_real_db
 
 warnings.filterwarnings("ignore")
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-from tests.conftest import requires_real_db
-from tests.conftest import REAL_DB as REAL
 real = requires_real_db
 
 

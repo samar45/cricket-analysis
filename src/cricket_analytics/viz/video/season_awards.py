@@ -15,6 +15,5 @@ def video_figure(result, aspect="9:16", focus=None):
     metric = "runs" if bat else "wickets"
     names = short_names(list(d["player"]))
     title = f"{phase} {'batters' if bat else 'bowlers'}: top {len(d)}"
-    p = result.meta["params"]
     sub = f"{d['competition'].iloc[0].upper()} {d['season'].iloc[0]}" if "competition" in d else scope_text(result)
     return podium(names, list(d[metric]), title, aspect, sub, note, unit=metric)

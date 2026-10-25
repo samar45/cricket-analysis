@@ -1,7 +1,5 @@
 """ask.py: everything except the live model, using the real DB and canned Ollama replies (live test skips without Ollama)."""
 
-import os
-from pathlib import Path
 
 import pytest
 

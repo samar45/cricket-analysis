@@ -156,7 +156,6 @@ def classify(df: pd.DataFrame) -> pd.DataFrame:
     o["bat_innings"] = df.bat_innings
     o["hint_bat_position"] = df.bat_position.round(1)
     death = (df.faced_death / df.balls_faced.replace(0, np.nan)).fillna(0)
-    pp = (df.faced_pp / df.balls_faced.replace(0, np.nan)).fillna(0)
     o["bat_death_share"] = death.round(3)
     has = (df.bat_innings >= MIN_MATCHES) & df.bat_position.notna()
     p = df.bat_position

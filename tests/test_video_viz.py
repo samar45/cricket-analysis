@@ -10,12 +10,12 @@ import pytest
 from cricket_analytics import api, registry
 from cricket_analytics.ingest.cricsheet import load_to_db
 from cricket_analytics.viz import video
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
 
 warnings.filterwarnings("ignore")
 ROOT = Path(__file__).parent.parent
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-from tests.conftest import requires_real_db
-from tests.conftest import REAL_DB as REAL
 SIZES = {"9:16": (1080, 1920), "1:1": (1080, 1080)}
 IPL = dict(competition="ipl")
 MIN_FONT = 30   # px at 1080 wide: anything smaller is unreadable on a phone
@@ -37,7 +37,8 @@ FIXTURE_CASES = [
 
 def check(fig, aspect):
     assert (fig.layout.width, fig.layout.height) == SIZES[aspect]
-    eff = lambda k: getattr(fig.layout, k) or getattr(fig.layout.template.layout, k)   # figure value, else the reel template's
+    def eff(k):  # figure value, else the reel template's
+        return getattr(fig.layout, k) or getattr(fig.layout.template.layout, k)
     assert eff("paper_bgcolor") == "rgba(0,0,0,0)" and eff("plot_bgcolor") == "rgba(0,0,0,0)"
     assert eff("showlegend") is False                          # direct labels, never a legend that can overflow
     assert not any(getattr(t, "showlegend", False) for t in fig.data)

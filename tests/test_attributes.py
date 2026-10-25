@@ -12,6 +12,8 @@ from cricket_analytics.db import query
 from cricket_analytics.ingest.cricsheet import load_to_db
 from cricket_analytics.reference import ATTRIBUTES_CSV, OVERRIDES_CSV, build_attributes as ba
 from cricket_analytics.sql import attributes as at
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
 
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
 
@@ -197,8 +199,6 @@ def test_charts_build_for_usage(db):
 
 
 # ── real DB: the lead's measured numbers ────────────────────────────────────────────────────────
-from tests.conftest import requires_real_db
-from tests.conftest import REAL_DB as REAL
 real = requires_real_db
 POS = [f"pos_{i}" for i in range(1, 12)]
 

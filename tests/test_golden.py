@@ -5,10 +5,7 @@ by default (official records do): Kohli's IPL career is 9,336 (9,346 with the 10
 8,661 before the 2026 season, which matches the ESPNcricinfo figure.
 """
 
-import os
-from pathlib import Path
 
-import pytest
 
 from cricket_analytics import api, registry
 from cricket_analytics.db import query, use_db

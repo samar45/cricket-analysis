@@ -11,10 +11,10 @@ import pytest
 
 from cricket_analytics import api, registry
 from cricket_analytics.ingest.cricsheet import load_to_db
-
-FIX = Path(__file__).parent / "fixtures" / "cricsheet"
 from tests.conftest import requires_real_db
 from tests.conftest import REAL_DB as REAL
+
+FIX = Path(__file__).parent / "fixtures" / "cricsheet"
 IDS = ["impact", "true_performance", "season_awards", "compare", "death_overs", "pace_vs_spin"]
 NOT_BOWLER = ["run out", "retired hurt", "retired out", "retired not out", "obstructing the field", "hit the ball twice"]
 

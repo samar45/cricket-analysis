@@ -30,7 +30,7 @@ def figure(result):
         metrics = METRICS[ent]
         fig = make_subplots(rows=len(metrics), cols=1, vertical_spacing=0.2, subplot_titles=[t for _, t in metrics])
         for i, (col, _) in enumerate(metrics, 1):
-            fig.add_trace(go.Bar(x=d["location"], y=d[col], marker_color=[LOC_COLOUR[l] for l in d["location"]],
+            fig.add_trace(go.Bar(x=d["location"], y=d[col], marker_color=[LOC_COLOUR[loc] for loc in d["location"]],
                                  text=[f"{v}  ({n} matches)" for v, n in zip(d[col], d["matches"])], textposition="outside",
                                  cliponaxis=False, showlegend=False), row=i, col=1)
         return style(fig, f"{names[0]}: home vs away vs neutral", result, height=330 * len(metrics) + 120)

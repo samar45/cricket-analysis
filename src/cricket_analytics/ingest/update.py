@@ -144,7 +144,9 @@ def _integrity(db: Path) -> dict:
     """Whole-DB sanity: duplicate keys, matches without balls, balls without a match."""
     con = duckdb.connect(str(db), read_only=True)
     try:
-        q = lambda s: con.execute(s).fetchone()[0]
+        def q(s):
+            return con.execute(s).fetchone()[0]
+
         dup_m = q("SELECT count(*) - count(DISTINCT match_id) FROM matches")
         dup_d = q("SELECT count(*) - count(DISTINCT (match_id, innings, ball_seq)) FROM deliveries")
         none = q("SELECT count(*) FROM matches m WHERE NOT EXISTS (SELECT 1 FROM deliveries d WHERE d.match_id = m.match_id)")

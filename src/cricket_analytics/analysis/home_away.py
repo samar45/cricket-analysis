@@ -50,7 +50,7 @@ def match_sides(f: Filters) -> pd.DataFrame:
         h_op = [is_home(t, c, r, s, se) for t, c, r, s, se in zip(m[b], m["country"], m["region"], m["site"], m["season"])]
         loc = ["home" if x else "away" if y else "neutral" for x, y in zip(h_me, h_op)]
         sides.append(pd.DataFrame({"match_id": m["match_id"], "team": m[a], "opp": m[b],
-                                   "location": [l if k else "unknown" for l, k in zip(loc, known)]}))
+                                   "location": [v if k else "unknown" for v, k in zip(loc, known)]}))
     return pd.concat(sides, ignore_index=True)
 
 
@@ -150,5 +150,5 @@ def home_away(f: Filters, role: str = "batting") -> pd.DataFrame:
     out = _run(sql, p, sides)
     # order: busiest team first, its rows home/away/neutral together
     out["_n"] = out.groupby("team")["matches"].transform("sum")
-    out["_o"] = out["location"].map({l: i for i, l in enumerate(LOCATIONS)}).fillna(9)
+    out["_o"] = out["location"].map({loc_name: i for i, loc_name in enumerate(LOCATIONS)}).fillna(9)
     return out.sort_values(["_n", "team", "_o"], ascending=[False, True, True]).drop(columns=["_n", "_o"]).reset_index(drop=True)

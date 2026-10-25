@@ -7,7 +7,6 @@ import pytest
 from tests.conftest import requires_real_db
 
 from cricket_analytics import api, registry
-from cricket_analytics.db import current_db_path
 
 EVALS = Path(__file__).parent.parent / "evals"
 spec = importlib.util.spec_from_file_location("run_nlq_eval", EVALS / "run_nlq_eval.py")
