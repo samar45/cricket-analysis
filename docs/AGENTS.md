@@ -27,3 +27,5 @@ Score out of 10: correct 4, complete 2, honest 2, constraints 1, efficient 1. Sc
 | 2026-10-25 | FE-3 | pressure | 10 | Exact state rebuild, honest bias caveat |
 | 2026-10-25 | FE-2 | home_away | 9 | 100% venue coverage; used a private db helper (flagged) |
 | 2026-10-25 | hand re-check | 197 hands | 9 | 24 fixes; stopped at search cap with a resume list |
+| 2026-10-25 | phase 4 | update + CI | 9 | Proved round trip on a copy; -1: CI untested on Linux |
+| 2026-10-25 | phase 5 | facts + chart + update CLI | 10 | Lead re-ran Bumrah facts: correct |

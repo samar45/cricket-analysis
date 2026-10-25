@@ -76,3 +76,9 @@
 - Reviewed list: 10% sample checked online (bowl_type 2.6% wrong, hands 11.7% wrong, all fixed); 48 IPL bowlers added by web search (IPL coverage 98.05%); 13 keepers flagged; 197 doubtful hands re-checked (24 fixed). 172 medium/low hands still unchecked (web-search cap) — resume list in docs/VERIFY_player_list.md.
 - 323 tests pass. Dashboard restarted.
 - Next: Phase 5 (`cricket facts`, `cricket chart`), Phase 4 (`cricket update` + CI), Phase 6 (NLQ).
+
+## 2026-10-25 Phases 4 and 5 done (73cdca2, latest)
+- `cricket update`: recently-added zips → new matches only → 5 checks on a temp copy → swap with backup. Round trip proven on a copy (61 matches); live DB already current. CI workflow written, untested (nothing pushed).
+- `cricket facts` (reel JSON with tokens) and `cricket chart` (reel PNG); handshake v2. Lead checked Bumrah facts (187 wkts, 7.34, 5/10) and the unknown-name path.
+- 338 tests pass. CLAUDE.md map refreshed.
+- Next: Phase 6 NLQ (Ollama), finish 172 hand checks, Edit Pipeline side (own session), push to GitHub (needs Samar's OK).

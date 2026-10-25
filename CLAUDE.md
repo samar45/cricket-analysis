@@ -92,12 +92,14 @@ If a task is bigger or riskier than the mode suggests, say so in one line and su
 
 | Path | Role |
 |---|---|
-| `src/cricket_analytics/` | One installed package (`pip install -e .`). `api.py` (`run`, `Result` with provenance, `choices`, `resolve_player`, `data_info`), `registry.py` (`@module`, `ParamSpec`, JSON schema), `competitions.py` (9 keys incl. `t20i_women`, URLs), `cli.py` (`cricket ingest/modules/run/schema/resolve/info`), `db.py` (cached read-only `query`, raises) |
+| `src/cricket_analytics/` | One installed package (`pip install -e .`). `api.py` (`run`, `Result` with provenance, `choices`, `resolve_player`, `data_info`), `registry.py` (`@module`, `ParamSpec`, JSON schema), `competitions.py` (9 keys incl. `t20i_women`, URLs), `cli.py` (`cricket ingest/update/modules/run/schema/resolve/info/facts/chart`), `db.py` (cached read-only `query`, raises) |
 | `src/cricket_analytics/sql/` | `fragments.py` (one definition per stat, phases per balls_per_over), `filters.py` (exact names, season-year mapping, super overs off by default), `innings.py`, `extra.py` |
-| `src/cricket_analytics/analysis/` | 13 modules, one file each, auto-discovered: batting, bowling, teams, venues, matchup, partnerships, form, impact, true_performance, season_awards, compare, death_overs, pace_vs_spin (experimental) |
+| `src/cricket_analytics/analysis/` | 18 modules, one file each, auto-discovered: batting, bowling, teams, venues, matchup, partnerships, form, impact, true_performance, season_awards, compare, death_overs, pace_vs_spin, player_profile, dismissal_profile, chase_vs_set, pressure, home_away |
+| `src/cricket_analytics/reference/` | `player_overrides.csv` (reviewed list: bowling type, hand, keeper; ~990 rows, partly web-verified), generated `player_attributes.csv`, `venue_country.csv`, `team_home.csv` |
+| `src/cricket_analytics/facts.py`, `export.py`, `ingest/update.py` | `cricket facts` (reel JSON + tokens), `cricket chart` (reel PNG), `cricket update` (new matches only, checks, safe swap). Contract: `docs/HANDSHAKE_video.md` |
 | `src/cricket_analytics/viz/` | `figure(result)` per module + shared dark template |
 | `dashboard/` | `app.py` + `ui.py` (~190 lines), generated from the registry. Preview: `cricket-dashboard` (port 8503) in `.claude/launch.json`. Restart after changing `src/` (no hot reload) |
-| `tests/` | 156 tests: loader fixture, core, modules, golden numbers, dashboard AppTest |
+| `tests/` | 338 tests: loader, core, modules, golden numbers, dashboard AppTest, video charts, facts, update |
 | `experiments/` | Hawk-Eye join trial (data local-only in gitignored `data/external/`), chart gallery script |
 | `data/` | `cricket_analytics.duckdb` (253 MB, gitignored, rebuilt locally), `_slim` (old LFS reference, never overwrite), `_prev_*` backups (gitignored) |
 
@@ -107,4 +109,4 @@ If a task is bigger or riskier than the mode suggests, say so in one line and su
 - Super-over innings (innings > 2) are excluded by default; 76 tie-break winners stored in `matches.winner` with `outcome_method`.
 - Caught-and-bowled has no fielder_1 (catcher = bowler). No line/length/shot/drop data from any free legal source (see `docs/EXPERIMENTS.md`).
 - Season labels are Cricsheet's ("2007/08" = IPL 2008); filters accept a 4-digit year and map it.
-- Pace/spin is guessed from over distribution (no bowling-style data), so that module is experimental.
+- Bowling type / hand / keeper come only from the reviewed list (IPL bowl-type coverage 98%); derived guesses are internal hints only (Samar's rule).
