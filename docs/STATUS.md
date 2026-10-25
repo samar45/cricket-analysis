@@ -82,3 +82,9 @@
 - `cricket facts` (reel JSON with tokens) and `cricket chart` (reel PNG); handshake v2. Lead checked Bumrah facts (187 wkts, 7.34, 5/10) and the unknown-name path.
 - 338 tests pass. CLAUDE.md map refreshed.
 - Next: Phase 6 NLQ (Ollama), finish 172 hand checks, Edit Pipeline side (own session), push to GitHub (needs Samar's OK).
+
+## 2026-10-25 Phase 6 (NLQ) first version done
+- `cricket ask "..."` + dashboard Ask page; local Ollama nemotron-3.5-bolt picks the module, Python resolves names (alias map), seasons/phase from the question text, numbers only from data.
+- Eval (50 questions, `evals/`): module 80%, params 85% per param / 64% all-correct, clarification recall 100% but 7 false clarifications, 7 s per question warm (37 s cold load).
+- Lead checked: "Buttler IPL 2022 runs" → 863 in 8 s. Branch pushed to GitHub (origin/overhaul); CI result not checked (gh not logged in).
+- Next options: drop invented competitions, venue resolver, try a smaller tools model (needs OK to pull), finish 172 hand checks.

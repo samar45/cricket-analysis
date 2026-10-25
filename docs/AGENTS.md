@@ -29,3 +29,5 @@ Score out of 10: correct 4, complete 2, honest 2, constraints 1, efficient 1. Sc
 | 2026-10-25 | hand re-check | 197 hands | 9 | 24 fixes; stopped at search cap with a resume list |
 | 2026-10-25 | phase 4 | update + CI | 9 | Proved round trip on a copy; -1: CI untested on Linux |
 | 2026-10-25 | phase 5 | facts + chart + update CLI | 10 | Lead re-ran Bumrah facts: correct |
+| 2026-10-25 | 6B eval | 50-question set + scorer | 9 | Found the text-tool-call parse bug that lifted accuracy; -1 thin on multi-venue questions |
+| 2026-10-25 | 6A ask | Ollama agent + Ask page | 9 | Lead asked one question: correct. 50% → 80% after fixes; -1 venue not resolved |
