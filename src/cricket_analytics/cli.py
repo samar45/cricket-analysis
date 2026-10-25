@@ -1,4 +1,4 @@
-"""Command line: `cricket modules | run | schema | resolve | setup | ingest`.
+"""Command line: `cricket modules | run | schema | resolve | facts | chart | update | setup | ingest`.
 
     cricket modules
     cricket run batting --player "V Kohli" --competition ipl --group_by season --json
@@ -173,6 +173,80 @@ def info_cmd():
     click.echo(f"{d['db_path']} (modified {d['db_modified']})")
     for c in d["competitions"]:
         click.echo(f"{c['competition']:<11} {c['matches']:>6} matches  {c['earliest']} .. {c['latest']}")
+
+
+@cli.command()
+@click.option("--player", required=True, help="Exact Cricsheet name, e.g. 'V Kohli' (find it with `cricket resolve`)")
+@click.option("--competition", default=None, help="Competition key; omit for all men's T20")
+@click.option("--last_n_years", type=int, default=None, help="Only the N most recent seasons")
+@click.option("--out", type=click.Path(dir_okay=False, path_type=Path), required=True, help="Write the facts JSON here")
+@click.option("--db", "db_path", type=click.Path(dir_okay=False, path_type=Path), default=None, help="DB file (default: the main DB)")
+def facts(player, competition, last_n_years, out, db_path):
+    """One JSON of headline facts for a reel: career, best season, phases, pace/spin, home/away, pressure, tokens."""
+    from . import facts as F
+    try:
+        data = F.build(player, competition, last_n_years, db_path=db_path)
+    except F.PlayerNotFound as e:
+        lines = [f"  {c['score']:.3f}  {c['name']}  {c['matches']} matches, last {c['last_match']}" for c in e.candidates]
+        raise click.ClickException(f"{e}. Closest names:\n" + ("\n".join(lines) or "  (none)"))
+    except ValueError as e:
+        raise click.ClickException(str(e))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    m = data["meta"]
+    click.echo(f"Wrote {out}: {len(data['facts'])} sections, {len(data['tokens'])} tokens, data through {m['data_through']}")
+    if m["competition_note"]:
+        click.echo(f"note: {m['competition_note']}")
+    for sk in m["skipped"]:
+        click.echo(f"skipped {sk['section']}: {sk['reason']}")
+
+
+@cli.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+@click.argument("module_id")
+@click.option("--aspect", type=click.Choice(["9:16", "1:1"]), default="9:16", show_default=True)
+@click.option("--focus", default=None, help="Sub-view of the chart (a metric, player or phase; see viz/video/<module>.py)")
+@click.option("--png", type=click.Path(dir_okay=False, path_type=Path), help="Write a PNG (1080 px wide)")
+@click.option("--html", type=click.Path(dir_okay=False, path_type=Path), help="Write a standalone interactive HTML")
+@click.option("--db", "db_path", type=click.Path(dir_okay=False, path_type=Path), default=None)
+@click.pass_context
+def chart(ctx, module_id, aspect, focus, png, html, db_path):
+    """Reel-ready chart: cricket chart batting --player "V Kohli" --competition ipl --aspect 9:16 --png card.png."""
+    from . import export
+    logging.getLogger().setLevel(logging.WARNING)   # kaleido logs every browser step at INFO
+    if not (png or html):
+        raise click.UsageError("Give --png and/or --html")
+    try:
+        _, r = export.render(module_id, aspect, focus, png, html, db_path=db_path,
+                             **_split_commas(module_id, _parse_extra(ctx.args)))
+    except ValueError as e:   # bad params, unknown module, empty result
+        raise click.ClickException(str(e))
+    except Exception as e:    # kaleido / browser problems
+        raise click.ClickException(f"Could not write the image ({type(e).__name__}: {e}). PNG needs kaleido and Edge/Chrome.")
+    for p in (png, html):
+        if p:
+            click.echo(f"Wrote {p} ({r.meta['row_count']} rows, data through {r.meta['data_through']})")
+
+
+@cli.command()
+@click.option("--days", type=click.Choice(["7", "30"]), default="30", show_default=True, help="Cricsheet recently-added window")
+@click.option("--db", "db_path", type=click.Path(dir_okay=False, path_type=Path), default=None, help="DB to update (default: the main DB)")
+@click.option("--dry-run", is_flag=True, help="Only classify and count; change nothing")
+@click.option("--no-download", "no_download", is_flag=True, help="Use zips already in today's updates folder")
+@click.option("--replace-changed", is_flag=True, help="Also reload matches whose numbers changed at Cricsheet")
+def update(days, db_path, dry_run, no_download, replace_changed):
+    """Add recently-added Cricsheet matches to the DB (old DB kept as _prev_<date>)."""
+    try:
+        from .ingest.update import run_update   # lazy: another module, imported only when used
+    except ImportError:
+        raise click.ClickException("ingest/update.py has no run_update yet.")
+    try:
+        report = run_update(db_path, days=int(days), include_female=True, dry_run=dry_run, download=not no_download,
+                            replace_changed=replace_changed)
+    except (RuntimeError, ValueError, FileNotFoundError) as e:
+        raise click.ClickException(str(e))
+    click.echo(json.dumps(report, indent=2, default=str))
+    if report.get("ok") is False:
+        raise click.ClickException("Checks failed; the DB was not swapped.")
 
 
 if __name__ == "__main__":

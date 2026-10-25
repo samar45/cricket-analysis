@@ -1,0 +1,4 @@
+- MILESTONE: facts.py + `cricket facts` written; Kohli IPL career.runs = 9,336 (token "9,336"), 9 sections, 114 tokens; Bumrah 7 sections (bowling keys). Unknown name -> exit 1 with resolve candidates.
+- MILESTONE: export.py + `cricket chart` written; PNGs via kaleido work (9:16 = 1080x1920, 1:1 = 1080x1080, transparent); empty result -> exit 1.
+- MILESTONE: `cricket update` wired to ingest.update.run_update (exists; not run: it downloads and writes the DB). HANDSHAKE_video.md v2 (3b = facts shape).
+- MILESTONE: tests/test_facts_export.py green.
