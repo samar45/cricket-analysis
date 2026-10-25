@@ -117,7 +117,52 @@ def explore():
             st.markdown(f"- {c}")
 
 
+def ask_page():
+    """Plain-English question -> local Ollama model picks a module -> the same table/chart as Explore."""
+    from cricket_analytics import ask as A
+    st.title("Ask your cricket data")
+    st.caption("A small local model (Ollama) only picks the module and fills its filters. Names are matched in Python and "
+               "every number comes from the data. Slow on first use while the model loads.")
+    if not A.ollama_up():
+        st.warning("Ollama is not running. Start it with `ollama serve`, then reload.")
+        return
+    q = st.text_input("Question", key="ask_q", placeholder="Kohli's IPL strike rate in 2024")
+    if st.button("Ask", type="primary") and q.strip():
+        with st.spinner("Thinking..."):
+            try:
+                st.session_state["ask_out"] = A.ask(q.strip())
+            except A.AskError as e:
+                st.session_state["ask_out"] = None
+                st.error(str(e))
+    out = st.session_state.get("ask_out")
+    if not out:
+        return
+    if out["tool_call"]:
+        st.markdown(f"**Module:** `{out['tool_call']['name']}`")
+        st.json(out["resolved_params"] or out["tool_call"]["arguments"], expanded=False)
+    for n in out["notes"]:
+        st.caption(n)
+    (st.warning if out["status"] != "ok" else st.success)(out["answer"])
+    for c in out["clarify"]:   # ambiguous name: let the user pick, then run without the model
+        pick = st.radio(f"Which {c['param']} did you mean by '{c['said']}'?", c["candidates"], key=f"ask_pick_{c['param']}")
+        if pick and st.button("Use this", key=f"ask_use_{c['param']}"):
+            st.session_state["ask_out"] = A.execute(out["question"], out["tool_call"], picks={c["param"]: pick},
+                                                    timings=out["timings"])
+            st.rerun()
+    if out["result"]:
+        import pandas as pd
+        from cricket_analytics.api import Result
+        r = Result(pd.DataFrame(out["result"]["rows"]), out["result"]["meta"])
+        chart_tab, table_tab = st.tabs(["Chart", "Table"])
+        with chart_tab:
+            fig = _figure(r.meta["module"], r)
+            st.plotly_chart(fig, width="stretch", theme=None) if fig is not None else st.caption("This module has no chart yet.")
+        with table_tab:
+            st.dataframe(r.data, hide_index=True, width="stretch")
+    st.caption(f"Seconds: {out['timings']}")
+
+
 with st.sidebar:
     st.header("🏏 Cricket analytics")
-    page = st.radio("Page", ["Overview", "Explore"], key="page", label_visibility="collapsed")
-{"Overview": overview, "Explore": explore}[page]()
+    page = st.radio("Page", ["Overview", "Explore", "Ask"], key="page", label_visibility="collapsed")
+{"Overview": overview, "Explore": explore, "Ask": guarded(ask_page)}[page]()

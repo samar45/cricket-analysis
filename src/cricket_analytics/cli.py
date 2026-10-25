@@ -1,4 +1,4 @@
-"""Command line: `cricket modules | run | schema | resolve | facts | chart | update | setup | ingest`.
+"""Command line: `cricket modules | run | schema | resolve | ask | facts | chart | update | setup | ingest`.
 
     cricket modules
     cricket run batting --player "V Kohli" --competition ipl --group_by season --json
@@ -247,6 +247,30 @@ def update(days, db_path, dry_run, no_download, replace_changed):
     click.echo(json.dumps(report, indent=2, default=str))
     if report.get("ok") is False:
         raise click.ClickException("Checks failed; the DB was not swapped.")
+
+
+@cli.command()
+@click.argument("question")
+@click.option("--model", default=None, help="Ollama model (default: nemotron-3.5-bolt:e4b-q4_K_M)")
+@click.option("--json", "as_json", is_flag=True, help="Print the full result as JSON")
+def ask(question, model, as_json):
+    """Ask in plain English (local Ollama model picks the module; numbers come from the data)."""
+    from . import ask as A
+    try:
+        out = A.ask(question, model or A.DEFAULT_MODEL)
+    except A.AskError as e:
+        raise click.ClickException(str(e))
+    if as_json:
+        click.echo(json.dumps(out, indent=2, default=str))
+        return
+    tc = out["tool_call"]
+    click.echo(f"Module: {tc['name'] if tc else '-'}  params: {out['resolved_params']}  ({out['timings']['total_s']} s)")
+    for n in out["notes"]:
+        click.echo(f"note: {n}")
+    click.echo(out["answer"])
+    if out["result"]:
+        import pandas as pd
+        click.echo(pd.DataFrame(out["result"]["rows"]).head(10).to_string(index=False))
 
 
 if __name__ == "__main__":
