@@ -197,8 +197,9 @@ def test_charts_build_for_usage(db):
 
 
 # ── real DB: the lead's measured numbers ────────────────────────────────────────────────────────
-REAL = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
-real = pytest.mark.skipif(not REAL.exists(), reason="real DB not built")
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
+real = requires_real_db
 POS = [f"pos_{i}" for i in range(1, 12)]
 
 

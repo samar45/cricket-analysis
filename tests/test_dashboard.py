@@ -13,8 +13,9 @@ from cricket_analytics import registry
 from cricket_analytics.viz import video
 
 APP = str(Path(__file__).parent.parent / "dashboard" / "app.py")
-REAL = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
-pytestmark = pytest.mark.skipif(not REAL.exists(), reason="real DB not built")
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
+pytestmark = requires_real_db
 
 IDS = [m.id for m in registry.all_modules()]
 PLAYERS = {"player": "V Kohli", "player2": "RG Sharma"}

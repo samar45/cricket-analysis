@@ -1,0 +1,17 @@
+[
+  {"name": "Kohli IPL career runs to 2025 (= ESPNcricinfo)", "module": "batting",
+   "params": {"player": "V Kohli", "competition": "ipl", "season_to": 2025}, "column": "total_runs", "expected": 8661},
+  {"name": "Buttler IPL 2022 runs", "module": "batting",
+   "params": {"player": "JC Buttler", "competition": "ipl", "season": 2022}, "column": "total_runs", "expected": 863},
+  {"name": "Bumrah IPL best figures to 2025", "module": "bowling",
+   "params": {"player": "JJ Bumrah", "competition": "ipl", "season_to": 2025}, "column": "best_figures", "expected": "5/10"},
+  {"name": "Top IPL stand to 2025", "module": "partnerships",
+   "params": {"competition": "ipl", "season_to": 2025, "group_by": "stand", "top": 1}, "column": "runs", "expected": 229},
+  {"name": "IPL 2025 matches", "sql": "SELECT count(*) FROM matches WHERE competition='ipl' AND season='2025'", "expected": 74},
+  {"name": "CSK IPL wins to 2025 (measured 2026-10-25)", "module": "teams",
+   "params": {"competition": "ipl", "team": "Chennai Super Kings", "season_to": 2025}, "column": "won", "expected": 142},
+  {"name": "Men's T20I matches to 2026-10-14 (at least)", "op": "ge", "expected": 3627,
+   "sql": "SELECT count(*) FROM matches WHERE competition='t20i' AND gender='male' AND date <= DATE '2026-10-14'"},
+  {"name": "Women's T20I matches to 2026-10-14 (at least)", "op": "ge", "expected": 2183,
+   "sql": "SELECT count(*) FROM matches WHERE competition='t20i' AND gender='female' AND date <= DATE '2026-10-14'"}
+]

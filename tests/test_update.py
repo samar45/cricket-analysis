@@ -37,7 +37,7 @@ def env(tmp_path):
     with zipfile.ZipFile(z, "w") as zf:
         for n, t in files.items():
             zf.writestr(n, t)
-    kw = dict(db_path=db, download=False, zip_paths=[z], raw_root=tmp_path / "raw", updates_root=tmp_path / "upd")
+    kw = dict(db_path=db, download=False, zip_paths=[z], raw_root=tmp_path / "raw", updates_root=tmp_path / "upd", golden=[])
     return db, tmp_path, kw
 
 

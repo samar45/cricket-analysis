@@ -6,6 +6,7 @@ Run: .venv\\Scripts\\streamlit.exe run dashboard/app.py
 
 import importlib
 
+import health
 import streamlit as st
 import ui
 
@@ -164,5 +165,6 @@ def ask_page():
 
 with st.sidebar:
     st.header("🏏 Cricket analytics")
-    page = st.radio("Page", ["Overview", "Explore", "Ask"], key="page", label_visibility="collapsed")
-{"Overview": overview, "Explore": explore, "Ask": guarded(ask_page)}[page]()
+    page = st.radio("Page", ["Overview", "Explore", "Ask", "Data health"], key="page", label_visibility="collapsed")
+{"Overview": overview, "Explore": explore, "Ask": guarded(ask_page),
+ "Data health": guarded(health.page)}[page]()

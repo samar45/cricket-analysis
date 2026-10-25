@@ -13,7 +13,8 @@ from cricket_analytics import api, registry
 from cricket_analytics.ingest.cricsheet import load_to_db
 
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-REAL = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
 IDS = ["impact", "true_performance", "season_awards", "compare", "death_overs", "pace_vs_spin"]
 NOT_BOWLER = ["run out", "retired hurt", "retired out", "retired not out", "obstructing the field", "hit the ball twice"]
 
@@ -214,7 +215,7 @@ def test_pace_vs_spin_bowler_types(db):
 
 # ── real DB ───────────────────────────────────────────────────────────────────
 
-real = pytest.mark.skipif(not REAL.exists(), reason="real DB not built")
+real = requires_real_db
 
 
 @real

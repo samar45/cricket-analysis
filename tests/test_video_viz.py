@@ -14,7 +14,8 @@ from cricket_analytics.viz import video
 warnings.filterwarnings("ignore")
 ROOT = Path(__file__).parent.parent
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-REAL = ROOT / "data" / "cricket_analytics.duckdb"
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
 SIZES = {"9:16": (1080, 1920), "1:1": (1080, 1080)}
 IPL = dict(competition="ipl")
 MIN_FONT = 30   # px at 1080 wide: anything smaller is unreadable on a phone
@@ -93,7 +94,7 @@ def test_fixture_bowling_donut_counts_wickets(fixture_db):
 
 
 # ── real DB, the same demo inputs as the gallery ────────────────────────────────────────────────────────────
-real = pytest.mark.skipif(not REAL.exists(), reason="real DB not built")
+real = requires_real_db
 
 
 def _real_cases():

@@ -12,8 +12,9 @@ from cricket_analytics.cli import _parse_extra, _split_commas, cli
 from cricket_analytics.db import init_schema, query, use_db
 from cricket_analytics.sql.filters import Filters
 
-REAL = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
-needs_real = pytest.mark.skipif(not REAL.exists(), reason="real DB not built")
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
+needs_real = requires_real_db
 
 
 # -- SQL binding ---------------------------------------------------------------

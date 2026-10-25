@@ -14,6 +14,7 @@ import re
 import pandas as pd
 
 from . import api
+from .db import use_db
 
 FACTS_VERSION = 1
 MIN_BALLS = 300     # a side of the game (bat or bowl) joins the career card at this many balls
@@ -98,7 +99,9 @@ def build(player: str, competition: str | None = None, last_n_years: int | None 
     bat_row = bat.data.iloc[0] if len(bat.data) else None
     bowl_row = bowl.data.iloc[0] if len(bowl.data) else None
     if bat_row is None and bowl_row is None:
-        raise PlayerNotFound(player, api.resolve_player(player, competition, 5))
+        with use_db(db_path):  # resolve against the same DB the stats came from
+            cands = api.resolve_player(player, competition, 5)
+        raise PlayerNotFound(player, cands)
     bat_balls = int(bat_row["balls"]) if bat_row is not None else 0
     bowl_balls = int(bowl_row["balls"]) if bowl_row is not None else 0
     role = "bowling" if bowl_balls > bat_balls else "batting"

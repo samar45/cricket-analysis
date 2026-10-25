@@ -18,7 +18,8 @@ from cricket_analytics.viz import batting as vbat, bowling as vbowl, form as vfo
 from cricket_analytics.viz import matchup as vmatch, partnerships as vpart, teams as vteams, venues as vven
 
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-REAL = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
 IPL = "1082591"
 VIZ = {"batting": vbat, "bowling": vbowl, "teams": vteams, "venues": vven, "matchup": vmatch,
        "partnerships": vpart, "form": vform}
@@ -276,7 +277,7 @@ def test_super_over_switch_in_sql():
 
 # ═════════════ golden numbers on the real DB ═════════════
 
-real = pytest.mark.skipif(not REAL.exists(), reason="real DB not built")
+real = requires_real_db
 
 
 @real

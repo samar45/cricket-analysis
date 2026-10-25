@@ -8,8 +8,9 @@ import pytest
 from cricket_analytics import ask as A
 from cricket_analytics import registry
 
-DB = Path(os.environ.get("CRICKET_TEST_DB") or Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb")
-needs_db = pytest.mark.skipif(not DB.exists(), reason="real DB not built")
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as DB
+needs_db = requires_real_db
 
 
 def canned(name, **args):

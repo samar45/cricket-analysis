@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import requires_real_db
+
 from cricket_analytics import api, registry
 from cricket_analytics.db import current_db_path
 
@@ -44,7 +46,7 @@ def test_expected_modules_and_params_validate():
         assert req <= set(c["expected_params"]), f"{c['id']} missing required {req}"
 
 
-@pytest.mark.skipif(not current_db_path().exists(), reason="database not built")
+@requires_real_db
 def test_golden_numbers_reproduce():
     n = 0
     for c in CASES:

@@ -11,9 +11,10 @@ from cricket_analytics.ingest.cricsheet import load_to_db
 from cricket_analytics.viz import chase_vs_set as vchase, dismissal_profile as vdis, video
 
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-REAL = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
 IPL = "1082591"
-real = pytest.mark.skipif(not REAL.exists(), reason="real DB not built")
+real = requires_real_db
 
 
 @pytest.fixture(scope="module")

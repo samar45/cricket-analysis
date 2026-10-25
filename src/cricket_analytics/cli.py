@@ -1,4 +1,4 @@
-"""Command line: `cricket modules | run | schema | resolve | ask | facts | chart | update | setup | ingest`.
+"""Command line: `cricket modules | run | schema | resolve | ask | facts | chart | update | health | runs | setup | ingest`.
 
     cricket modules
     cricket run batting --player "V Kohli" --competition ipl --group_by season --json
@@ -244,9 +244,35 @@ def update(days, db_path, dry_run, no_download, replace_changed):
                             replace_changed=replace_changed)
     except (RuntimeError, ValueError, FileNotFoundError) as e:
         raise click.ClickException(str(e))
-    click.echo(json.dumps(report, indent=2, default=str))
+    click.echo(f"Run log: {report['log_path']}")   # the summary was printed by run_update
     if report.get("ok") is False:
-        raise click.ClickException("Checks failed; the DB was not swapped.")
+        raise click.ClickException("Checks failed; the DB was not swapped. See the log above.")
+
+
+@cli.command()
+@click.option("--db", "db_path", type=click.Path(dir_okay=False, path_type=Path), default=None, help="DB to audit (default: the main DB)")
+def health(db_path):
+    """Read-only audit of the DB: counts, integrity, golden numbers. Logged to data/runs/."""
+    from .ingest.update import run_health
+    try:
+        r = run_health(db_path)
+    except Exception as e:
+        raise click.ClickException(str(e))
+    if not r["ok"]:
+        raise click.ClickException(f"Health check failed: {r['failed']}")
+
+
+@cli.command()
+@click.option("--last", default=10, show_default=True, help="How many runs to list")
+@click.option("--db", "db_path", type=click.Path(dir_okay=False, path_type=Path), default=None, help="DB whose data/runs folder to read")
+def runs(last, db_path):
+    """List logged update / health runs, newest first."""
+    from .ingest.cricsheet import default_db_path
+    from .runlog import list_runs
+    for r in list_runs(db_path or default_db_path(), last):
+        bad = sum(c["status"] == "fail" for c in r["checks"]) + sum(g["status"] == "fail" for g in r["golden"])
+        click.echo(f"{r['run_id']}  {r['kind']:8}  {'ok  ' if r['ok'] else 'FAIL'}  swapped={r['swapped']}  "
+                   f"failed checks={bad}  {r['error'] or ''}")
 
 
 @cli.command()

@@ -13,8 +13,9 @@ from cricket_analytics.sql.filters import Filters
 from cricket_analytics.viz import home_away as vha, video
 
 FIX = Path(__file__).parent / "fixtures" / "cricsheet"
-REAL = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
-real = pytest.mark.skipif(not REAL.exists(), reason="real DB not built")
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as REAL
+real = requires_real_db
 
 
 @pytest.fixture(scope="module")

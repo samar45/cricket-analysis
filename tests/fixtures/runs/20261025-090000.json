@@ -1,0 +1,131 @@
+{
+ "schema": 1,
+ "error": "check failed: old_data_unchanged",
+ "db_path": "data/cricket_analytics.duckdb",
+ "args": {},
+ "skipped_events": [],
+ "changed_matches": [
+  {
+   "match_id": "1234567",
+   "reason": "wickets 14 -> 17"
+  }
+ ],
+ "swapped": false,
+ "backup": null,
+ "new_by_competition": {
+  "t20i": {
+   "matches": 1,
+   "earliest": "2026-10-14",
+   "latest": "2026-10-14"
+  }
+ },
+ "golden": [
+  {
+   "name": "Kohli IPL runs to 2025",
+   "expected": 8661,
+   "actual": 8661,
+   "status": "pass"
+  },
+  {
+   "name": "Buttler IPL 2022 runs",
+   "expected": 863,
+   "actual": 863,
+   "status": "pass"
+  }
+ ],
+ "run_id": "20261025-090000",
+ "kind": "update",
+ "started": "2026-10-25T09:00:00",
+ "finished": "2026-10-25T09:01:05",
+ "ok": false,
+ "steps": [
+  {
+   "name": "download",
+   "status": "pass",
+   "seconds": 7.9,
+   "details": {}
+  },
+  {
+   "name": "load",
+   "status": "pass",
+   "seconds": 40.2,
+   "details": {}
+  },
+  {
+   "name": "checks",
+   "status": "fail",
+   "seconds": 13.1,
+   "details": {}
+  },
+  {
+   "name": "swap",
+   "status": "skip",
+   "seconds": 0,
+   "details": {}
+  }
+ ],
+ "checks": [
+  {
+   "name": "all_loaded",
+   "status": "pass",
+   "expected": "1",
+   "actual": "1",
+   "message": ""
+  },
+  {
+   "name": "old_data_unchanged",
+   "status": "fail",
+   "expected": "identical",
+   "actual": "ipl wickets differ by 3",
+   "message": "old matches changed"
+  }
+ ],
+ "freshness_before": {
+  "ipl": {
+   "matches": 1190,
+   "latest": "2026-05-31"
+  },
+  "t20i": {
+   "matches": 3300,
+   "latest": "2026-10-14"
+  }
+ },
+ "freshness_after": {
+  "ipl": {
+   "matches": 1190,
+   "latest": "2026-05-31"
+  },
+  "t20i": {
+   "matches": 3300,
+   "latest": "2026-10-14"
+  }
+ },
+ "fingerprint_before": {
+  "ipl": {
+   "matches": 1190,
+   "balls": 280000,
+   "runs": 370000,
+   "wickets": 13000
+  },
+  "t20i": {
+   "matches": 3300,
+   "balls": 700000,
+   "runs": 900000,
+   "wickets": 36000
+  }
+ },
+ "fingerprint_after": {
+  "ipl": {
+   "matches": 1190,
+   "balls": 280000,
+   "runs": 370000,
+   "wickets": 13003
+  },
+  "t20i": {
+   "matches": 3300,
+   "balls": 700000,
+   "runs": 900000,
+   "wickets": 36000
+  }
+ }
+}

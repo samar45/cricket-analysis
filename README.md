@@ -45,6 +45,11 @@ From Python: `from cricket_analytics.api import run; run("batting", player="V Ko
 Overview shows what is in the database and the leaders for a competition and season. Explore lists every module,
 builds its filter widgets from the module's parameters, and offers CSV and JSON downloads.
 
+## Running it by hand
+
+`docs/RUNBOOK.md` is the step-by-step guide for a fresh laptop: install, first build, daily `cricket update`,
+restoring a backup and troubleshooting. The dashboard's **Data health** page shows every update and health-check run.
+
 ## Tests
 
 ```

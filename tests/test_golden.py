@@ -15,8 +15,9 @@ from cricket_analytics.db import query, use_db
 from cricket_analytics.sql.filters import Filters
 
 # CRICKET_TEST_DB=path points these tests at another DB file (e.g. a freshly built one)
-DB = Path(os.environ.get("CRICKET_TEST_DB") or Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb")
-pytestmark = pytest.mark.skipif(not DB.exists(), reason="real DB not built")
+from tests.conftest import requires_real_db
+from tests.conftest import REAL_DB as DB
+pytestmark = requires_real_db
 
 
 def test_kohli_ipl_career_runs():
