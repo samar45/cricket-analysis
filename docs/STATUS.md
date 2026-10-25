@@ -105,3 +105,9 @@
 - `git filter-branch --msg-filter` removed "Co-Authored-By: Claude" and "Generated with Claude Code" lines from all 59 commits on `overhaul` (origin/main..overhaul). Files identical to before (empty diff). Backup branch: `backup/overhaul-before-trailer-strip`.
 - Samar must force-push once: `git push --force-with-lease origin overhaul`.
 - Note: 12 older commits already on `main` (from ~7 months ago) also carry the trailer, so GitHub may still list "claude" until those are rewritten too (needs a force-push of main — Samar's call).
+
+## 2026-10-25 Overhaul merged into main (3983247, squash, no Claude attribution)
+- Samar squash-merged PR #1 on GitHub; CI green. Local main reset to origin/main (old unpushed local commit kept as backup/old-local-main).
+- Full suite on merged main: 388 passed (one earlier run had 1 failure that didn't repeat — likely a timing flake in a live test; watch for it).
+- Dependabot opened 3 PRs (gitleaks-action 3.0.0, duckdb 1.5.6, pip-audit 2.10.1) — review before merging; duckdb change must be tested against the real DB.
+- New work happens on branch `dev`; Claude commits locally, Samar pushes.
