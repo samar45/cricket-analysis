@@ -11,18 +11,29 @@ through api.run, and the answer sentence is built from the result rows.
 import json
 import re
 import time
+from difflib import SequenceMatcher
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
 import requests
 
-from . import api, applog, competitions, registry
-from .db import use_db
+from . import api, applog, ask_rules, competitions, registry
+from .db import current_db_path, query, use_db
 
 OLLAMA_URL = "http://localhost:11434"
 DEFAULT_MODEL = "nemotron-3.5-bolt:e4b-q4_K_M"
-_KEEP_KINDS = {"player", "player2", "team", "opposition", "competition", "phase", "choice"}
-_KEEP_INTS = {"last_n_years", "season_from", "season_to", "top", "min_balls", "n"}
+_KEEP_KINDS = {"player", "player2", "team", "opposition", "competition", "phase", "choice", "venue"}
+_KEEP_INTS = {
+    "last_n_years",
+    "season_from",
+    "season_to",
+    "top",
+    "min_balls",
+    "min_matches",
+    "n",
+    "window",
+}
 _KEEP_FALLBACK_NAMES = {
     "season"
 }  # the one multi/season param, flattened to a plain string for the model
@@ -98,6 +109,8 @@ def tools() -> list[dict]:
                         if p.kind == "player"
                         else "second player (the bowler in a duel)"
                     )
+                elif p.kind == "venue":
+                    prop["description"] = "ground name as the user wrote it, e.g. Wankhede"
                 elif p.name == "season":
                     prop["description"] = "year, e.g. 2024"
                 props[p.name] = prop
@@ -181,32 +194,68 @@ def _tokens(s: str) -> list[str]:
     return re.findall(r"[a-z]+", s.lower())
 
 
+def _sim(a: str, b: str) -> float:
+    return SequenceMatcher(None, a, b).ratio()
+
+
+@lru_cache(maxsize=16)
+def _roster(db_key: tuple, competition: str | None) -> tuple:
+    """((name, matches played), ...) for everyone who batted or bowled; cached per DB file version."""
+    cond, p = "1=1", []
+    if competition:
+        c = competitions.get(competition)
+        cond, p = "m.competition = ? AND m.gender = ?", [c.competition, c.gender]
+    sql = (
+        "SELECT name, count(DISTINCT match_id) AS n FROM ("
+        f"SELECT d.match_id, d.batter AS name FROM deliveries d JOIN matches m USING (match_id) WHERE {cond} "
+        f"UNION ALL SELECT d.match_id, d.bowler FROM deliveries d JOIN matches m USING (match_id) WHERE {cond}"
+        ") GROUP BY name"
+    )
+    df = query(sql, p + p)
+    return tuple((r.name, int(r.n)) for r in df.itertuples())
+
+
+def _db_key() -> tuple:
+    path = current_db_path()
+    return str(path), path.stat().st_mtime
+
+
 def pick_player(name: str, competition: str | None) -> tuple[str | None, list[dict]]:
     """(exact data name, []) when sure; (None, candidates) when ambiguous or unknown.
 
-    Data names are initials + surname ('V Kohli'), so 'Virat Kohli' and 'kohli' both mean: same surname, matching
-    first initial. Several such players: take the busiest if he has 3x the matches of the next, else ask.
+    Data names are initials + surname ('V Kohli'). Rule: the typed surname is compared to every data surname
+    (spelling similarity, so 'kholi' and 'bumra' work) and, when a first name was typed, its initial must match.
+    Among spellings equally close, take the player with 3x the matches of the next; otherwise ask.
     """
-    alias = _PLAYER_ALIAS.get(name.strip().lower())
-    if alias and api.resolve_player(alias, competition, limit=1)[0]["score"] >= 0.99:
+    key = name.strip().lower()
+    roster = _roster(_db_key(), competition)
+    have = {n for n, _ in roster}
+    alias = _PLAYER_ALIAS.get(key)
+    if not alias and len(key) >= 5:  # a typo of an alias ('kholi', 'bumra')
+        close = [(_sim(key, k), v) for k, v in _PLAYER_ALIAS.items() if len(k) >= 5]
+        best = max(close, default=(0, None))
+        alias = best[1] if best[0] >= 0.8 else None
+    if alias in have:
         return alias, []
-    cands = api.resolve_player(name, competition, limit=5)
-    if cands and cands[0]["score"] >= 0.99:
-        return cands[0]["name"], []
+    exact = [n for n in have if n.lower() == key]
+    if exact:
+        return exact[0], []
     q = _tokens(name)
     if q:
-        pool = api.resolve_player(q[-1], competition, limit=15)
-        hits = [
-            c
-            for c in pool
-            if _tokens(c["name"])[-1:] == q[-1:]
-            and (len(q) == 1 or _tokens(c["name"])[0][0] == q[0][0])
-        ]
-        hits.sort(key=lambda c: -c["matches"])
-        if len(hits) == 1 or (len(hits) > 1 and hits[0]["matches"] >= 3 * hits[1]["matches"]):
-            return hits[0]["name"], []
-        if hits:
-            return None, hits
+        scored = []
+        for n, m in roster:
+            t = _tokens(n)
+            if not t or (len(q) > 1 and t[0][0] != q[0][0]):
+                continue
+            if (s := _sim(q[-1], t[-1])) >= 0.78:
+                scored.append((s, m, n))
+        if scored:
+            top = max(s for s, _, _ in scored)
+            pool = sorted((x for x in scored if x[0] >= top - 0.06), key=lambda x: -x[1])
+            if len(pool) == 1 or pool[0][1] >= 3 * pool[1][1]:
+                return pool[0][2], []
+            return None, [{"name": n, "matches": m} for _, m, n in pool[:5]]
+    cands = api.resolve_player(name, competition, limit=5)
     if len(cands) == 1 or (
         cands and cands[0]["score"] >= 0.85 and cands[0]["score"] - cands[1]["score"] >= 0.05
     ):
@@ -224,6 +273,73 @@ def pick_team(name: str, competition: str | None) -> tuple[str | None, list[dict
     ):
         return cands[0]["name"], []
     return None, cands
+
+
+_GENERIC = {"stadium", "ground", "cricket", "international", "the", "at", "in", "oval", "of", "and"}
+_VENUE_ALIAS = {  # old / common names -> a word in the data name
+    "kotla": "jaitley",
+    "motera": "narendra",
+    "chepauk": "chidambaram",
+    "bangalore": "chinnaswamy",
+    "bengaluru": "chinnaswamy",
+    "mohali": "bindra",
+}
+
+
+def _venue_groups(competition: str | None) -> dict[str, list[str]]:
+    """Venue names grouped by the part before the comma ('X' and 'X, City' are the same ground)."""
+    g: dict[str, list[str]] = {}
+    for v in api.choices("venue", competition):
+        g.setdefault(v.split(",")[0].strip().lower(), []).append(v)
+    return g
+
+
+def pick_venue(name: str, competition: str | None) -> tuple[str | list[str] | None, list[dict]]:
+    """Data venue name(s) for a loose ground name ('wankhede', 'chinnaswamy'): every spelling of the one ground.
+
+    All typed words (minus 'stadium' etc.) must match a word of the data name, allowing typos. Several different
+    grounds -> the one with 3x the matches, else ask.
+    """
+    q = [_VENUE_ALIAS.get(t, t) for t in _tokens(name) if t not in _GENERIC]
+    if not q:
+        return None, []
+    hits = {
+        k: vs
+        for k, vs in _venue_groups(competition).items()
+        if all(any(_sim(w, t) >= 0.85 for t in _tokens(k)) for w in q)
+    }
+    if not hits:
+        return None, []
+    if len(hits) > 1:
+        c = ",".join("?" * len(hits))
+        df = query(
+            f"SELECT venue, count(*) AS n FROM matches WHERE lower(split_part(venue, ',', 1)) IN ({c}) GROUP BY venue",
+            list(hits),
+        )
+        n = {k: 0 for k in hits}
+        for r in df.itertuples():
+            n[r.venue.split(",")[0].strip().lower()] += int(r.n)
+        order = sorted(hits, key=lambda k: -n[k])
+        if n[order[0]] < 3 * n[order[1]]:
+            return None, [{"name": hits[k][0], "matches": n[k]} for k in order[:4]]
+        hits = {order[0]: hits[order[0]]}
+    vs = next(iter(hits.values()))
+    return (vs[0] if len(vs) == 1 else vs), []
+
+
+def venue_in_question(question: str, competition: str | None) -> str | None:
+    """A ground named in the question that the model left out: a word (6+ letters) found in only one or two venue
+    names and not part of any team name ('Wankhede', 'Chinnaswamy'), or a known old name ('Chepauk')."""
+    teams = {t for x in api.choices("team", competition) for t in _tokens(x)}
+    qt = _tokens(question)
+    words = {w for w in qt if len(w) >= 6 and w not in teams and w not in _GENERIC}
+    words |= {w for w in qt if w in _VENUE_ALIAS}
+    groups = _venue_groups(competition)
+    for w in sorted(words):
+        t = _VENUE_ALIAS.get(w, w)
+        if sum(t in _tokens(k) for k in groups) in (1, 2):
+            return t
+    return None
 
 
 def _season(v):
@@ -274,6 +390,11 @@ def question_filters(q: str) -> dict:
         f["order"] = "best"
         if re.search(r"figures|bowling", q):
             f["role"] = "bowling"
+    if m := re.search(
+        r"\b(\d+)\s*\+\s*(?:matches|games)|\b(?:at least|min(?:imum)?)\s+(\d+)\s+(?:matches|games)",
+        q,
+    ):
+        f["min_matches"] = int(m[1] or m[2])
     for word, ph in (
         ("powerplay", "powerplay"),
         ("power play", "powerplay"),
@@ -285,10 +406,37 @@ def question_filters(q: str) -> dict:
     return f
 
 
+def _only_competition(team: str) -> str | None:
+    """The competition key when this team appears in exactly one (competition, gender) of the data, else None."""
+    df = query(
+        "SELECT DISTINCT competition, gender FROM matches WHERE team1 = ? OR team2 = ?",
+        [team, team],
+    )
+    keys = {(c.competition, c.gender): k for k, c in competitions.COMPETITIONS.items()}
+    found = {keys.get((r.competition, r.gender)) for r in df.itertuples()}
+    return found.pop() if len(found) == 1 and None not in found else None
+
+
+_SEASON_KEYS = ("season", "season_from", "season_to", "last_n_years")
+_YEAR_LIKE = {"season": (1990, 2100), "season_from": (1990, 2100), "season_to": (1990, 2100)}
+
+
+def _sane_season(k: str, v) -> bool:
+    if k == "last_n_years":
+        return str(v).isdigit() and 1 <= int(v) <= 30
+    vals = v if isinstance(v, list) else [v]
+    lo, hi = _YEAR_LIKE[k]
+    return all(str(x)[:4].isdigit() and lo <= int(str(x)[:4]) <= hi for x in vals)
+
+
 def resolve(
     tool: dict, picks: dict | None = None, question: str = ""
 ) -> tuple[dict, list[dict], list[str]]:
-    """Model arguments -> (params for api.run, clarifications, notes). `picks` = {param: exact name} chosen by the user."""
+    """Model arguments -> (params for api.run, clarifications, notes). `picks` = {param: exact name} chosen by the user.
+
+    Rules applied here, not by the model: the competition comes from the words (IPL, T20I, women's...), seasons from
+    the question's own numbers, choices must be in the allowed list.
+    """
     mod = registry.get(tool["name"])
     allowed = {p.name for p in mod.params}
     a = {k: v for k, v in tool["arguments"].items() if v not in (None, "", [], "null", "None")}
@@ -300,6 +448,19 @@ def resolve(
         notes.append(f"ignored unknown competition {a.pop('competition')!r}")
     if "phase" in a and a["phase"] not in ("powerplay", "middle", "death"):
         notes.append(f"ignored unknown phase {a.pop('phase')!r}")
+    for (
+        p
+    ) in mod.params:  # a choice outside its list ('batter' for a batting/bowling choice) is dropped
+        if p.choices and p.name in a and str(a[p.name]) not in p.choices:
+            notes.append(f"ignored {p.name}={a.pop(p.name)!r} (not one of {', '.join(p.choices)})")
+    if question and "competition" in allowed:
+        named = ask_rules.competition_in(question)
+        if named:
+            a["competition"] = named
+        elif "competition" in a:
+            notes.append(
+                f"dropped competition {a.pop('competition')!r}: the question does not name one"
+            )
     if "season" in a:
         s = _season(a.pop("season"))
         if s is None:
@@ -309,14 +470,32 @@ def resolve(
     qf = question_filters(question)
     if "order" in qf and "last_n_years" not in qf:
         a.pop("last_n_years", None)  # the model confuses "last 5 matches" with last 5 seasons
-    if qf:
-        if {"season", "season_from", "season_to", "last_n_years"} & qf.keys():
-            for k in ("season", "season_from", "season_to", "last_n_years"):
-                a.pop(k, None)
-        a.update({k: v for k, v in qf.items() if k in allowed})
+    if {"season", "season_from", "season_to", "last_n_years"} & qf.keys():
+        for k in _SEASON_KEYS:
+            a.pop(k, None)
+    elif question:  # no season words: keep the model's only if it is a believable year and the question hints at one
+        hint = re.search(
+            r"season|year|since|recent|latest|current|this|last|edition", question.lower()
+        )
+        for k in _SEASON_KEYS:
+            if k in a and not (hint and _sane_season(k, a[k])):
+                notes.append(f"dropped {k}={a.pop(k)!r}: the question gives no such season")
+    a.update({k: v for k, v in qf.items() if k in allowed})
+    if "window" in allowed and "n" in qf:
+        a["window"] = qf["n"]
+    if mod.id == "pace_vs_spin" and "mode" not in a and "player" not in a:
+        if re.search(r"\bteams?\b|\bsides?\b", question.lower()):
+            a["mode"] = "team_vs_type"
+    if mod.id == "dismissal_profile" and (g := ask_rules.dismissal_group(question)):
+        a["group_by"] = g
+    if mod.id == "partnerships":
+        a["group_by"] = ask_rules.partnership_group(question)
+    if "venue" in allowed and "venue" not in a and question:
+        if v := venue_in_question(question, a.get("competition")):
+            a["venue"] = v
     asks, picks = [], dict(picks or {})
     comp = a.get("competition")
-    for key in ("player", "player2", "team", "opposition"):
+    for key in ("team", "opposition", "venue", "player", "player2"):
         if key not in a:
             continue
         if key in picks:
@@ -325,17 +504,68 @@ def resolve(
         vals = a[key] if isinstance(a[key], list) else [a[key]]
         done = []
         for v in vals:
-            exact, cands = (pick_team if key in ("team", "opposition") else pick_player)(
-                str(v), comp
+            picker = {"team": pick_team, "opposition": pick_team, "venue": pick_venue}.get(
+                key, pick_player
             )
+            exact, cands = picker(str(v), comp)
             if exact:
-                done.append(exact)
+                done.extend(exact if isinstance(exact, list) else [exact])
             else:
                 asks.append(
                     {"param": key, "said": str(v), "candidates": [c["name"] for c in cands]}
                 )
-        a[key] = done if isinstance(a[key], list) else (done[0] if done else None)
+        a[key] = done if isinstance(a[key], list) or len(done) > 1 else (done[0] if done else None)
+        if key == "team" and done and not comp and "competition" in allowed:
+            if only := _only_competition(done[0]):  # e.g. Chennai Super Kings plays only in the IPL
+                a["competition"] = comp = only
+                notes.append(f"competition set to {only}: {done[0]} only plays there")
     return {k: v for k, v in a.items() if v is not None}, asks, notes
+
+
+def _team_pair(question: str) -> tuple[str, str] | None:
+    """('MI', 'CSK') for 'MI vs CSK head to head': both sides of a vs/against are teams (3, 2 or 1 words each)."""
+    m = re.search(r"\b(?:vs\.?|versus|against|v)\b", question.lower())
+    if not m:
+        return None
+    left, right = _tokens(question[: m.start()]), _tokens(question[m.end() :])
+
+    def side(words):
+        for n in (3, 2, 1):
+            if len(words) >= n:
+                w = " ".join(words[:n] if words is right else words[-n:])
+                if pick_team(w, None)[0]:
+                    return w
+        return None
+
+    a, b = side(left), side(right)
+    return (a, b) if a and b and a != b else None
+
+
+def apply_rules(question: str, tool: dict | None, db_path: Path | None = None) -> dict | None:
+    """Python overrides of the model's module pick. Returns the (possibly new) tool call, with `overrides` listing why."""
+    cur = tool["name"] if tool else None
+    args = dict(tool["arguments"]) if tool else {}
+    with use_db(db_path):
+        pair = _team_pair(question)
+        if pair and not re.search(r"\bcompare\b|\bhome\b|\baway\b", question.lower()):
+            mod, why = "teams", f"two teams on either side of vs: {pair[0]!r}, {pair[1]!r}"
+            args = {k: v for k, v in args.items() if k not in ("player", "player2")}
+            args["team"], args["opposition"] = pair
+        else:
+            mod, why = ask_rules.route(question, cur)
+            q = question.lower()
+            if (
+                not mod
+                and cur not in ("matchup", "compare", None)
+                and "player" in args
+                and "player2" in args
+                and re.search(r"\bvs\.?\b|\bversus\b|\bagainst\b", q)
+                and not re.search(r"compare|better|\bor\b", q)
+            ):
+                mod, why = "matchup", "a player vs a second player means matchup"
+    if not mod or mod == cur:
+        return tool
+    return {"name": mod, "arguments": args, "overrides": [(tool or {}).get("name"), mod, why]}
 
 
 # ---------------------------------------------------------------- answer text
@@ -417,7 +647,10 @@ def execute(
     t = time.perf_counter()
     try:
         with use_db(db_path):
-            params, asks, out["notes"] = resolve(tool, picks, question)
+            params, asks, notes = resolve(tool, picks, question)
+        if ov := tool.get("overrides"):
+            notes.insert(0, f"routing: {ov[0] or 'no module'} -> {ov[1]} ({ov[2]})")
+        out["notes"] = notes
         out["resolved_params"] = params
         if asks:
             out["clarify"], out["status"] = asks, "clarify"
@@ -456,10 +689,29 @@ def execute(
 def ask(question: str, model: str = DEFAULT_MODEL, db_path: Path | None = None) -> dict:
     """question -> {id, question, tool_call, resolved_params, clarify, notes, result{meta, rows}, answer, status, timings}.
 
-    status: ok | clarify (a name was ambiguous: see `clarify`) | no_tool (model found no module) | error.
+    status: ok | clarify (a name was ambiguous: see `clarify`) | no_tool (model found no module) | out_of_scope
+    (not T20 ball-by-ball data: Test/ODI, line and length, weather...; the model is not even called) | error.
     Raises AskError when Ollama cannot be reached. Every call is appended to logs/ask.jsonl (see applog).
     """
     ask_id, t = applog.new_id("A"), time.perf_counter()
+    if why := ask_rules.out_of_scope(question):
+        out = {
+            "id": ask_id,
+            "question": question,
+            "tool_call": None,
+            "resolved_params": None,
+            "clarify": [],
+            "notes": [],
+            "result": None,
+            "status": "out_of_scope",
+            "timings": {"total_s": round(time.perf_counter() - t, 2)},
+            "answer": f"This app has T20 ball-by-ball data only; it can't answer {why}.",
+        }
+        applog.log_ask(
+            {k: out[k] for k in ("id", "question", "status", "answer", "timings")}
+            | {"model": model}
+        )
+        return out
     try:
         resp = _chat(question, model)
     except AskError as e:
@@ -478,6 +730,9 @@ def ask(question: str, model: str = DEFAULT_MODEL, db_path: Path | None = None) 
         raise
     timings = {"model_s": round(time.perf_counter() - t, 2)}
     tool = _tool_call(resp)
+    if tool and tool["name"] not in {m.id for m in registry.all_modules()}:
+        tool = None
+    tool = apply_rules(question, tool, db_path)
     raw = json.dumps((resp.get("message") or {}), default=str)
     if tool is None or tool["name"] not in {m.id for m in registry.all_modules()}:
         text = ((resp.get("message") or {}).get("content") or "").strip()
@@ -514,6 +769,7 @@ def ask(question: str, model: str = DEFAULT_MODEL, db_path: Path | None = None) 
             "status": out["status"],
             "clarify": out["clarify"],
             "notes": out["notes"],
+            "overrides": (out["tool_call"] or {}).get("overrides"),
             "row_count": (out["result"] or {}).get("meta", {}).get("row_count"),
             "answer": out["answer"],
             "timings": out["timings"],

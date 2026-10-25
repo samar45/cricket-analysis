@@ -31,7 +31,7 @@ def test_tools_cover_every_module_and_stay_small():
     comp = next(t for t in ts if t["function"]["name"] == "batting")["function"]["parameters"][
         "properties"
     ]
-    assert "t20i_women" in comp["competition"]["enum"] and "venue" not in comp
+    assert "t20i_women" in comp["competition"]["enum"] and comp["venue"]["type"] == "string"
     assert len(str(ts)) < 30_000  # a small model has to read all of it on every question
 
 
@@ -144,3 +144,112 @@ def test_last_matches_drops_models_last_n_years(monkeypatch):
     out = A.ask("naman dhir last 5 matches", db_path=DB)
     assert out["resolved_params"]["order"] == "last" and out["resolved_params"]["n"] == 5
     assert "last_n_years" not in out["resolved_params"]
+
+
+# ---------------------------------------------------------------- Python rules around the model
+def test_out_of_scope_phrases():
+    oos = A.ask_rules.out_of_scope
+    for q in (
+        "how many runs did Kohli score in Test cricket",
+        "Rohit Sharma ODI average",
+        "what line and length does Bumrah bowl",
+        "how many catches has Kohli dropped",
+        "will it rain at Wankhede tomorrow",
+        "best football player",
+        "which shot does SKY play most",
+    ):
+        assert oos(q), q
+    for q in (
+        "Kohli's IPL strike rate in 2024",
+        "best chasers in ipl since 2020",
+        "test of form for Gill",
+    ):
+        assert oos(q) is None, q
+
+
+def test_ask_out_of_scope_skips_the_model(monkeypatch):
+    monkeypatch.setattr(A, "_chat", lambda *a, **k: pytest.fail("model must not be called"))
+    out = A.ask("Kohli ODI runs")
+    assert out["status"] == "out_of_scope" and "T20 ball-by-ball data only" in out["answer"]
+
+
+def test_competition_comes_from_the_words():
+    c = A.ask_rules.competition_in
+    assert c("Kohli runs in the IPL") == "ipl" and c("SKY in t20is") == "t20i"
+    assert c("women's T20I stats") == "t20i_women" and c("big bash top scorers") == "bbl"
+    assert c("who has most runs") is None and c("ipl vs bbl") is None
+
+
+def test_route_phrases():
+    r = lambda q, cur="batting": A.ask_rules.route(q, cur)[0]  # noqa: E731
+    assert r("how does Dhoni do against spin", "matchup") == "pace_vs_spin"
+    assert r("does Hardik bowl better when defending", "pressure") == "chase_vs_set"
+    assert r("how does Rohit get out", "batting") == "dismissal_profile"
+    assert r("CSK home vs away", "teams") == "home_away"
+    assert r("who performs best under pressure") == "pressure"
+    assert r("naman dhir debut score") == "innings_list"
+    assert r("kohli form last 10 innings", "innings_list") == "form"  # form beats "last 10 innings"
+    assert r("who had the most impact", None) == "impact"
+    assert r("SKY powerplay strike rate", "true_performance") == "batting"
+    assert r("true strike rate leaders", "true_performance") is None
+    assert r("best debutants of 2024", "season_awards") is None  # 'debutants' is not 'debut'
+
+
+@needs_db
+def test_typo_names():
+    pp = lambda n, c="ipl": A.pick_player(n, c)[0]  # noqa: E731
+    assert pp("kholi") == "V Kohli" and pp("virat kholi", None) == "V Kohli"
+    assert pp("bumra") == "JJ Bumrah" and pp("rohit shrma") == "RG Sharma"
+    exact, cands = A.pick_player("Sharma", "ipl")  # genuinely ambiguous: ask
+    assert exact is None and len(cands) >= 2
+    assert A.pick_player("Gill", "ipl")[0] == "Shubman Gill"
+    assert A.pick_team("chenai super kings", "ipl")[0] == "Chennai Super Kings"
+
+
+@needs_db
+def test_venue_resolver():
+    pv = lambda n, c=None: A.pick_venue(n, c)[0]  # noqa: E731
+    assert (
+        pv("wankhede", "ipl") == "Wankhede Stadium" and pv("Chinnaswamy") == "M Chinnaswamy Stadium"
+    )
+    assert pv("chinaswamy") == "M Chinnaswamy Stadium"  # typo
+    assert pv("eden", "ipl") == "Eden Gardens"
+    mohali = pv("mohali", "ipl")  # one ground, several spellings -> all of them
+    assert isinstance(mohali, list) and len(mohali) >= 2
+    assert A.pick_venue("atlantis", "ipl") == (None, [])
+    assert A.venue_in_question("highest score at Wankhede in the IPL", "ipl") == "wankhede"
+    assert A.venue_in_question("Kohli runs in the IPL", "ipl") is None
+
+
+@needs_db
+def test_rules_override_the_model(monkeypatch):
+    fake(monkeypatch, canned("matchup", competition="t20i", player="MI", player2="CSK"))
+    out = A.ask("MI vs CSK head to head", db_path=DB)
+    assert out["tool_call"]["name"] == "teams" and out["status"] == "ok"
+    assert out["resolved_params"] == {
+        "team": "Mumbai Indians",
+        "opposition": "Chennai Super Kings",
+        "competition": "ipl",
+    }
+    assert any(n.startswith("routing: matchup -> teams") for n in out["notes"])
+    fake(monkeypatch, canned("venues", competition="ipl", season="2024", group_by="venue"))
+    out = A.ask("wankhede stats", db_path=DB)
+    assert out["resolved_params"] == {"venue": "Wankhede Stadium", "group_by": "venue"}
+    fake(monkeypatch, canned("pressure", player="Hardik", role="bowling", competition="ipl"))
+    out = A.ask("does Hardik bowl better when defending", db_path=DB)
+    assert (
+        out["tool_call"]["name"] == "chase_vs_set"
+        and out["resolved_params"]["player"] == "HH Pandya"
+    )
+    assert "competition" not in out["resolved_params"]  # IPL was never mentioned
+
+
+@needs_db
+def test_model_season_numbers_are_checked(monkeypatch):
+    fake(
+        monkeypatch,
+        canned("player_profile", bowl_type="left-arm orthodox", season_from=1, season_to=999),
+    )
+    out = A.ask("list left arm orthodox spinners with 50+ matches", db_path=DB)
+    p = out["resolved_params"]
+    assert "season_from" not in p and p["min_matches"] == 50
