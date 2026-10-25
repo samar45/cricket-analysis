@@ -1,6 +1,6 @@
 # Cricket Analytics Platform - direct dependencies, pinned to the versions tested in .venv (2026-10-25)
 pandas==2.3.3
-duckdb==1.5.0
+duckdb==1.5.6
 PyYAML==6.0.3
 requests==2.34.2
 plotly==6.6.0
