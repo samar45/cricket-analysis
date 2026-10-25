@@ -37,3 +37,6 @@ Score out of 10: correct 4, complete 2, honest 2, constraints 1, efficient 1. Sc
 | 2026-10-25 | logs D | logs, feedback, Ask bug | 9 | Lead re-ran debut question: 1 correct row. -1 stray control chars (self-caught) |
 | 2026-10-25 | innings E | innings_list | 10 | Golden numbers checked |
 | 2026-10-25 | lint F | lint/format/pillow | 10 | Lead re-ran ruff + DB-free tests: clean; didn't force a breaking pillow upgrade |
+| 2026-10-25 | 7A fielding | fielding module | 10 | Lead re-ran Dhoni: matches report |
+| 2026-10-25 | 7B stories | stories + underrated | 9 | Hook numbers verified; fixed nested-db bug; -1 plural glitch |
+| 2026-10-25 | ask v2 | rules + OOS | 7 | 98% on eval but 2/5 on lead's fresh questions: tuned to the test set |

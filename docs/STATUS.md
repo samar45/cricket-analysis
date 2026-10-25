@@ -111,3 +111,10 @@
 - Full suite on merged main: 388 passed (one earlier run had 1 failure that didn't repeat — likely a timing flake in a live test; watch for it).
 - Dependabot opened 3 PRs (gitleaks-action 3.0.0, duckdb 1.5.6, pip-audit 2.10.1) — review before merging; duckdb change must be tested against the real DB.
 - New work happens on branch `dev`; Claude commits locally, Samar pushes.
+
+## 2026-10-25 Phase 7 done + ask agent v2 (dev: 052df05, 34c94cb, e3a835a..f9e53fa)
+- fielding module (Dhoni IPL 158 ct / 47 st / 53 RO; all 9,720 IPL caught dismissals accounted for; Cricsheet lacks fielder on ~15% of run-outs).
+- stories module (ranked reel hooks from other modules, sample guards, sources) + underrated finder (experimental heuristic, transparent components); facts.json v2 with `stories`; handshake v3. Lead checked Kohli pace/spin hook = module output.
+- Ask v2: eval (64 questions incl. 8 out-of-scope) 76.5% → 98% module accuracy, 0 false clarifications, 8/8 out-of-scope.
+- **Lead's held-out check (5 NEW questions not in the eval): only 2/5 handled well** (Kohli Test average → out-of-scope ✅; Rashid "at the death" → batting instead of bowling; "Pant vs left-arm spin" and "KL Rahul at Chinnaswamy" → model asked a question instead of calling a module; "most catches IPL 2024" → player_profile instead of fielding). The 98% is tuned on the eval itself — real accuracy is lower. Next: a held-out question set written separately, a fallback when the model returns no tool, routing for fielding/role words.
+- Tests 423 pass; DB-free 293 pass / 130 skip; ruff clean. All commits local, no Claude lines; Samar to push dev.

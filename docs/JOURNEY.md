@@ -29,13 +29,15 @@ The full plan and goals are in `docs/ROADMAP.md`. Mode: Heavy, Opus leads, 2-4 S
 - Line/length/shot/drops from free sources: none found (see EXPERIMENTS.md); deeper research running.
 
 ## 5. Lessons
+- An eval used to design fixes overstates accuracy (98% on the eval, 2/5 on fresh questions). Keep a held-out set that nobody tunes on.
 - Samar pushes; Claude commits locally with no attribution trailer (rule since 2026-10-25).
 - Streamlit does not reload package code: after changing `src/`, restart the dashboard or users see old/new code mixed (caused a crash report on 2026-10-24).
 - "Ran without errors" ≠ correct. The doubling only showed up in the Kohli spot-check.
 - Check the raw file before trusting a "the format doesn't have it" fact. Our CLAUDE.md was wrong about fielders.
 
 ## 6. Next (resume here)
-0. **Waiting on Samar**: merge overhaul → main via a pull request on GitHub (CI must be green); decide whether to strip the Claude trailer from the 58 already-pushed commits. Then: NLQ improvements from ask-log, 172 hand checks, Edit Pipeline side.
+0. **Phase 7 done (2026-10-25)**: fielding, stories, underrated. Next: ask agent held-out set + no-tool fallback; Dependabot PRs; daily update task; Edit Pipeline side (handover in docs/HANDOVER_edit_pipeline.md).
+   Earlier: **Waiting on Samar**: merge overhaul → main via a pull request on GitHub (CI must be green); decide whether to strip the Claude trailer from the 58 already-pushed commits. Then: NLQ improvements from ask-log, 172 hand checks, Edit Pipeline side.
    Earlier: **Data health + logs + CI done (2026-10-25)**: see STATUS; RUNBOOK for other laptops. Next: NLQ improvements via ask-log feedback, 172 hand checks, Edit Pipeline side.
    Earlier: **Phase 6 NLQ v1 done (2026-10-25)**: `cricket ask`, eval 80% module accuracy. Next: improve NLQ (see STATUS), Edit Pipeline side, 172 hand checks.
    Earlier: **Phases 4 + 5 done (2026-10-25)**: `cricket update`, `cricket facts`, `cricket chart`. Next: Phase 6 NLQ.
