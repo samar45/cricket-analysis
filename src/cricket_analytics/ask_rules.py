@@ -72,6 +72,7 @@ def competition_in(question: str) -> str | None:
 _KIND = r"spin(?:ners?|ner)?|pace(?:rs?)?|seam(?:ers?)?|fast(?:\s+bowlers?)?|slow(?:\s+bowlers?)?"
 # first match wins; the order matters (form beats "last 10 innings"; "get out" beats "against spin")
 _ROUTES = [
+    ("true_performance", r"\btrue\s+(?:strike|economy|batting|bowling|performance|average)"),
     ("form", r"\bform\b"),
     (
         "dismissal_profile",
@@ -103,6 +104,12 @@ def route(
             if mod != current:
                 return mod, f"phrase {re.search(pat, q).group(0)!r} means {mod}"
             return None, ""
+    if current == "season_awards" and not re.search(
+        r"\bseasons?\b|award|debut|\bcap\b|champion|mvp|player of|\b(?:19|20)\d{2}\b", q
+    ):  # season_awards is season-by-season; a plain leaderboard is batting / bowling
+        return (
+            "bowling" if re.search(r"\bbowl|economy|wicket", q) else "batting"
+        ), "no season word: a plain leaderboard"
     if current == "true_performance" and not re.search(r"\btrue\b|\badjusted\b|\bcontext\b", q):
         return (
             "bowling" if re.search(r"\bbowl|economy|wicket", q) else "batting"

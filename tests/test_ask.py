@@ -131,7 +131,7 @@ def test_innings_list_wording_rules():
     assert qf("naman dhir debut match score ipl") == {"order": "first", "n": 1}
     assert qf("first three innings") == {"order": "first", "n": 3}
     assert (
-        qf("best innings of kohli") == {"order": "best"}
+        qf("best innings of kohli") == {"order": "best", "n": 1}
         and qf("best bowling figures")["role"] == "bowling"
     )
     assert qf("last 3 seasons") == {"last_n_years": 3}  # seasons stay a season filter
@@ -253,3 +253,31 @@ def test_model_season_numbers_are_checked(monkeypatch):
     out = A.ask("list left arm orthodox spinners with 50+ matches", db_path=DB)
     p = out["resolved_params"]
     assert "season_from" not in p and p["min_matches"] == 50
+
+
+def test_wording_with_a_league_word_and_best_n():
+    qf = A.question_filters
+    assert qf("Kohli's last 10 IPL innings") == {"order": "last", "n": 10}
+    assert qf("highest score at Wankhede") == {"order": "best", "n": 1}
+    assert qf("best 3 innings of Gill") == {"order": "best", "n": 3}
+    assert "order" not in qf("last season matches")  # 'last season' is a season, not 'last 1 match'
+
+
+def test_more_routes():
+    r = lambda q, cur: A.ask_rules.route(q, cur)[0]  # noqa: E731
+    assert r("true strike rate leaders in the ipl", "season_awards") == "true_performance"
+    assert r("best death bowlers in t20is", "season_awards") == "bowling"
+    assert r("powerplay leaders each ipl season", "season_awards") is None
+    assert r("best debutants of ipl 2024", "season_awards") is None
+
+
+@needs_db
+def test_models_season_guess_is_dropped_and_this_season_is_read(monkeypatch):
+    fake(monkeypatch, canned("batting", player="Kohli", competition="ipl", season="2024"))
+    out = A.ask("Kohli runs", db_path=DB)
+    assert "season" not in out["resolved_params"] and any(
+        "dropped season" in n for n in out["notes"]
+    )
+    fake(monkeypatch, canned("batting", player="Kohli", season="2019"))
+    out = A.ask("Kohli IPL runs this season", db_path=DB)
+    assert out["resolved_params"]["season"] == "2026"  # the newest IPL season in the DB

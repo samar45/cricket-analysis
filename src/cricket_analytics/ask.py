@@ -380,14 +380,24 @@ def question_filters(q: str) -> dict:
         f["season"] = int(m[0]) if len(m) == 1 else [int(x) for x in m]
     # innings_list wording ("matches/innings/games" is NOT a season count: only years/seasons set last_n_years)
     if m := re.search(
-        r"\b(first|last)\s+(?:(\d+|" + "|".join(_NUM) + r")\s+)?(?:matches|match|innings|games?)\b",
+        r"\b(first|last)\s+(?:(\d+|"
+        + "|".join(_NUM)
+        + r")\s+)?(?:(?!seasons?\b|years?\b)[a-z0-9]+\s+)?(?:matches|match|innings|games?)\b",
         q,
     ):
         f["order"], f["n"] = m[1], (int(m[2]) if m[2] and m[2].isdigit() else _NUM.get(m[2], 1))
     elif re.search(r"\bdebut\b", q):
         f["order"], f["n"] = "first", 1
-    elif re.search(r"\b(?:best|top)\s+(?:innings|figures|bowling)|highest score|top score", q):
+    elif m := re.search(
+        r"\b(?:best|top)\s+(?:(\d+|"
+        + "|".join(_NUM)
+        + r")\s+)?(?:innings|figures|bowling)|highest score|top score",
+        q,
+    ):
         f["order"] = "best"
+        f["n"] = (
+            int(m[1]) if m[1] and m[1].isdigit() else _NUM.get(m[1], 1)
+        )  # "best figures" = the one best
         if re.search(r"figures|bowling", q):
             f["role"] = "bowling"
     if m := re.search(
@@ -418,15 +428,6 @@ def _only_competition(team: str) -> str | None:
 
 
 _SEASON_KEYS = ("season", "season_from", "season_to", "last_n_years")
-_YEAR_LIKE = {"season": (1990, 2100), "season_from": (1990, 2100), "season_to": (1990, 2100)}
-
-
-def _sane_season(k: str, v) -> bool:
-    if k == "last_n_years":
-        return str(v).isdigit() and 1 <= int(v) <= 30
-    vals = v if isinstance(v, list) else [v]
-    lo, hi = _YEAR_LIKE[k]
-    return all(str(x)[:4].isdigit() and lo <= int(str(x)[:4]) <= hi for x in vals)
 
 
 def resolve(
@@ -473,13 +474,16 @@ def resolve(
     if {"season", "season_from", "season_to", "last_n_years"} & qf.keys():
         for k in _SEASON_KEYS:
             a.pop(k, None)
-    elif question:  # no season words: keep the model's only if it is a believable year and the question hints at one
-        hint = re.search(
-            r"season|year|since|recent|latest|current|this|last|edition", question.lower()
-        )
+    else:  # the model cannot know the year: its season numbers are dropped unless the question has them
         for k in _SEASON_KEYS:
-            if k in a and not (hint and _sane_season(k, a[k])):
+            if k in a:
                 notes.append(f"dropped {k}={a.pop(k)!r}: the question gives no such season")
+        if m := re.search(r"\b(this|current|latest|last|previous)\s+season\b", question.lower()):
+            seasons = api.choices("season", a.get("competition"))
+            i = 0 if m[1] in ("this", "current", "latest") else 1
+            if len(seasons) > i and "season" in allowed:
+                a["season"] = seasons[i]
+                notes.append(f"'{m[1]} season' read as {seasons[i]} (newest season in the data)")
     a.update({k: v for k, v in qf.items() if k in allowed})
     if "window" in allowed and "n" in qf:
         a["window"] = qf["n"]
