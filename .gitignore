@@ -46,3 +46,5 @@ Thumbs.db
 # external, unlicensed data (local only)
 data/external/
 data/cricket_analytics_prev_*.duckdb
+data/*_updtest*.duckdb
+*.updating.duckdb*
