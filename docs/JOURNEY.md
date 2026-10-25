@@ -29,12 +29,14 @@ The full plan and goals are in `docs/ROADMAP.md`. Mode: Heavy, Opus leads, 2-4 S
 - Line/length/shot/drops from free sources: none found (see EXPERIMENTS.md); deeper research running.
 
 ## 5. Lessons
+- Samar pushes; Claude commits locally with no attribution trailer (rule since 2026-10-25).
 - Streamlit does not reload package code: after changing `src/`, restart the dashboard or users see old/new code mixed (caused a crash report on 2026-10-24).
 - "Ran without errors" ≠ correct. The doubling only showed up in the Kohli spot-check.
 - Check the raw file before trusting a "the format doesn't have it" fact. Our CLAUDE.md was wrong about fielders.
 
 ## 6. Next (resume here)
-0. **Data health + logs + CI done (2026-10-25)**: see STATUS; RUNBOOK for other laptops. Next: NLQ improvements via ask-log feedback, 172 hand checks, Edit Pipeline side.
+0. **Waiting on Samar**: merge overhaul → main via a pull request on GitHub (CI must be green); decide whether to strip the Claude trailer from the 58 already-pushed commits. Then: NLQ improvements from ask-log, 172 hand checks, Edit Pipeline side.
+   Earlier: **Data health + logs + CI done (2026-10-25)**: see STATUS; RUNBOOK for other laptops. Next: NLQ improvements via ask-log feedback, 172 hand checks, Edit Pipeline side.
    Earlier: **Phase 6 NLQ v1 done (2026-10-25)**: `cricket ask`, eval 80% module accuracy. Next: improve NLQ (see STATUS), Edit Pipeline side, 172 hand checks.
    Earlier: **Phases 4 + 5 done (2026-10-25)**: `cricket update`, `cricket facts`, `cricket chart`. Next: Phase 6 NLQ.
    Earlier: **Phase 3.5 + feature engineering done (2026-10-25)**: 18 modules incl. dismissal_profile, chase_vs_set, pressure, home_away; reviewed list 940+ players, partly web-verified. Next: Phase 5 facts/chart CLI, Phase 4 update+CI, Phase 6 NLQ. Unchecked hands: docs/VERIFY_player_list.md.

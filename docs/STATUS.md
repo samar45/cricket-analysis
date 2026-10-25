@@ -95,3 +95,8 @@
 - innings_list module (debut / last N / best); ask maps "debut" and "last N matches" in Python.
 - CI: ci.yml with ruff lint + format (blocking), DB-free tests (277 pass / 111 skip), pip-audit (pillow 12.3 advisories ignored with TODO: streamlit 1.55 pins pillow<13), gitleaks; SHA-pinned actions; dependabot; pre-commit config. Lint 74 → 0.
 - Pushed. First green CI run pending at time of writing.
+
+## 2026-10-25 New rule: Samar pushes, no Claude attribution
+- Samar saw "claude" listed as a contributor on GitHub (from Co-Authored-By trailers). From now on: commit locally without any Claude trailer; Claude never runs `git push`. Rule added to CLAUDE.md (Git safety) and to memory.
+- 58 commits on `overhaul` (already pushed to origin) carry the trailer. Removing it means rewriting those commits and a force-push of `overhaul` — Samar's decision (see options in the chat / JOURNEY).
+- Next for Samar: open the GitHub "Compare & pull request" for overhaul → main, check CI, merge.

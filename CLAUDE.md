@@ -61,6 +61,8 @@ If a task is bigger or riskier than the mode suggests, say so in one line and su
 - Work on a branch, not main. One small commit per working step with a clear message.
 - Commit before any risky change so it can be undone with one command.
 - Never force-push, rewrite history or push to a remote without asking.
+- **Claude never pushes** (Samar, 2026-10-25). Commit locally only; Samar reviews and pushes from his own account.
+- **No Claude attribution** in commits or PRs: no `Co-Authored-By: Claude` trailer, no "Generated with Claude Code" line.
 - Keep secrets out of git (.env in .gitignore; use .env.example for the names).
 - Never commit a new `.duckdb` without asking (because of the LFS quota).
 
