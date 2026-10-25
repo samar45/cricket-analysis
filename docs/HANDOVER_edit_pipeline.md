@@ -18,7 +18,7 @@ Use the full path, so it works from the Edit Pipeline folder with its own venv:
 
 | Need | Command |
 |---|---|
-| Exact player name (Cricsheet uses initials: "RG Sharma") | `cricket resolve "rohit sharma"` |
+| Exact player name (Cricsheet uses initials: "RG Sharma") | `cricket resolve "RG Sharma"` or `cricket resolve "Sharma"`. Careful: a full name can match a different player ("rohit sharma" finds an associate player named Rohit Sharma, not RG Sharma), so check the matches count and last date |
 | Everything for one player's reel, as one JSON file | `cricket facts --player "V Kohli" --competition ipl --out reels/<slug>/data/facts.json` |
 | One stat table | `cricket run <module> --player "V Kohli" --competition ipl [--last_n_years 5] --json --out file.json` |
 | Reel chart as PNG (1080×1920 or 1080×1080, transparent background) | `cricket chart <module> --player "V Kohli" --competition ipl --aspect 9:16 --png reels/<slug>/assets/kohli.png` |
