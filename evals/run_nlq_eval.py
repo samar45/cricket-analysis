@@ -1,6 +1,6 @@
 """Run the natural-language question set through cricket_analytics.ask.ask() and score it.
 
-    .venv/Scripts/python evals/run_nlq_eval.py [--model M] [--limit N] [--ids q01,q02]
+    .venv/Scripts/python evals/run_nlq_eval.py [--model M] [--limit N] [--ids q01,q02] [--file F ...] [--tag T]
 
 Scores (exact match in Python, no LLM judge): module accuracy, param accuracy (per param and all-correct),
 clarification precision/recall, golden-number presence in the answer, seconds per question.
@@ -61,6 +61,14 @@ def golden_hit(value, answer):
 
 def score_one(case, out):
     """One question -> dict of booleans/counts. `out` is what ask() returned (or {} on error)."""
+    if case.get("expect_status"):  # out-of-scope style: the status itself is the answer
+        return {
+            "id": case["id"],
+            "clar_pred": False,
+            "clar_expected": False,
+            "status_expected": case["expect_status"],
+            "status_ok": out.get("status") == case["expect_status"],
+        }
     clar_pred, clar_exp = predicted_clarification(out), case["expect_clarification"]
     s = {"id": case["id"], "clar_pred": clar_pred, "clar_expected": clar_exp}
     if clar_exp:
@@ -81,7 +89,8 @@ def score_one(case, out):
 
 
 def summarize(scores, seconds):
-    ex = [s for s in scores if not s["clar_expected"]]
+    oos = [s for s in scores if "status_ok" in s]
+    ex = [s for s in scores if not s["clar_expected"] and "status_ok" not in s]
     ph = [h for s in ex for h in s.get("param_hits", {}).values()]
     gold = [s["golden_ok"] for s in ex if "golden_ok" in s]
     tp = sum(s["clar_pred"] and s["clar_expected"] for s in scores)
@@ -97,6 +106,7 @@ def summarize(scores, seconds):
         "clarification_precision": r(tp, pred),
         "clarification_recall": r(tp, exp),
         "false_clarifications": sum(s["clar_pred"] and not s["clar_expected"] for s in scores),
+        "out_of_scope_ok": f"{sum(s['status_ok'] for s in oos)}/{len(oos)}" if oos else None,
         "golden_present": r(sum(gold), len(gold)),
         "golden_n": len(gold),
         "seconds_mean": round(sum(seconds) / len(seconds), 2) if seconds else None,
@@ -108,6 +118,10 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--limit", type=int)
+    ap.add_argument(
+        "--file", nargs="+", default=["nlq_questions.jsonl"], help="question files in evals/"
+    )
+    ap.add_argument("--tag", default="", help="suffix for the results file name")
     ap.add_argument("--ids", help="comma-separated question ids, e.g. q01,q07")
     a = ap.parse_args(argv)
     try:
@@ -116,7 +130,7 @@ def main(argv=None):
         sys.exit(
             f"cricket_analytics.ask is not available yet ({e}). Build src/cricket_analytics/ask.py first."
         )
-    cases = load_questions()
+    cases = [c for f in a.file for c in load_questions(HERE / f)]
     if a.ids:
         want = set(a.ids.split(","))
         cases = [c for c in cases if c["id"] in want]
@@ -144,12 +158,13 @@ def main(argv=None):
                 "status": out.get("status"),
             }
         )
-        flag = "ok " if (s.get("params_ok") or (s["clar_expected"] and s["clar_pred"])) else "BAD"
+        good = s.get("params_ok") or s.get("status_ok") or (s["clar_expected"] and s["clar_pred"])
+        flag = "ok " if good else "BAD"
         print(f"{flag} {c['id']} {dt_s:5.1f}s  {c['question'][:60]}")
     summ = summarize(scores, secs)
     res = HERE / "results"
     res.mkdir(exist_ok=True)
-    f = res / f"{dt.date.today()}_{re.sub(r'[^A-Za-z0-9._-]', '_', a.model)}.json"
+    f = res / f"{dt.date.today()}_{re.sub(r'[^A-Za-z0-9._-]', '_', a.model)}{a.tag}.json"
     f.write_text(
         json.dumps({"model": a.model, "summary": summ, "questions": rows}, indent=1, default=str),
         encoding="utf-8",

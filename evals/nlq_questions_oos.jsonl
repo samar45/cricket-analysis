@@ -1,0 +1,8 @@
+{"id": "o01", "question": "how many runs did Kohli score in Test cricket", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "o02", "question": "Rohit Sharma ODI batting average", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "o03", "question": "what line and length does Bumrah bowl to left handers", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "o04", "question": "how many catches has Kohli dropped in the IPL", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "o05", "question": "will it rain at Wankhede tomorrow", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "o06", "question": "who is the best football player in the world", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "o07", "question": "who won the 2019 ODI World Cup final", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "o08", "question": "which shot does Suryakumar play most against fast bowlers", "expect_status": "out_of_scope", "expect_clarification": false}
