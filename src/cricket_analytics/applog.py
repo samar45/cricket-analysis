@@ -40,10 +40,12 @@ def _handler() -> None:
     for h in _logger.handlers:
         if getattr(h, "baseFilename", None) == str(Path(path).resolve()):
             return
-    for h in list(_logger.handlers):   # the log folder changed (tests): swap the file
+    for h in list(_logger.handlers):  # the log folder changed (tests): swap the file
         _logger.removeHandler(h)
         h.close()
-    h = RotatingFileHandler(path, maxBytes=1_000_000, backupCount=4, encoding="utf-8")   # 5 files x 1 MB
+    h = RotatingFileHandler(
+        path, maxBytes=1_000_000, backupCount=4, encoding="utf-8"
+    )  # 5 files x 1 MB
     h.setFormatter(logging.Formatter("%(asctime)s | %(message)s"))
     _logger.addHandler(h)
 
@@ -58,7 +60,15 @@ def log_error(where: str, exc: BaseException, **ctx) -> str:
     try:
         _handler()
         tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)).rstrip()
-        _logger.error("%s | %s | %s: %s | ctx=%s\n%s", eid, where, type(exc).__name__, exc, _short(ctx, 500), tb)
+        _logger.error(
+            "%s | %s | %s: %s | ctx=%s\n%s",
+            eid,
+            where,
+            type(exc).__name__,
+            exc,
+            _short(ctx, 500),
+            tb,
+        )
     except OSError:
         pass
     return eid
@@ -93,10 +103,18 @@ def log_ask(entry: dict) -> dict:
     return entry
 
 
-def log_feedback(ask_id: str, rating: str, comment: str = "", expected_module: str | None = None) -> dict:
+def log_feedback(
+    ask_id: str, rating: str, comment: str = "", expected_module: str | None = None
+) -> dict:
     """rating: 'up' or 'down'."""
-    e = {"type": "feedback", "ts": dt.datetime.now().isoformat(timespec="seconds"), "ask_id": ask_id,
-         "rating": rating, "comment": comment.strip(), "expected_module": expected_module or None}
+    e = {
+        "type": "feedback",
+        "ts": dt.datetime.now().isoformat(timespec="seconds"),
+        "ask_id": ask_id,
+        "rating": rating,
+        "comment": comment.strip(),
+        "expected_module": expected_module or None,
+    }
     _append(e)
     return e
 
@@ -118,7 +136,11 @@ def read_asks(last: int | None = None, bad_only: bool = False) -> list[dict]:
             asks.append(e)
     for a in asks:
         f = fb.get(a["id"], {})
-        a["rating"], a["comment"], a["expected_module"] = f.get("rating"), f.get("comment"), f.get("expected_module")
+        a["rating"], a["comment"], a["expected_module"] = (
+            f.get("rating"),
+            f.get("comment"),
+            f.get("expected_module"),
+        )
     if bad_only:
         asks = [a for a in asks if a["rating"] == "down" or a["status"] in ("error", "no_tool")]
     return asks[-last:] if last else asks

@@ -42,7 +42,7 @@ def pressure_cond(level: str = "high") -> str:
 
 
 def ball_state(f: Filters) -> tuple[str, list]:
-    base = replace(f, team=None, opposition=None, player=None, phase=None)   # match-level scope only
+    base = replace(f, team=None, opposition=None, player=None, phase=None)  # match-level scope only
     where, params = base.where("match")
     wk = f"CASE WHEN {DISMISSAL} THEN 1 ELSE 0 END"
     lg = f"CASE WHEN {LEGAL_BALL} THEN 1 ELSE 0 END"

@@ -26,17 +26,25 @@ import pandas as pd
 from ..sql.fragments import BALL_FACED, BOWLER_WICKET, LEGAL_BALL, phase_sql
 
 # ---- thresholds -------------------------------------------------------------------------------------------------
-MIN_ROWS_MATCHES = 3       # players with fewer matches are left out of the CSV (nothing useful to say, saves size)
-MIN_MATCHES = 5            # fewer matches -> role/slot 'unknown'
-BOWL_SHARE_MIN = 0.06      # >= 6% of team legal balls per match ~ 1.2 overs of 20: a real bowling contribution
-BAT_SHARE_MIN = 0.045      # >= 4.5% of team balls faced per match ~ 5 balls of 120: a real batting contribution
-MIN_BOWL_BALLS = 120       # fewer legal balls: bowl_phase_role / bowl_kind 'unknown'
-KEEPER_STUMPINGS = 3       # >= 3 stumpings AND rate >= KEEPER_RATE per match -> keeper
-KEEPER_RATE = 0.06         # a full-time keeper makes ~0.1-0.3 stumpings per match (stumpings / ALL his matches)
+MIN_ROWS_MATCHES = (
+    3  # players with fewer matches are left out of the CSV (nothing useful to say, saves size)
+)
+MIN_MATCHES = 5  # fewer matches -> role/slot 'unknown'
+BOWL_SHARE_MIN = (
+    0.06  # >= 6% of team legal balls per match ~ 1.2 overs of 20: a real bowling contribution
+)
+BAT_SHARE_MIN = (
+    0.045  # >= 4.5% of team balls faced per match ~ 5 balls of 120: a real batting contribution
+)
+MIN_BOWL_BALLS = 120  # fewer legal balls: bowl_phase_role / bowl_kind 'unknown'
+KEEPER_STUMPINGS = 3  # >= 3 stumpings AND rate >= KEEPER_RATE per match -> keeper
+KEEPER_RATE = (
+    0.06  # a full-time keeper makes ~0.1-0.3 stumpings per match (stumpings / ALL his matches)
+)
 KEEPER_RATE_WITH_CATCHES = 0.04
 KEEPER_RATE_SOMETIMES = 0.025
 FINISHER_DEATH_SHARE = 0.35
-PHASE_ROLE_MIN = {"powerplay": 0.45, "death": 0.40, "middle": 0.60}   # share of the bowler's balls
+PHASE_ROLE_MIN = {"powerplay": 0.45, "death": 0.40, "middle": 0.60}  # share of the bowler's balls
 
 
 def features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
@@ -53,7 +61,9 @@ def features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     FROM dd d GROUP BY ALL
     UNION ALL
     SELECT match_id, bowling_team, 0, COUNT(*) FILTER (WHERE {LEGAL_BALL}) FROM dd d GROUP BY ALL""")
-    con.execute("CREATE TEMP TABLE tm AS SELECT match_id, team, SUM(team_faced) AS team_faced, SUM(team_bowled) AS team_bowled FROM team_match GROUP BY ALL")
+    con.execute(
+        "CREATE TEMP TABLE tm AS SELECT match_id, team, SUM(team_faced) AS team_faced, SUM(team_bowled) AS team_bowled FROM team_match GROUP BY ALL"
+    )
     # who played for whom: batter, non-striker, bowler or fielder in the match (fielding subs excluded)
     con.execute("""
     CREATE TEMP TABLE pm AS
@@ -72,7 +82,9 @@ def features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
               SELECT match_id, innings, ball_seq, batter AS player, 1 AS is_striker FROM dd
               UNION ALL SELECT match_id, innings, ball_seq, non_striker, 0 FROM dd) GROUP BY ALL)""")
     # keepers for the caught-behind count: anyone with >= 3 stumpings (the rate rule in classify() is stricter)
-    con.execute("CREATE TEMP TABLE keepers AS SELECT fielder FROM dd WHERE wicket_type = 'stumped' GROUP BY 1 HAVING COUNT(*) >= 3")
+    con.execute(
+        "CREATE TEMP TABLE keepers AS SELECT fielder FROM dd WHERE wicket_type = 'stumped' GROUP BY 1 HAVING COUNT(*) >= 3"
+    )
     return con.execute(f"""
     WITH played AS (
         SELECT pm.player, COUNT(*) AS matches, SUM(tm.team_faced) AS team_faced, SUM(tm.team_bowled) AS team_bowled
@@ -119,21 +131,37 @@ def features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
 
 
 def _conf(matches: pd.Series) -> pd.Series:
-    return pd.Series(np.select([matches >= 30, matches >= 10], ["high", "medium"], "low"), index=matches.index)
+    return pd.Series(
+        np.select([matches >= 30, matches >= 10], ["high", "medium"], "low"), index=matches.index
+    )
 
 
 def classify(df: pd.DataFrame) -> pd.DataFrame:
     """Add the derived columns to the output of features(). Pure function of the counts."""
-    o = pd.DataFrame({"name": df.name, "gender": df.gender, "last_date": df.last_date.astype(str).str[:10],
-                      "matches": df.matches.astype(int)})
+    o = pd.DataFrame(
+        {
+            "name": df.name,
+            "gender": df.gender,
+            "last_date": df.last_date.astype(str).str[:10],
+            "matches": df.matches.astype(int),
+        }
+    )
     # 'both' = the same Cricsheet name is used by a man and a woman (21 names, e.g. 'RP Singh'); the numbers are then mixed
     o["balls_faced"] = df.balls_faced
     o["balls_bowled"] = df.balls_bowled
-    o["bat_share"] = (df.balls_faced / df.team_faced.replace(0, np.nan)).round(3)      # share of team balls faced, over his matches
-    o["bowl_share"] = (df.balls_bowled / df.team_bowled.replace(0, np.nan)).round(3)   # share of team legal balls bowled
+    o["bat_share"] = (df.balls_faced / df.team_faced.replace(0, np.nan)).round(
+        3
+    )  # share of team balls faced, over his matches
+    o["bowl_share"] = (df.balls_bowled / df.team_bowled.replace(0, np.nan)).round(
+        3
+    )  # share of team legal balls bowled
     enough = df.matches >= MIN_MATCHES
     bats, bowls = o.bat_share.fillna(0) >= BAT_SHARE_MIN, o.bowl_share.fillna(0) >= BOWL_SHARE_MIN
-    o["role"] = np.select([~enough, bats & bowls, bowls, bats], ["unknown", "all-rounder", "bowler", "batter"], "batter")
+    o["role"] = np.select(
+        [~enough, bats & bowls, bowls, bats],
+        ["unknown", "all-rounder", "bowler", "batter"],
+        "batter",
+    )
     o["role_confidence"] = _conf(df.matches)
     o["role_source"] = "derived"
 
@@ -145,12 +173,18 @@ def classify(df: pd.DataFrame) -> pd.DataFrame:
     #   ''        no evidence. A part-timer with 1 stumping in 300 matches stays here.
     rate = df.stumpings / df.matches
     cpm = df.catches / df.matches
-    yes = (df.stumpings >= KEEPER_STUMPINGS) & ((rate >= KEEPER_RATE) | ((rate >= KEEPER_RATE_WITH_CATCHES) & (cpm >= 0.5)))
+    yes = (df.stumpings >= KEEPER_STUMPINGS) & (
+        (rate >= KEEPER_RATE) | ((rate >= KEEPER_RATE_WITH_CATCHES) & (cpm >= 0.5))
+    )
     sometimes = ~yes & (df.stumpings >= 2) & (rate >= KEEPER_RATE_SOMETIMES)
     o["stumpings"], o["catches"] = df.stumpings, df.catches
     o["catches_per_match"] = cpm.round(2)
     o["hint_keeper"] = np.select([yes, sometimes], ["yes", "sometimes"], "")
-    o["hint_keeper_confidence"] = np.select([yes & (df.stumpings >= 10) & (rate >= KEEPER_RATE), yes, sometimes], ["high", "medium", "low"], "")
+    o["hint_keeper_confidence"] = np.select(
+        [yes & (df.stumpings >= 10) & (rate >= KEEPER_RATE), yes, sometimes],
+        ["high", "medium", "low"],
+        "",
+    )
 
     # batting position and slot
     o["bat_innings"] = df.bat_innings
@@ -161,7 +195,9 @@ def classify(df: pd.DataFrame) -> pd.DataFrame:
     p = df.bat_position
     o["hint_bat_slot"] = np.select(
         [~has, p <= 2, p <= 4, (p <= 7) & (death >= FINISHER_DEATH_SHARE), p <= 6, p > 6],
-        ["unknown", "opener", "top order", "finisher", "middle", "tail"], "unknown")
+        ["unknown", "opener", "top order", "finisher", "middle", "tail"],
+        "unknown",
+    )
     o["hint_bat_slot_confidence"] = np.where(has, _conf(df.bat_innings), "")
 
     # bowling: phase role
@@ -169,7 +205,9 @@ def classify(df: pd.DataFrame) -> pd.DataFrame:
     sp, sm, sd = df.pp_balls / bb, df.mid_balls / bb, df.death_balls / bb
     o["pp_share"], o["mid_share"], o["death_share"] = sp.round(3), sm.round(3), sd.round(3)
     ok = df.balls_bowled >= MIN_BOWL_BALLS
-    cand = pd.DataFrame({k: v.fillna(0) for k, v in (("powerplay", sp), ("middle", sm), ("death", sd))})
+    cand = pd.DataFrame(
+        {k: v.fillna(0) for k, v in (("powerplay", sp), ("middle", sm), ("death", sd))}
+    )
     meets = pd.DataFrame({k: cand[k] >= t for k, t in PHASE_ROLE_MIN.items()})
     best = (cand.where(meets, -1)).idxmax(axis=1)
     o["hint_bowl_phase_role"] = np.where(~ok, "", np.where(meets.any(axis=1), best, "all-phase"))
@@ -180,23 +218,29 @@ def classify(df: pd.DataFrame) -> pd.DataFrame:
     o["noball_rate"] = (df.noballs / bb).round(4)
     o["wide_rate"] = (df.wides / bb).round(4)
     o["wickets"] = df.wickets
-    o["caught_behind_share"] = np.where(df.wickets >= 20, df.caught_behind / df.wickets.replace(0, np.nan), np.nan).round(3)
+    o["caught_behind_share"] = np.where(
+        df.wickets >= 20, df.caught_behind / df.wickets.replace(0, np.nan), np.nan
+    ).round(3)
     o["bye_rate"] = (df.byes / bb).round(4)
     o["first_over_share"] = (df.first_over_balls / bb).round(3)
     score = spin_score(o)
     o["hint_bowl_kind"] = np.select([~ok, score >= 2], ["", "spin"], "pace")
-    unsure = score.between(1, 2) | (df.balls_bowled < 600)    # scores 1-2 were right only ~50% of the time on the seed
-    o["hint_bowl_kind_confidence"] = np.where(~ok, "", np.select([unsure, df.balls_bowled >= 1200], ["low", "high"], "medium"))
+    unsure = score.between(1, 2) | (
+        df.balls_bowled < 600
+    )  # scores 1-2 were right only ~50% of the time on the seed
+    o["hint_bowl_kind_confidence"] = np.where(
+        ~ok, "", np.select([unsure, df.balls_bowled >= 1200], ["low", "high"], "medium")
+    )
     # bowl_type and bat_hand are not derivable; they come from player_overrides.csv, never from this script
     return o
 
 
 def spin_score(o: pd.DataFrame) -> pd.Series:
     """Points towards 'spin' (>= 2 -> spin). Each clause is one cheap piece of evidence:
-       +3  stumped off his bowling: >= 2 stumpings and >= 1 per 1000 balls (pace bowlers: max 0.3 per 1000, measured)
-       +1 / -1  caught-behind share of his wickets < 10% / >= 14% (needs >= 20 wickets; pace 16% vs spin 8% on average)
-       +1  >= 55% of balls in the middle overs     -1  >= 25% of balls at the death
-       -1  >= 10% of balls in over 1               -1  no-ball rate >= 1%
+    +3  stumped off his bowling: >= 2 stumpings and >= 1 per 1000 balls (pace bowlers: max 0.3 per 1000, measured)
+    +1 / -1  caught-behind share of his wickets < 10% / >= 14% (needs >= 20 wickets; pace 16% vs spin 8% on average)
+    +1  >= 55% of balls in the middle overs     -1  >= 25% of balls at the death
+    -1  >= 10% of balls in over 1               -1  no-ball rate >= 1%
     """
     s = pd.Series(0.0, index=o.index)
     s += np.where((o.stumped_off >= 2) & (o.stumped_off_per_1000.fillna(0) >= 1), 3, 0)
@@ -211,11 +255,17 @@ def spin_score(o: pd.DataFrame) -> pd.Series:
 
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--db", type=Path, default=None, help="DuckDB file (default: config database). Opened read-only.")
+    ap.add_argument(
+        "--db",
+        type=Path,
+        default=None,
+        help="DuckDB file (default: config database). Opened read-only.",
+    )
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     if a.db is None:
         from ..config import get_db_path
+
         a.db = get_db_path()
     con = duckdb.connect(str(a.db), read_only=True)
     out = classify(features(con))

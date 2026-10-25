@@ -1,4 +1,5 @@
 """The NLQ eval set is valid (params exist, golden numbers reproduce) and the scorer works."""
+
 import importlib.util
 from pathlib import Path
 
@@ -30,7 +31,9 @@ def test_file_shape():
     assert len(CASES) == 50
     assert len({c["id"] for c in CASES}) == 50
     assert sum(c["expect_clarification"] for c in CASES) == 5
-    assert all(c["question"] and c["expected_module"] is None for c in CASES if c["expect_clarification"])
+    assert all(
+        c["question"] and c["expected_module"] is None for c in CASES if c["expect_clarification"]
+    )
 
 
 def test_expected_modules_and_params_validate():
@@ -38,7 +41,8 @@ def test_expected_modules_and_params_validate():
         if c["expect_clarification"]:
             continue
         for m, p in [(c["expected_module"], c["expected_params"])] + [
-                (a["module"], a.get("params", {})) for a in c.get("acceptable_alternatives", [])]:
+            (a["module"], a.get("params", {})) for a in c.get("acceptable_alternatives", [])
+        ]:
             registry.get(m)
             _check_params(m, p)
         req = {p.name for p in registry.get(c["expected_module"]).params if p.required}
@@ -63,11 +67,24 @@ def test_golden_numbers_reproduce():
 def test_scorer_on_fake_outputs():
     by = {c["id"]: c for c in CASES}
     q1, q2, clar = by["q01"], by["q02"], by["q46"]
-    good = {"status": "ok", "tool_call": {"name": "batting", "arguments": {"player": "Kohli", "competition": "ipl"}},
-            "resolved_params": {"player": "V Kohli", "competition": "ipl"}, "answer": "Kohli has 9,336 IPL runs."}
-    bad = {"status": "ok", "tool_call": {"name": "bowling", "arguments": {}}, "resolved_params": {"player": "RG Sharma"},
-           "answer": "Sharma took 15."}
-    ask_back = {"status": "clarify", "tool_call": {"name": "batting", "arguments": {"player": "Sharma"}}, "clarify": ["Which Sharma?"], "answer": ""}
+    good = {
+        "status": "ok",
+        "tool_call": {"name": "batting", "arguments": {"player": "Kohli", "competition": "ipl"}},
+        "resolved_params": {"player": "V Kohli", "competition": "ipl"},
+        "answer": "Kohli has 9,336 IPL runs.",
+    }
+    bad = {
+        "status": "ok",
+        "tool_call": {"name": "bowling", "arguments": {}},
+        "resolved_params": {"player": "RG Sharma"},
+        "answer": "Sharma took 15.",
+    }
+    ask_back = {
+        "status": "clarify",
+        "tool_call": {"name": "batting", "arguments": {"player": "Sharma"}},
+        "clarify": ["Which Sharma?"],
+        "answer": "",
+    }
     s = [ev.score_one(q1, good), ev.score_one(q2, bad), ev.score_one(clar, ask_back)]
     assert s[0]["module_ok"] and s[0]["params_ok"] and s[0]["golden_ok"]
     assert not s[1]["module_ok"] and not s[1]["params_ok"]

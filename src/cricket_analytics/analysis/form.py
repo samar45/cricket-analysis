@@ -14,12 +14,22 @@ from ..sql.innings import batter_innings
     title="Player form",
     category="intermediate",
     description="One row per innings (batter) or bowling spell (bowler), oldest first, with rolling averages over "
-                "the last `window` rows. Needs a player.",
+    "the last `window` rows. Needs a player.",
     params=[
-        ParamSpec("player", "player", required=True, help="Exact player name as in the data (use resolve first)"),
+        ParamSpec(
+            "player",
+            "player",
+            required=True,
+            help="Exact player name as in the data (use resolve first)",
+        ),
         *std("competition", "season", "team", "opposition", "venue"),
-        ParamSpec("role", "choice", default="batter", choices=("batter", "bowler"),
-                  help="batter: runs and strike rate; bowler: wickets and economy"),
+        ParamSpec(
+            "role",
+            "choice",
+            default="batter",
+            choices=("batter", "bowler"),
+            help="batter: runs and strike rate; bowler: wickets and economy",
+        ),
         ParamSpec("window", "int", default=10, help="Rolling window in innings/spells"),
     ],
     caveats=[
@@ -32,7 +42,9 @@ from ..sql.innings import batter_innings
 )
 def form(f: Filters, role: str = "batter", window: int = 10) -> pd.DataFrame:
     window = max(int(window), 1)
-    frame = f"ROWS BETWEEN {window - 1} PRECEDING AND CURRENT ROW"   # window is an int, safe to inline
+    frame = (
+        f"ROWS BETWEEN {window - 1} PRECEDING AND CURRENT ROW"  # window is an int, safe to inline
+    )
     if role == "batter":
         inn, params = batter_innings(f, [("m.season", "season"), ("m.venue", "venue")])
         sql = f"""

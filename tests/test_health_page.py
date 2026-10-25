@@ -10,8 +10,10 @@ FIX = Path(__file__).parent / "fixtures" / "runs"
 
 def _script(d):
     import sys
+
     sys.path.insert(0, d[1])
     import health
+
     health.page(d[0])
 
 
@@ -42,7 +44,9 @@ def test_corrupt_files(tmp_path):
     shutil.copy(next(FIX.glob("*.json")), tmp_path / "20260101-000000.json")
     (tmp_path / "20260102-000000.json").write_text("{not json", encoding="utf-8")
     (tmp_path / "20260103-000000.json").write_text("[1, 2]", encoding="utf-8")
-    (tmp_path / "20260104-000000.json").write_text('{"checks": "oops", "steps": [1], "freshness_after": 5}', encoding="utf-8")
+    (tmp_path / "20260104-000000.json").write_text(
+        '{"checks": "oops", "steps": [1], "freshness_after": 5}', encoding="utf-8"
+    )
     at = open_page(tmp_path)
     assert not at.exception
     ids = list(at.selectbox(key="health_run").options)

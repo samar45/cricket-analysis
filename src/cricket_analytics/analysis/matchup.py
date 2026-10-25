@@ -13,11 +13,15 @@ from ..sql.fragments import BALL_FACED, BOWLER_WICKET, IS_DOT, LEGAL_BALL, RUNS_
     title="Batter vs bowler",
     category="basic",
     description="Head-to-head of batters against bowlers. Give player (batter) and player2 (bowler) for one duel; "
-                "give only one to list that player's opponents, busiest first.",
+    "give only one to list that player's opponents, busiest first.",
     params=[
         *std("player", "player2", "competition", "season", "venue", "phase", "team", "opposition"),
-        ParamSpec("min_balls", "int", default=6,
-                  help="Hide pairs with fewer balls faced than this (ignored when both players are given)"),
+        ParamSpec(
+            "min_balls",
+            "int",
+            default=6,
+            help="Hide pairs with fewer balls faced than this (ignored when both players are given)",
+        ),
         ParamSpec("top", "int", default=50, help="Maximum rows returned"),
     ],
     caveats=[
@@ -29,7 +33,9 @@ from ..sql.fragments import BALL_FACED, BOWLER_WICKET, IS_DOT, LEGAL_BALL, RUNS_
         "Super-over balls are excluded.",
     ],
 )
-def matchup(f: Filters, player2: str | None = None, min_balls: int = 6, top: int = 50) -> pd.DataFrame:
+def matchup(
+    f: Filters, player2: str | None = None, min_balls: int = 6, top: int = 50
+) -> pd.DataFrame:
     if not f.player and not player2:
         raise ValueError("matchup needs player (batter), player2 (bowler), or both")
     where, params = f.where("bat")

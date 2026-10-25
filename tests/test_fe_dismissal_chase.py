@@ -33,7 +33,9 @@ def raw():
 
 def test_dismissal_kinds_match_csv(db, raw):
     d = api.run("dismissal_profile", db_path=db, competition="ipl").data
-    w = raw[raw.player_dismissed.notna() & ~raw.wicket_type.isin(["retired hurt", "retired not out"])]
+    w = raw[
+        raw.player_dismissed.notna() & ~raw.wicket_type.isin(["retired hurt", "retired not out"])
+    ]
     assert d.outs.sum() == len(w)
     got = d.groupby("kind").outs.sum()
     assert got.get("run out", 0) == (w.wicket_type == "run out").sum()
@@ -56,19 +58,32 @@ def test_chase_vs_set_matches_csv(db, raw):
     for r in d.itertuples():
         assert r.runs == bat[(1 if r.setting == "setting" else 2, r.player)]
     b = api.run("chase_vs_set", db_path=db, competition="ipl", role="bowling").data
-    assert b.wickets.sum() == raw.wicket_type.isin(["bowled", "caught", "lbw", "stumped", "caught and bowled", "hit wicket"]).sum()
+    assert (
+        b.wickets.sum()
+        == raw.wicket_type.isin(
+            ["bowled", "caught", "lbw", "stumped", "caught and bowled", "hit wicket"]
+        ).sum()
+    )
     assert set(b.setting) == {"setting", "chasing"}
 
 
 def test_charts_build(db):
-    for mid, role in (("dismissal_profile", None), ("chase_vs_set", "batting"), ("chase_vs_set", "bowling")):
+    for mid, role in (
+        ("dismissal_profile", None),
+        ("chase_vs_set", "batting"),
+        ("chase_vs_set", "bowling"),
+    ):
         kw = {"role": role} if role else {}
         r = api.run(mid, db_path=db, competition="ipl", **kw)
         mod = vdis if mid == "dismissal_profile" else vchase
         assert isinstance(mod.figure(r), go.Figure)
         for aspect in ("9:16", "1:1"):
             assert isinstance(video.video_figure(mid, r, aspect), go.Figure)
-    one = api.run("chase_vs_set", db_path=db, player=api.run("chase_vs_set", db_path=db, competition="ipl").data.player[0])
+    one = api.run(
+        "chase_vs_set",
+        db_path=db,
+        player=api.run("chase_vs_set", db_path=db, competition="ipl").data.player[0],
+    )
     assert isinstance(vchase.figure(one), go.Figure)
 
 
@@ -82,4 +97,9 @@ def test_golden_kohli_ipl():
     assert set(c.setting) == {"setting", "chasing"}
     for aspect in ("9:16", "1:1"):
         for focus in (None, "strike_rate", "win_pct"):
-            video.video_figure("chase_vs_set", api.run("chase_vs_set", player="V Kohli", competition="ipl"), aspect, focus)
+            video.video_figure(
+                "chase_vs_set",
+                api.run("chase_vs_set", player="V Kohli", competition="ipl"),
+                aspect,
+                focus,
+            )

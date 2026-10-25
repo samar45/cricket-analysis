@@ -19,11 +19,16 @@ _GROUPS = {
     title="Venue summary",
     category="basic",
     description="Per-venue matches, average 1st and 2nd innings scores, highest and lowest totals and the "
-                "bat-first win rate. Top batters/bowlers at a venue: run batting / bowling with the venue filter.",
+    "bat-first win rate. Top batters/bowlers at a venue: run batting / bowling with the venue filter.",
     params=[
         *std("venue", "competition", "season", "team", "opposition"),
-        ParamSpec("group_by", "choice", default="venue", choices=("venue", "season"),
-                  help="venue = one row per venue; season = per venue per season"),
+        ParamSpec(
+            "group_by",
+            "choice",
+            default="venue",
+            choices=("venue", "season"),
+            help="venue = one row per venue; season = per venue per season",
+        ),
         ParamSpec("min_matches", "int", default=1, help="Hide venues with fewer matches than this"),
     ],
     caveats=[

@@ -15,15 +15,19 @@ RUNS_CONCEDED = "(d.runs_batter + d.wides + d.noballs)"
 
 # Dismissals credited to the bowler: everything except run outs, retirements, obstructing the field and
 # hitting the ball twice (1 row). ('retired not out' is not a dismissal at all.)
-_NOT_BOWLER = ("'run out', 'retired hurt', 'retired out', 'retired not out', "
-               "'obstructing the field', 'hit the ball twice'")
+_NOT_BOWLER = (
+    "'run out', 'retired hurt', 'retired out', 'retired not out', "
+    "'obstructing the field', 'hit the ball twice'"
+)
 BOWLER_WICKET = f"(d.wicket_type IS NOT NULL AND d.wicket_type NOT IN ({_NOT_BOWLER}))"
 
 # `player_out` left the crease dismissed on this ball (any way except retired hurt / retired not out).
 # It may be the STRIKER or the NON-STRIKER (non-striker run outs are 5,345 balls in the data), so count
 # an innings' dismissal by grouping on d.player_out, never on d.batter:
 #   SELECT d.player_out AS batter, match_id, innings FROM deliveries d WHERE DISMISSAL
-DISMISSAL = "(d.player_out IS NOT NULL AND d.wicket_type NOT IN ('retired hurt', 'retired not out'))"
+DISMISSAL = (
+    "(d.player_out IS NOT NULL AND d.wicket_type NOT IN ('retired hurt', 'retired not out'))"
+)
 
 # The striker (d.batter) was the one dismissed on this ball. Use it only for ball-level questions such as
 # "batter X dismissed by bowler Y"; for innings/average counts use DISMISSAL grouped by player_out.
@@ -45,8 +49,10 @@ def phase_sql(d: str = "d", m: str = "m") -> str:
     i.e. the first 25 balls are powerplay and the last 25 are death.
     """
     pp = f"CASE WHEN {m}.balls_per_over = 5 THEN 5 ELSE 6 END"
-    return (f"(CASE WHEN {d}.over_num < {pp} THEN 'powerplay' "
-            f"WHEN {d}.over_num < 15 THEN 'middle' ELSE 'death' END)")
+    return (
+        f"(CASE WHEN {d}.over_num < {pp} THEN 'powerplay' "
+        f"WHEN {d}.over_num < 15 THEN 'middle' ELSE 'death' END)"
+    )
 
 
 PHASES = ("powerplay", "middle", "death")

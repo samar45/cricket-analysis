@@ -17,10 +17,19 @@ from . import api
 from .db import use_db
 
 FACTS_VERSION = 1
-MIN_BALLS = 300     # a side of the game (bat or bowl) joins the career card at this many balls
+MIN_BALLS = 300  # a side of the game (bat or bowl) joins the career card at this many balls
 PHASES = ("powerplay", "middle", "death")
-ORDER = ("career", "best_season", "by_phase", "vs_pace_spin", "home_away", "chase_vs_set", "pressure", "dismissals",
-         "profile")
+ORDER = (
+    "career",
+    "best_season",
+    "by_phase",
+    "vs_pace_spin",
+    "home_away",
+    "chase_vs_set",
+    "pressure",
+    "dismissals",
+    "profile",
+)
 
 
 class PlayerNotFound(ValueError):
@@ -68,9 +77,14 @@ def _flatten(d: dict, prefix: str, raw: dict) -> None:
             raw[key] = v
 
 
-def build(player: str, competition: str | None = None, last_n_years: int | None = None, db_path=None) -> dict:
-    base = {"player": player, **({"competition": competition} if competition else {}),
-            **({"last_n_years": last_n_years} if last_n_years else {})}
+def build(
+    player: str, competition: str | None = None, last_n_years: int | None = None, db_path=None
+) -> dict:
+    base = {
+        "player": player,
+        **({"competition": competition} if competition else {}),
+        **({"last_n_years": last_n_years} if last_n_years else {}),
+    }
     calls, results, skipped = [], [], []
 
     def call(module, **extra):
@@ -110,15 +124,43 @@ def build(player: str, competition: str | None = None, last_n_years: int | None 
 
     career, src = {}, []
     if bats:
-        career.update(_pick(bat_row, {"innings": "innings", "not_outs": "not_outs", "runs": "total_runs", "balls": "balls",
-                                      "highest": "highest", "average": "average", "strike_rate": "strike_rate",
-                                      "fifties": "fifties", "hundreds": "hundreds", "fours": "fours", "sixes": "sixes"}))
+        career.update(
+            _pick(
+                bat_row,
+                {
+                    "innings": "innings",
+                    "not_outs": "not_outs",
+                    "runs": "total_runs",
+                    "balls": "balls",
+                    "highest": "highest",
+                    "average": "average",
+                    "strike_rate": "strike_rate",
+                    "fifties": "fifties",
+                    "hundreds": "hundreds",
+                    "fours": "fours",
+                    "sixes": "sixes",
+                },
+            )
+        )
         src.append(s_bat)
     if bowls:
-        career.update(_pick(bowl_row, {"bowl_innings": "innings", "wickets": "wickets", "runs_conceded": "runs_conceded",
-                                       "balls_bowled": "balls", "economy": "economy", "bowl_average": "average",
-                                       "bowl_strike_rate": "strike_rate", "best_figures": "best_figures",
-                                       "three_plus": "three_plus", "five_plus": "five_plus"}))
+        career.update(
+            _pick(
+                bowl_row,
+                {
+                    "bowl_innings": "innings",
+                    "wickets": "wickets",
+                    "runs_conceded": "runs_conceded",
+                    "balls_bowled": "balls",
+                    "economy": "economy",
+                    "bowl_average": "average",
+                    "bowl_strike_rate": "strike_rate",
+                    "best_figures": "best_figures",
+                    "three_plus": "three_plus",
+                    "five_plus": "five_plus",
+                },
+            )
+        )
         src.append(s_bowl)
     facts["career"] = {"source": src, **career}
 
@@ -129,25 +171,70 @@ def build(player: str, competition: str | None = None, last_n_years: int | None 
             return None
         key = "total_runs" if bat_side else "wickets"
         row = r.data.loc[r.data[key].idxmax()]
-        cols = ({"season": "season", "runs": "total_runs", "innings": "innings", "average": "average",
-                 "strike_rate": "strike_rate", "highest": "highest"} if bat_side else
-                {"season": "season", "wickets": "wickets", "innings": "innings", "economy": "economy",
-                 "best_figures": "best_figures"})
+        cols = (
+            {
+                "season": "season",
+                "runs": "total_runs",
+                "innings": "innings",
+                "average": "average",
+                "strike_rate": "strike_rate",
+                "highest": "highest",
+            }
+            if bat_side
+            else {
+                "season": "season",
+                "wickets": "wickets",
+                "innings": "innings",
+                "economy": "economy",
+                "best_figures": "best_figures",
+            }
+        )
         return {"source": [s], **_pick(row, cols)}
 
     def by_phase():
         r, s = call(role, group_by="phase")
-        cols = ({"innings": "innings", "runs": "total_runs", "balls": "balls", "average": "average",
-                 "strike_rate": "strike_rate", "boundary_pct": "boundary_pct"} if role == "batting" else
-                {"innings": "innings", "balls": "balls", "wickets": "wickets", "economy": "economy", "dot_pct": "dot_pct"})
-        out = {row["phase"]: _pick(row, cols) for _, row in r.data.iterrows() if row["phase"] in PHASES}
+        cols = (
+            {
+                "innings": "innings",
+                "runs": "total_runs",
+                "balls": "balls",
+                "average": "average",
+                "strike_rate": "strike_rate",
+                "boundary_pct": "boundary_pct",
+            }
+            if role == "batting"
+            else {
+                "innings": "innings",
+                "balls": "balls",
+                "wickets": "wickets",
+                "economy": "economy",
+                "dot_pct": "dot_pct",
+            }
+        )
+        out = {
+            row["phase"]: _pick(row, cols) for _, row in r.data.iterrows() if row["phase"] in PHASES
+        }
         return {"source": [s], **out} if out else None
 
     def vs_pace_spin():
         r, s = call("pace_vs_spin")
-        kinds = {str(row["bowler_type"]).lower(): _pick(row, ["innings", "runs", "balls", "strike_rate", "average",
-                                                              "dismissals", "dot_pct", "pct_of_balls"])
-                 for _, row in r.data.iterrows() if row["level"] == "kind"}
+        kinds = {
+            str(row["bowler_type"]).lower(): _pick(
+                row,
+                [
+                    "innings",
+                    "runs",
+                    "balls",
+                    "strike_rate",
+                    "average",
+                    "dismissals",
+                    "dot_pct",
+                    "pct_of_balls",
+                ],
+            )
+            for _, row in r.data.iterrows()
+            if row["level"] == "kind"
+        }
         if "pace" not in kinds and "spin" not in kinds:
             return None
         unk = kinds.pop("unknown", {}).get("pct_of_balls")
@@ -155,26 +242,60 @@ def build(player: str, competition: str | None = None, last_n_years: int | None 
 
     def home_away():
         r, s = call("home_away", role=role)
-        cols = ({"matches": "matches", "runs": "total_runs", "average": "average", "strike_rate": "strike_rate"}
-                if role == "batting" else {"matches": "matches", "wickets": "wickets", "economy": "economy"})
-        out = {row["location"]: _pick(row, cols) for _, row in r.data.iterrows() if row["location"] != "unknown"}
+        cols = (
+            {
+                "matches": "matches",
+                "runs": "total_runs",
+                "average": "average",
+                "strike_rate": "strike_rate",
+            }
+            if role == "batting"
+            else {"matches": "matches", "wickets": "wickets", "economy": "economy"}
+        )
+        out = {
+            row["location"]: _pick(row, cols)
+            for _, row in r.data.iterrows()
+            if row["location"] != "unknown"
+        }
         return {"source": [s], **out} if out else None
 
     def chase_vs_set():
         r, s = call("chase_vs_set", role=role)
-        cols = (["innings", "runs", "average", "strike_rate", "big_games", "win_pct"] if role == "batting"
-                else ["innings", "wickets", "economy", "big_games", "win_pct"])
-        out = {row["setting"]: _pick(row, cols) for _, row in r.data.iterrows() if row["setting"] in ("setting", "chasing")}
+        cols = (
+            ["innings", "runs", "average", "strike_rate", "big_games", "win_pct"]
+            if role == "batting"
+            else ["innings", "wickets", "economy", "big_games", "win_pct"]
+        )
+        out = {
+            row["setting"]: _pick(row, cols)
+            for _, row in r.data.iterrows()
+            if row["setting"] in ("setting", "chasing")
+        }
         return {"source": [s], **out} if out else None
 
     def pressure():
         r, s = call("pressure", role=role)
         if r.data.empty:
             return None
-        cols = ({"balls": "pressure_balls", "runs": "pressure_runs", "outs": "pressure_outs", "strike_rate": "pressure_sr",
-                 "average": "pressure_avg", "calm_strike_rate": "calm_sr", "sr_change": "sr_change"} if role == "batting" else
-                {"balls": "pressure_legal_balls", "wickets": "pressure_wickets", "economy": "pressure_economy",
-                 "calm_economy": "calm_economy", "economy_change": "economy_change"})
+        cols = (
+            {
+                "balls": "pressure_balls",
+                "runs": "pressure_runs",
+                "outs": "pressure_outs",
+                "strike_rate": "pressure_sr",
+                "average": "pressure_avg",
+                "calm_strike_rate": "calm_sr",
+                "sr_change": "sr_change",
+            }
+            if role == "batting"
+            else {
+                "balls": "pressure_legal_balls",
+                "wickets": "pressure_wickets",
+                "economy": "pressure_economy",
+                "calm_economy": "calm_economy",
+                "economy_change": "economy_change",
+            }
+        )
         out = _pick(r.data.iloc[0], cols)
         return {"source": [s], **out} if out.get("balls") else None
 
@@ -183,21 +304,46 @@ def build(player: str, competition: str | None = None, last_n_years: int | None 
         if r.data.empty:
             return None
         d = r.data.sort_values("outs", ascending=False)
-        kinds = {_slug(row["kind"]): {"label": row["kind"], "outs": int(row["outs"]), "pct": float(row["pct"])}
-                 for _, row in d.iterrows()}
-        return {"source": [s], "total": int(d["outs"].sum()), "top_kind": d.iloc[0]["kind"],
-                "top_pct": float(d.iloc[0]["pct"]), "kinds": kinds}
+        kinds = {
+            _slug(row["kind"]): {
+                "label": row["kind"],
+                "outs": int(row["outs"]),
+                "pct": float(row["pct"]),
+            }
+            for _, row in d.iterrows()
+        }
+        return {
+            "source": [s],
+            "total": int(d["outs"].sum()),
+            "top_kind": d.iloc[0]["kind"],
+            "top_pct": float(d.iloc[0]["pct"]),
+            "kinds": kinds,
+        }
 
     def profile():
         r, s = call("player_profile", min_matches=1)
         if r.data.empty:
             return None
-        return {"source": [s], **_pick(r.data.iloc[0], ["role", "bowl_kind", "bowl_type", "bat_hand", "keeper",
-                                                         "usually_bats_at", "usually_faces_in", "usually_bowls_in"])}
+        return {
+            "source": [s],
+            **_pick(
+                r.data.iloc[0],
+                [
+                    "role",
+                    "bowl_kind",
+                    "bowl_type",
+                    "bat_hand",
+                    "keeper",
+                    "usually_bats_at",
+                    "usually_faces_in",
+                    "usually_bowls_in",
+                ],
+            ),
+        }
 
     section("best_season", best_season)
     section("by_phase", by_phase)
-    if role == "batting":   # these three are batter views; a bowler's tail-end numbers would mislead
+    if role == "batting":  # these three are batter views; a bowler's tail-end numbers would mislead
         section("vs_pace_spin", vs_pace_spin)
     section("home_away", home_away)
     section("chase_vs_set", chase_vs_set)
@@ -211,12 +357,27 @@ def build(player: str, competition: str | None = None, last_n_years: int | None 
     _flatten(facts, "", raw)
     first = results[0].meta
     meta = {
-        "facts_version": FACTS_VERSION, "player": player, "role": role, "params": base,
+        "facts_version": FACTS_VERSION,
+        "player": player,
+        "role": role,
+        "params": base,
         "generated": dt.datetime.now().isoformat(timespec="seconds"),
-        "data_through": max((r.meta["data_through"] for r in results if r.meta["data_through"]), default=None),
-        "db_path": first["db_path"], "db_modified": first["db_modified"], "source": first["source"],
-        "competition_note": None if competition else "No competition given: all men's T20 competitions combined.",
+        "data_through": max(
+            (r.meta["data_through"] for r in results if r.meta["data_through"]), default=None
+        ),
+        "db_path": first["db_path"],
+        "db_modified": first["db_modified"],
+        "source": first["source"],
+        "competition_note": None
+        if competition
+        else "No competition given: all men's T20 competitions combined.",
         "caveats": list(dict.fromkeys(c for r in results for c in r.meta["caveats"])),
-        "calls": calls, "skipped": skipped,
+        "calls": calls,
+        "skipped": skipped,
     }
-    return {"meta": meta, "facts": facts, "tokens": {k: _fmt(v) for k, v in raw.items()}, "tokens_raw": raw}
+    return {
+        "meta": meta,
+        "facts": facts,
+        "tokens": {k: _fmt(v) for k, v in raw.items()},
+        "tokens_raw": raw,
+    }

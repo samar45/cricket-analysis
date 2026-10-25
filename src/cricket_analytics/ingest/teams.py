@@ -18,20 +18,18 @@ Usage:
 TEAM_ALIASES: dict[str, str] = {
     # ── IPL renames ──────────────────────────────────────────────────────────
     # Delhi franchise: renamed from Daredevils to Capitals in 2019
-    "Delhi Daredevils":                     "Delhi Capitals",
-
+    "Delhi Daredevils": "Delhi Capitals",
     # Punjab franchise: rebranded from Kings XI Punjab to Punjab Kings in 2021
-    "Kings XI Punjab":                      "Punjab Kings",
-
+    "Kings XI Punjab": "Punjab Kings",
     # Royal Challengers: city name change Bangalore → Bengaluru in 2024
-    "Royal Challengers Bangalore":          "Royal Challengers Bengaluru",
-
+    "Royal Challengers Bangalore": "Royal Challengers Bengaluru",
     # Rising Pune: typo variant (missing final 's')
-    "Rising Pune Supergiant":               "Rising Pune Supergiants",
+    "Rising Pune Supergiant": "Rising Pune Supergiants",
 }
 
 
 # ── Normalisation function ────────────────────────────────────────────────────
+
 
 def normalise_team(raw: str | None) -> str | None:
     """Return the canonical team name for a raw Cricsheet team string."""
@@ -56,6 +54,7 @@ def normalise_team(raw: str | None) -> str | None:
 
 # ── DB migration ──────────────────────────────────────────────────────────────
 
+
 def migrate_teams(db_path=None) -> int:
     """Apply all alias mappings to the matches table in-place.
 
@@ -63,6 +62,7 @@ def migrate_teams(db_path=None) -> int:
     Returns the number of rows updated.
     """
     from ..db import get_connection
+
     con = get_connection(db_path)
 
     total_updated = 0
@@ -70,13 +70,11 @@ def migrate_teams(db_path=None) -> int:
         if raw == canonical:
             continue
         for col in ("team1", "team2", "winner"):
-            before = con.execute(
-                f"SELECT COUNT(*) FROM matches WHERE {col} = ?", [raw]
-            ).fetchone()[0]
+            before = con.execute(f"SELECT COUNT(*) FROM matches WHERE {col} = ?", [raw]).fetchone()[
+                0
+            ]
             if before:
-                con.execute(
-                    f"UPDATE matches SET {col} = ? WHERE {col} = ?", [canonical, raw]
-                )
+                con.execute(f"UPDATE matches SET {col} = ? WHERE {col} = ?", [canonical, raw])
                 total_updated += before
 
     con.close()
@@ -85,6 +83,7 @@ def migrate_teams(db_path=None) -> int:
 
 if __name__ == "__main__":
     import logging
+
     logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
     n = migrate_teams()
     print(f"Updated {n} team rows")

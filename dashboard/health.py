@@ -32,7 +32,9 @@ def load_runs(d: Path) -> list[dict]:
             r["_file"] = p.name
             runs.append(r)
         except (OSError, ValueError) as e:
-            runs.append({"run_id": p.stem, "load_error": f"{type(e).__name__}: {e}", "_file": p.name})
+            runs.append(
+                {"run_id": p.stem, "load_error": f"{type(e).__name__}: {e}", "_file": p.name}
+            )
     return runs
 
 
@@ -54,8 +56,18 @@ def _status(r: dict) -> str:
 
 def _summary_row(r: dict) -> dict:
     if r.get("load_error"):
-        return {"run_id": r["run_id"], "kind": "?", "ok": "❌ unreadable", "new matches": "", "passed": "", "failed": "",
-                "warned": "", "seconds": "", "swapped": "", "error": r["load_error"]}
+        return {
+            "run_id": r["run_id"],
+            "kind": "?",
+            "ok": "❌ unreadable",
+            "new matches": "",
+            "passed": "",
+            "failed": "",
+            "warned": "",
+            "seconds": "",
+            "swapped": "",
+            "error": r["load_error"],
+        }
     cs = [c.get("status") for c in _rows(r, "checks")]
     new = 0
     for v in _dicts(r, "new_by_competition").values():
@@ -69,9 +81,18 @@ def _summary_row(r: dict) -> dict:
             secs += float(s.get("seconds") or 0)
         except (TypeError, ValueError):
             pass
-    return {"run_id": r["run_id"], "kind": r.get("kind"), "ok": ICON[_status(r)], "new matches": new,
-            "passed": cs.count("pass"), "failed": cs.count("fail"), "warned": cs.count("warn"),
-            "seconds": round(secs, 1), "swapped": bool(r.get("swapped")), "error": r.get("error") or ""}
+    return {
+        "run_id": r["run_id"],
+        "kind": r.get("kind"),
+        "ok": ICON[_status(r)],
+        "new matches": new,
+        "passed": cs.count("pass"),
+        "failed": cs.count("fail"),
+        "warned": cs.count("warn"),
+        "seconds": round(secs, 1),
+        "swapped": bool(r.get("swapped")),
+        "error": r.get("error") or "",
+    }
 
 
 def _tint(row):
@@ -84,7 +105,11 @@ def _table(rows: list[dict], cols: list[str], tint: bool = True):
         st.caption("Nothing recorded.")
         return
     df = pd.DataFrame(rows).reindex(columns=cols).fillna("").astype(str)
-    st.dataframe(df.style.apply(_tint, axis=1) if tint and "status" in cols else df, hide_index=True, width="stretch")
+    st.dataframe(
+        df.style.apply(_tint, axis=1) if tint and "status" in cols else df,
+        hide_index=True,
+        width="stretch",
+    )
 
 
 def _compare(before: dict, after: dict, fields: list[str]):
@@ -103,8 +128,14 @@ def _compare(before: dict, after: dict, fields: list[str]):
     df = pd.DataFrame(rows).astype(str)
 
     def mark(row):
-        return ["" if c == "competition" or row[f"{c.rsplit(' ', 1)[0]} before"] == row[f"{c.rsplit(' ', 1)[0]} after"]
-                else AMBER for c in row.index]
+        return [
+            ""
+            if c == "competition"
+            or row[f"{c.rsplit(' ', 1)[0]} before"] == row[f"{c.rsplit(' ', 1)[0]} after"]
+            else AMBER
+            for c in row.index
+        ]
+
     st.dataframe(df.style.apply(mark, axis=1), hide_index=True, width="stretch")
 
 
@@ -120,11 +151,21 @@ def _detail(r: dict):
     _table(_rows(r, "checks"), ["name", "status", "expected", "actual", "message"])
     st.markdown("**Freshness (matches, latest date)**")
     _compare(_dicts(r, "freshness_before"), _dicts(r, "freshness_after"), ["matches", "latest"])
-    st.markdown("**Fingerprint (matches, balls, runs, wickets).** A highlighted cell means the data changed.")
-    _compare(_dicts(r, "fingerprint_before"), _dicts(r, "fingerprint_after"), ["matches", "balls", "runs", "wickets"])
+    st.markdown(
+        "**Fingerprint (matches, balls, runs, wickets).** A highlighted cell means the data changed."
+    )
+    _compare(
+        _dicts(r, "fingerprint_before"),
+        _dicts(r, "fingerprint_after"),
+        ["matches", "balls", "runs", "wickets"],
+    )
     st.markdown("**Golden numbers** (known-good stats)")
     _table(_rows(r, "golden"), ["name", "expected", "actual", "status"])
-    new = [{"competition": k, **v} for k, v in _dicts(r, "new_by_competition").items() if isinstance(v, dict)]
+    new = [
+        {"competition": k, **v}
+        for k, v in _dicts(r, "new_by_competition").items()
+        if isinstance(v, dict)
+    ]
     if new:
         st.markdown("**New matches**")
         _table(new, ["competition", "matches", "earliest", "latest"], tint=False)
@@ -134,9 +175,16 @@ def _detail(r: dict):
     if _rows(r, "skipped_events"):
         st.markdown("**Skipped events** (not tracked; review for league renames)")
         _table(_rows(r, "skipped_events"), ["event", "match_type", "gender", "count"], tint=False)
-    st.caption(f"Backup: {r.get('backup') or 'none'} | DB: {r.get('db_path')} | {r.get('started')} to {r.get('finished')}")
-    st.download_button("Download run JSON", json.dumps({k: v for k, v in r.items() if k != "_file"}, indent=2),
-                       f"{r['run_id']}.json", "application/json", key=f"dl_{r['run_id']}")
+    st.caption(
+        f"Backup: {r.get('backup') or 'none'} | DB: {r.get('db_path')} | {r.get('started')} to {r.get('finished')}"
+    )
+    st.download_button(
+        "Download run JSON",
+        json.dumps({k: v for k, v in r.items() if k != "_file"}, indent=2),
+        f"{r['run_id']}.json",
+        "application/json",
+        key=f"dl_{r['run_id']}",
+    )
 
 
 def _run_cli(*args: str):
@@ -157,10 +205,14 @@ def _actions():
     if c2.button("Dry-run update", key="h_dry"):
         _run_cli("update", "--dry-run")
     with c3, st.expander("Real update (careful)"):
-        st.warning("This dashboard keeps the database open. On Windows the final file swap fails while it is open, "
-                   "and nothing is changed. Safe way: stop the dashboard, run `cricket update` in a terminal, "
-                   "then start the dashboard again (see docs/RUNBOOK.md).")
-        if st.checkbox("I understand, run it from here anyway", key="h_confirm") and st.button("Run update", key="h_update"):
+        st.warning(
+            "This dashboard keeps the database open. On Windows the final file swap fails while it is open, "
+            "and nothing is changed. Safe way: stop the dashboard, run `cricket update` in a terminal, "
+            "then start the dashboard again (see docs/RUNBOOK.md)."
+        )
+        if st.checkbox("I understand, run it from here anyway", key="h_confirm") and st.button(
+            "Run update", key="h_update"
+        ):
             _run_cli("update")
     if "health_out" in st.session_state:
         cmd, code, out = st.session_state["health_out"]
@@ -171,8 +223,11 @@ def _actions():
 def _db_cards() -> tuple[str, dict]:
     try:
         from cricket_analytics import api
+
         info = api.data_info()
-        return str(info["db_modified"]), {c["competition"]: c["latest"] for c in info["competitions"]}
+        return str(info["db_modified"]), {
+            c["competition"]: c["latest"] for c in info["competitions"]
+        }
     except Exception:  # noqa: BLE001  (no DB on this machine: the page still shows the logs)
         return "unavailable", {}
 
@@ -183,15 +238,19 @@ def page(runs_dir: Path | None = None):
     if not runs and runs_dir is None:
         runs, sample = load_runs(SAMPLE_DIR), True
     if sample:
-        st.info("SAMPLE DATA: nothing recorded yet in data/runs/. The runs below are examples. "
-                "Click 'Run health check' to record a real one.")
+        st.info(
+            "SAMPLE DATA: nothing recorded yet in data/runs/. The runs below are examples. "
+            "Click 'Run health check' to record a real one."
+        )
     _actions()
 
     stamp, latest = _db_cards()
     a, b, c = st.columns(3)
     with a, st.container(border=True):
         st.markdown("**Last run**")
-        st.markdown(f"### {ICON[_status(runs[0])] + ' ' + runs[0]['run_id'] if runs else 'no runs'}")
+        st.markdown(
+            f"### {ICON[_status(runs[0])] + ' ' + runs[0]['run_id'] if runs else 'no runs'}"
+        )
     with b, st.container(border=True):
         st.markdown("**Database updated**")
         st.markdown(f"### {stamp}")
@@ -199,12 +258,16 @@ def page(runs_dir: Path | None = None):
         st.markdown("**Runs recorded**")
         st.markdown(f"### {len(runs)}")
     if latest:
-        st.caption("Latest match per competition: " + ", ".join(f"{k} {v}" for k, v in latest.items()))
+        st.caption(
+            "Latest match per competition: " + ", ".join(f"{k} {v}" for k, v in latest.items())
+        )
 
     if not runs:
         st.caption("No run logs yet.")
         return
     st.subheader("Runs (newest first)")
-    st.dataframe(pd.DataFrame([_summary_row(r) for r in runs]).astype(str), hide_index=True, width="stretch")
+    st.dataframe(
+        pd.DataFrame([_summary_row(r) for r in runs]).astype(str), hide_index=True, width="stretch"
+    )
     ids = [r["run_id"] for r in runs]
     _detail(runs[ids.index(st.selectbox("Open a run", ids, key="health_run"))])

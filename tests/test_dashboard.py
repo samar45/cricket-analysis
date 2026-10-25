@@ -33,21 +33,29 @@ def open_module(at: AppTest, module_id: str) -> AppTest:
 def assert_clean(at: AppTest, module_id: str = ""):
     assert not at.exception, [e.message for e in at.exception]
     assert not at.error, [e.value for e in at.error]
-    assert not [c for c in at.caption if "no chart yet" in c.value], f"{module_id} has no viz/<id>.py"
+    assert not [c for c in at.caption if "no chart yet" in c.value], (
+        f"{module_id} has no viz/<id>.py"
+    )
 
 
 def test_overview_loads():
     at = new_app()
     assert_clean(at)
-    assert len(at.markdown) >= 16 and len(at.dataframe) == 2          # one card per competition, two leader tables
-    at.selectbox(key="ov_comp").set_value("t20i_women").run()      # leaders follow the chosen competition
+    assert (
+        len(at.markdown) >= 16 and len(at.dataframe) == 2
+    )  # one card per competition, two leader tables
+    at.selectbox(key="ov_comp").set_value(
+        "t20i_women"
+    ).run()  # leaders follow the chosen competition
     assert_clean(at)
 
 
 @pytest.mark.parametrize("module_id", IDS)
 def test_module_defaults(module_id):
     at = open_module(new_app(), module_id)
-    for p in registry.get(module_id).params:   # required players have no "Any" option; matchup needs one of two
+    for p in registry.get(
+        module_id
+    ).params:  # required players have no "Any" option; matchup needs one of two
         if p.required or (module_id == "matchup" and p.name in PLAYERS):
             at.selectbox(key=f"p_{p.name}").set_value(PLAYERS[p.name]).run()
     assert_clean(at, module_id)
@@ -64,11 +72,15 @@ def test_module_ipl_with_players(module_id):
         if p.name in names:
             at.selectbox(key=f"p_{p.name}").set_value(names[p.name]).run()
     assert_clean(at, module_id)
-    assert bool(at.warning) == (mod.category == "experimental"), "only experimental modules show the banner"
+    assert bool(at.warning) == (mod.category == "experimental"), (
+        "only experimental modules show the banner"
+    )
     if module_id == "batting":
         at.toggle(key="batting_include_super_overs").set_value(True).run()
         assert_clean(at, module_id)
-        assert any(r.get("total_runs") == 9346 for r in at.dataframe[0].value.to_dict("records")), "Kohli IPL runs with super overs"
+        assert any(r.get("total_runs") == 9346 for r in at.dataframe[0].value.to_dict("records")), (
+            "Kohli IPL runs with super overs"
+        )
 
 
 def test_multi_and_season_controls():
@@ -77,12 +89,12 @@ def test_multi_and_season_controls():
     at.selectbox(key="p_player").set_value("V Kohli").run()
     at.multiselect(key="p_venue").set_value(["M Chinnaswamy Stadium", "Wankhede Stadium"]).run()
     assert_clean(at, "batting")
-    assert at.dataframe[0].value.total_runs.iloc[0] == 4139           # two venues, summed
+    assert at.dataframe[0].value.total_runs.iloc[0] == 4139  # two venues, summed
     at.radio(key="p_season_mode").set_value("Last N seasons").run()
     at.number_input(key="p_last_n_years").set_value(5).run()
     at.multiselect(key="p_venue").set_value([]).run()
     assert_clean(at, "batting")
-    assert at.dataframe[0].value.total_runs.iloc[0] == 3053           # IPL 2022..2026
+    assert at.dataframe[0].value.total_runs.iloc[0] == 3053  # IPL 2022..2026
     at.radio(key="p_season_mode").set_value("Year range").run()
     at.selectbox(key="p_season_from").set_value(2024).run()
     assert_clean(at, "batting")
@@ -102,7 +114,9 @@ def test_video_tab(module_id):
         if p.name in names:
             at.selectbox(key=f"p_{p.name}").set_value(names[p.name]).run()
     assert_clean(at, module_id)
-    assert at.tabs, f"{module_id} returned no rows for Kohli in the IPL, so its tabs cannot be checked"
+    assert at.tabs, (
+        f"{module_id} returned no rows for Kohli in the IPL, so its tabs cannot be checked"
+    )
     assert [t.label for t in at.tabs] == ["Chart", "Table", "Video"]
     assert module_id in video.module_ids()
     assert at.radio(key="video_aspect").value == "9:16"

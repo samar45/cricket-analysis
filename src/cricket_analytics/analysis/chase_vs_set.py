@@ -17,12 +17,16 @@ _ORDER = "CASE setting WHEN 'setting' THEN 1 WHEN 'chasing' THEN 2 ELSE 3 END"
     title="Setting vs chasing (players)",
     category="intermediate",
     description="A player's batting (or bowling) when his team sets the target (1st innings) vs when it chases (2nd innings): "
-                "runs, average, strike rate (economy for bowlers), and how often his team won when he scored 30+ "
-                "(or took 2+ wickets).",
+    "runs, average, strike rate (economy for bowlers), and how often his team won when he scored 30+ "
+    "(or took 2+ wickets).",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
         ParamSpec("role", "choice", default="batting", choices=("batting", "bowling")),
-        ParamSpec("threshold", "int", help="A 'big' game: runs scored (batting, default 30) or wickets taken (bowling, default 2)"),
+        ParamSpec(
+            "threshold",
+            "int",
+            help="A 'big' game: runs scored (batting, default 30) or wickets taken (bowling, default 2)",
+        ),
         ParamSpec("min_innings", "int", default=0, help="Hide rows with fewer innings than this"),
     ],
     caveats=[
@@ -37,14 +41,16 @@ _ORDER = "CASE setting WHEN 'setting' THEN 1 WHEN 'chasing' THEN 2 ELSE 3 END"
         "Super-over innings (innings 3+) are excluded unless include_super_overs, then shown as 'super over'.",
     ],
 )
-def chase_vs_set(f: Filters, role: str = "batting", threshold: int | None = None, min_innings: int = 0) -> pd.DataFrame:
+def chase_vs_set(
+    f: Filters, role: str = "batting", threshold: int | None = None, min_innings: int = 0
+) -> pd.DataFrame:
     big = int(threshold) if threshold is not None else (30 if role == "batting" else 2)
     if role == "batting":
         inn, ip = batter_innings(f)
         sql = f"""
         WITH inn AS ({inn}),
         bt AS (SELECT match_id, innings, any_value(batting_team) AS team FROM deliveries GROUP BY match_id, innings),
-        x AS (SELECT i.batter AS player, {_SETTING.format(i='i.innings')} AS setting, i.runs, i.balls, i.out,
+        x AS (SELECT i.batter AS player, {_SETTING.format(i="i.innings")} AS setting, i.runs, i.balls, i.out,
                      (i.runs >= ?) AS big, (m.winner IS NOT NULL) AS decided, (m.winner = bt.team) AS won
               FROM inn i JOIN matches m USING (match_id) JOIN bt USING (match_id, innings))
         SELECT player, setting, COUNT(*)::INTEGER AS innings, SUM(1 - out)::INTEGER AS not_outs,
@@ -62,7 +68,7 @@ def chase_vs_set(f: Filters, role: str = "batting", threshold: int | None = None
     where, wp = f.where("bowl")
     sql = f"""
     WITH x AS (
-        SELECT d.bowler AS player, {_SETTING.format(i='d.innings')} AS setting, d.match_id,
+        SELECT d.bowler AS player, {_SETTING.format(i="d.innings")} AS setting, d.match_id,
                COUNT(*) FILTER (WHERE {BOWLER_WICKET}) AS wkts, SUM({RUNS_CONCEDED}) AS runs,
                COUNT(*) FILTER (WHERE {LEGAL_BALL}) AS legal, any_value(m.winner) AS winner, any_value(d.bowling_team) AS team
         FROM deliveries d JOIN matches m ON d.match_id = m.match_id

@@ -1,6 +1,5 @@
 """Tests for database schema and connection."""
 
-
 import pytest
 
 from cricket_analytics.db import get_connection, init_schema

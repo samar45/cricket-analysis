@@ -22,15 +22,29 @@ _TYPE = "CASE WHEN pa.bowl_type IS NULL THEN 'Unknown type' ELSE upper(left(pa.b
     title="Bowling-type matchups (pace vs spin, and each bowling type)",
     category="advanced",
     description="How a batter (or a batting team) scores against pace and spin, and with "
-                "detail=true against each bowling type (right-arm fast ... left-arm wrist spin). A bowler's type comes only from the hand-kept "
-                "list (player_overrides.csv); every other bowler is Unknown. Modes: batter_vs_type, team_vs_type, bowler_types "
-                "(the bowlers and their labels with source and confidence).",
+    "detail=true against each bowling type (right-arm fast ... left-arm wrist spin). A bowler's type comes only from the hand-kept "
+    "list (player_overrides.csv); every other bowler is Unknown. Modes: batter_vs_type, team_vs_type, bowler_types "
+    "(the bowlers and their labels with source and confidence).",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
-        ParamSpec("mode", "choice", default="batter_vs_type", choices=("batter_vs_type", "team_vs_type", "bowler_types"),
-                  help="batter_vs_type: per batter; team_vs_type: per batting team; bowler_types: the bowlers and their labels (player = the bowler)"),
-        ParamSpec("detail", "bool", default=False, help="Also split by bowling type (right-arm fast, left-arm orthodox, ...). Not used by bowler_types"),
-        ParamSpec("min_balls", "int", help="Hide rows with fewer balls faced (default 20 per batter, 60 per team; not used by bowler_types)"),
+        ParamSpec(
+            "mode",
+            "choice",
+            default="batter_vs_type",
+            choices=("batter_vs_type", "team_vs_type", "bowler_types"),
+            help="batter_vs_type: per batter; team_vs_type: per batting team; bowler_types: the bowlers and their labels (player = the bowler)",
+        ),
+        ParamSpec(
+            "detail",
+            "bool",
+            default=False,
+            help="Also split by bowling type (right-arm fast, left-arm orthodox, ...). Not used by bowler_types",
+        ),
+        ParamSpec(
+            "min_balls",
+            "int",
+            help="Hide rows with fewer balls faced (default 20 per batter, 60 per team; not used by bowler_types)",
+        ),
     ],
     caveats=[
         "A bowler has a type only if he is in the hand-kept list (player_overrides.csv, source manual-llm = written from memory by "
@@ -44,11 +58,13 @@ _TYPE = "CASE WHEN pa.bowl_type IS NULL THEN 'Unknown type' ELSE upper(left(pa.b
         "Two people who share a Cricsheet name (21 names) get one label.",
     ],
 )
-def pace_vs_spin(f: Filters, mode: str = "batter_vs_type", detail: bool = False, min_balls: int | None = None) -> pd.DataFrame:
+def pace_vs_spin(
+    f: Filters, mode: str = "batter_vs_type", detail: bool = False, min_balls: int | None = None
+) -> pd.DataFrame:
     if mode == "bowler_types":
         where, params = f.where("bowl")
         sql = f"""
-        WITH {attributes_cte('pa')}
+        WITH {attributes_cte("pa")}
         SELECT d.bowler AS bowler, COUNT(DISTINCT d.match_id)::INTEGER AS matches,
                COUNT(*) FILTER (WHERE {LEGAL_BALL})::INTEGER AS balls,
                lower({_KIND}) AS bowl_kind, pa.bowl_type AS bowl_type,
@@ -65,20 +81,25 @@ def pace_vs_spin(f: Filters, mode: str = "batter_vs_type", detail: bool = False,
         who, key, extra, floor = "team", "d.batting_team AS team", "", 60
     else:
         who, key, floor = "batter", "d.batter AS batter", 20
-        extra = (", COUNT(DISTINCT d.match_id || '-' || d.innings)::INTEGER AS innings, "
-                 f"COUNT(*) FILTER (WHERE {BOWLER_WICKET})::INTEGER AS dismissals")
+        extra = (
+            ", COUNT(DISTINCT d.match_id || '-' || d.innings)::INTEGER AS innings, "
+            f"COUNT(*) FILTER (WHERE {BOWLER_WICKET})::INTEGER AS dismissals"
+        )
     levels = [("kind", _KIND)] + ([("type", _TYPE)] if detail else [])
-    parts = " UNION ALL ".join(f"""
+    parts = " UNION ALL ".join(
+        f"""
         SELECT {key}, '{lvl}' AS level, {label} AS bowler_type, {bat_cols()}{extra}
         FROM deliveries d JOIN matches m ON d.match_id = m.match_id LEFT JOIN pa ON pa.name = d.bowler
         WHERE {where}
-        GROUP BY ALL""" for lvl, label in levels)
+        GROUP BY ALL"""
+        for lvl, label in levels
+    )
     cols = f"runs, balls, {ratio('runs', 'balls', 100.0)} AS strike_rate, "
     if mode == "batter_vs_type":
         cols = f"innings, {cols}{ratio('runs', 'dismissals')} AS average, dismissals, dots, "
     # pct_of_balls and the ordering are computed before the min_balls filter, so a hidden small row still counts in the share
     sql = f"""
-    WITH {attributes_cte('pa')}, g AS ({parts}), h AS (
+    WITH {attributes_cte("pa")}, g AS ({parts}), h AS (
         SELECT *, {ratio("balls", f"SUM(balls) OVER (PARTITION BY {who}, level)", 100.0, 1)} AS pct_of_balls,
                SUM(runs) OVER (PARTITION BY {who}, level) AS total_runs
         FROM g)

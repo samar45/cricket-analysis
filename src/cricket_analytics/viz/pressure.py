@@ -15,14 +15,25 @@ def figure(result) -> go.Figure:
     if d.empty:
         return empty("No players with enough pressure balls for these filters")
     bat = "batter" in d.columns
-    who, p, c, name, dec = (("batter", "pressure_sr", "calm_sr", "Strike rate", 0) if bat
-                            else ("bowler", "pressure_economy", "calm_economy", "Economy", 2))
+    who, p, c, name, dec = (
+        ("batter", "pressure_sr", "calm_sr", "Strike rate", 0)
+        if bat
+        else ("bowler", "pressure_economy", "calm_economy", "Economy", 2)
+    )
     level = result.meta["params"].get("level", "high")
     if len(d) == 1 or result.meta["params"].get("player"):
         r = d.iloc[0]
-        pb, cb = (r.pressure_balls, r.calm_balls) if bat else (r.pressure_legal_balls, r.calm_legal_balls)
+        pb, cb = (
+            (r.pressure_balls, r.calm_balls)
+            if bat
+            else (r.pressure_legal_balls, r.calm_legal_balls)
+        )
         if bat:
-            cats, pv, cv = ["Strike rate", "Average"], [r.pressure_sr, r.pressure_avg], [r.calm_sr, r.calm_avg]
+            cats, pv, cv = (
+                ["Strike rate", "Average"],
+                [r.pressure_sr, r.pressure_avg],
+                [r.calm_sr, r.calm_avg],
+            )
         else:
             cats, pv, cv = ["Economy"], [r.pressure_economy], [r.calm_economy]
         title = f"{r[who]}: under pressure vs calm chase balls"
@@ -31,16 +42,43 @@ def figure(result) -> go.Figure:
     else:
         t = d.head(TOP)
         cats, pv, cv = [short(x, 16) for x in t[who]], list(t[p]), list(t[c])
-        title = f"{name} under pressure vs calm: top {len(t)} by pressure {name.lower()}" if bat else f"Economy under pressure vs calm: best {len(t)}"
+        title = (
+            f"{name} under pressure vs calm: top {len(t)} by pressure {name.lower()}"
+            if bat
+            else f"Economy under pressure vs calm: best {len(t)}"
+        )
         note = f"pressure level: {level}; chases only, D/L and shortened matches left out"
         height = 480
-    fig = go.Figure([
-        go.Bar(name="Under pressure", x=cats, y=pv, marker_color=PALETTE["bad"], text=[_t(v, dec) for v in pv], textposition="outside"),
-        go.Bar(name="Calm chase", x=cats, y=cv, marker_color=PALETTE["neutral"], text=[_t(v, dec) for v in cv], textposition="outside"),
-    ])
+    fig = go.Figure(
+        [
+            go.Bar(
+                name="Under pressure",
+                x=cats,
+                y=pv,
+                marker_color=PALETTE["bad"],
+                text=[_t(v, dec) for v in pv],
+                textposition="outside",
+            ),
+            go.Bar(
+                name="Calm chase",
+                x=cats,
+                y=cv,
+                marker_color=PALETTE["neutral"],
+                text=[_t(v, dec) for v in cv],
+                textposition="outside",
+            ),
+        ]
+    )
     fig.update_layout(barmode="group", bargap=0.25)
-    fig.update_yaxes(title_text=("Strike rate (runs per 100 balls) / average" if bat and len(cats) == 2 and cats[0] == "Strike rate" else
-                                 "Strike rate (runs per 100 balls)" if bat else "Economy (runs per over)"))
+    fig.update_yaxes(
+        title_text=(
+            "Strike rate (runs per 100 balls) / average"
+            if bat and len(cats) == 2 and cats[0] == "Strike rate"
+            else "Strike rate (runs per 100 balls)"
+            if bat
+            else "Economy (runs per over)"
+        )
+    )
     return style(fig, title, result, note=note, height=height)
 
 

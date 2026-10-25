@@ -3,13 +3,23 @@
 ## How to write a module (contract, 2A)
 Add ONE file `src/cricket_analytics/analysis/<name>.py`. Nothing else is edited: the registry, `api.run`, CLI, JSON schema and (Phase 3) dashboard all read the registry. Template = `analysis/batting.py`.
 ```python
-@module(id="bowling", title="Bowling stats", category="basic",          # basic | intermediate | advanced
-        description="...", caveats=["..."],
-        params=[*std("player", "competition", "season", "team", "opposition", "venue", "phase"),
-                ParamSpec("group_by", "choice", default="player", choices=("player", "season", "phase"))])
+@module(
+    id="bowling",
+    title="Bowling stats",
+    category="basic",  # basic | intermediate | advanced
+    description="...",
+    caveats=["..."],
+    params=[
+        *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
+        ParamSpec("group_by", "choice", default="player", choices=("player", "season", "phase")),
+    ],
+)
 def bowling(f: Filters, group_by="player") -> pd.DataFrame:
-    where, params = f.where("bowl")                    # always "1=1 AND ..."; params bound with ?
-    return query(f"SELECT ... FROM deliveries d JOIN matches m ON d.match_id = m.match_id WHERE {where} ...", params)
+    where, params = f.where("bowl")  # always "1=1 AND ..."; params bound with ?
+    return query(
+        f"SELECT ... FROM deliveries d JOIN matches m ON d.match_id = m.match_id WHERE {where} ...",
+        params,
+    )
 ```
 - **Signature:** `fn(f: Filters, **extra) -> DataFrame`. `extra` = declared params that are not Filters fields (`player2`, `group_by`, `min_balls`, ...), defaults already filled. Return data only, no plotly, no printing, no `except: return empty`.
 - **Aliases:** `deliveries d`, `matches m` (fragments hard-code `d.`). Always JOIN matches (Filters needs `m.competition/gender/season/venue/balls_per_over`).

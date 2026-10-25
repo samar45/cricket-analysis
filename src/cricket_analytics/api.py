@@ -1,8 +1,8 @@
 """Public API: the one place the CLI, the dashboard, the video pipeline and an LLM agent call.
 
-    from cricket_analytics.api import run, resolve_player
-    r = run("batting", player="V Kohli", competition="ipl", group_by="season")
-    r.data (DataFrame), r.meta (dict), r.to_records(), r.to_json()
+from cricket_analytics.api import run, resolve_player
+r = run("batting", player="V Kohli", competition="ipl", group_by="season")
+r.data (DataFrame), r.meta (dict), r.to_records(), r.to_json()
 """
 
 import datetime as dt
@@ -66,7 +66,9 @@ def _coerce_one(spec: registry.ParamSpec, value):
     elif k == "phase" and value not in PHASES:
         raise ValueError(f"phase must be one of {', '.join(PHASES)}, got {value!r}")
     elif k == "choice" and value not in spec.choices:
-        raise ValueError(f"{spec.name} must be one of {', '.join(map(str, spec.choices))}, got {value!r}")
+        raise ValueError(
+            f"{spec.name} must be one of {', '.join(map(str, spec.choices))}, got {value!r}"
+        )
     elif k == "season":
         return value if isinstance(value, int) else str(value)
     return value
@@ -80,17 +82,24 @@ def run(module_id: str, *, db_path: Path | None = None, **params) -> Result:
         return _run(module_id, db_path, params)
     except Exception as e:
         from .applog import log_error
+
         log_error("api.run", e, module=module_id, params=params)
         raise
 
 
 def _run(module_id: str, db_path: Path | None, params: dict) -> Result:
     mod = registry.get(module_id)
-    params = {k: v for k, v in params.items() if v is not None and not (isinstance(v, (list, tuple)) and not v)}
+    params = {
+        k: v
+        for k, v in params.items()
+        if v is not None and not (isinstance(v, (list, tuple)) and not v)
+    }
     unknown = set(params) - {p.name for p in mod.params}
     if unknown:
-        raise ValueError(f"Module {module_id!r} has no param(s) {sorted(unknown)}. "
-                         f"Allowed: {[p.name for p in mod.params]}")
+        raise ValueError(
+            f"Module {module_id!r} has no param(s) {sorted(unknown)}. "
+            f"Allowed: {[p.name for p in mod.params]}"
+        )
     used = {}
     for p in mod.params:
         if p.name in params:
@@ -112,7 +121,9 @@ def _run(module_id: str, db_path: Path | None, params: dict) -> Result:
         "params": used,
         "data_through": None if pd.isna(through) else str(pd.Timestamp(through).date()),
         "db_path": str(path),
-        "db_modified": dt.datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="seconds"),
+        "db_modified": dt.datetime.fromtimestamp(path.stat().st_mtime).isoformat(
+            timespec="seconds"
+        ),
         "row_count": len(df),
         "caveats": mod.caveats,
         "source": SOURCE,
@@ -121,14 +132,24 @@ def _run(module_id: str, db_path: Path | None, params: dict) -> Result:
 
 
 def list_modules() -> list[dict]:
-    return [{"id": m.id, "title": m.title, "category": m.category, "description": m.description,
-             "params": [p.name for p in m.params]} for m in registry.all_modules()]
+    return [
+        {
+            "id": m.id,
+            "title": m.title,
+            "category": m.category,
+            "description": m.description,
+            "params": [p.name for p in m.params],
+        }
+        for m in registry.all_modules()
+    ]
 
 
 def schema() -> list[dict]:
     """Tool definitions for every module: {name, description, parameters: JSON Schema}."""
-    return [{"name": m.id, "description": m.description, "parameters": registry.json_schema(m.id)}
-            for m in registry.all_modules()]
+    return [
+        {"name": m.id, "description": m.description, "parameters": registry.json_schema(m.id)}
+        for m in registry.all_modules()
+    ]
 
 
 def _rank(names_sql: str, params: list, name: str, limit: int) -> list[dict]:
@@ -160,16 +181,27 @@ def resolve_player(name: str, competition: str | None = None, limit: int = 5) ->
     if competition:
         c = competitions.get(competition)
         cond, p = "m.competition = ? AND m.gender = ?", [c.competition, c.gender]
-    base = (f"SELECT d.match_id, m.date, d.batter, d.bowler FROM deliveries d "
-            f"JOIN matches m ON d.match_id = m.match_id WHERE {cond}")
-    names = f"SELECT DISTINCT batter AS name FROM ({base}) UNION SELECT DISTINCT bowler FROM ({base})"
+    base = (
+        f"SELECT d.match_id, m.date, d.batter, d.bowler FROM deliveries d "
+        f"JOIN matches m ON d.match_id = m.match_id WHERE {cond}"
+    )
+    names = (
+        f"SELECT DISTINCT batter AS name FROM ({base}) UNION SELECT DISTINCT bowler FROM ({base})"
+    )
     out = _rank(names, p + p, name, limit * 4)
     for r in out:
-        s = query(f"SELECT count(DISTINCT match_id) AS n, max(date) AS last FROM ({base}) "
-                  "WHERE batter = ? OR bowler = ?", p + [r["name"], r["name"]])
+        s = query(
+            f"SELECT count(DISTINCT match_id) AS n, max(date) AS last FROM ({base}) "
+            "WHERE batter = ? OR bowler = ?",
+            p + [r["name"], r["name"]],
+        )
         r["matches"] = int(s["n"].iloc[0])
-        r["last_match"] = None if pd.isna(s["last"].iloc[0]) else str(pd.Timestamp(s["last"].iloc[0]).date())
-    out.sort(key=lambda r: (-r["score"], -r["matches"]))  # same score (A Kohli / V Kohli): more matches first
+        r["last_match"] = (
+            None if pd.isna(s["last"].iloc[0]) else str(pd.Timestamp(s["last"].iloc[0]).date())
+        )
+    out.sort(
+        key=lambda r: (-r["score"], -r["matches"])
+    )  # same score (A Kohli / V Kohli): more matches first
     return out[:limit]
 
 
@@ -179,53 +211,88 @@ def resolve_team(name: str, competition: str | None = None, limit: int = 5) -> l
     if competition:
         c = competitions.get(competition)
         cond, p = "competition = ? AND gender = ?", [c.competition, c.gender]
-    names = (f"SELECT team1 AS name FROM matches WHERE {cond} UNION "
-             f"SELECT team2 FROM matches WHERE {cond}")
+    names = (
+        f"SELECT team1 AS name FROM matches WHERE {cond} UNION "
+        f"SELECT team2 FROM matches WHERE {cond}"
+    )
     return _rank(names, p + p, name, limit)
 
 
 def data_info() -> dict:
     """What is in the DB: per-competition match count, earliest and latest match date."""
-    df = query("SELECT competition, gender, count(*) AS matches, min(date) AS earliest, max(date) AS latest "
-               "FROM matches GROUP BY ALL ORDER BY 1, 2")
+    df = query(
+        "SELECT competition, gender, count(*) AS matches, min(date) AS earliest, max(date) AS latest "
+        "FROM matches GROUP BY ALL ORDER BY 1, 2"
+    )
     keys = {(c.competition, c.gender): k for k, c in competitions.COMPETITIONS.items()}
-    rows = [{"competition": keys.get((r.competition, r.gender), f"{r.competition}/{r.gender}"),
-             "matches": int(r.matches), "earliest": str(r.earliest)[:10], "latest": str(r.latest)[:10]}
-            for r in df.itertuples()]
+    rows = [
+        {
+            "competition": keys.get((r.competition, r.gender), f"{r.competition}/{r.gender}"),
+            "matches": int(r.matches),
+            "earliest": str(r.earliest)[:10],
+            "latest": str(r.latest)[:10],
+        }
+        for r in df.itertuples()
+    ]
     path = current_db_path()
-    return {"db_path": str(path),
-            "db_modified": dt.datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="seconds"),
-            "source": SOURCE, "competitions": rows}
+    return {
+        "db_path": str(path),
+        "db_modified": dt.datetime.fromtimestamp(path.stat().st_mtime).isoformat(
+            timespec="seconds"
+        ),
+        "source": SOURCE,
+        "competitions": rows,
+    }
 
 
 @functools.lru_cache(maxsize=256)
-def _choices(db: str, mtime: float, kind: str, competition: str | None, season: tuple[str, ...]) -> tuple[str, ...]:
+def _choices(
+    db: str, mtime: float, kind: str, competition: str | None, season: tuple[str, ...]
+) -> tuple[str, ...]:
     # db and mtime are only cache keys: a rebuilt DB file gets fresh lists
     where, p = Filters(competition=competition, season=season).where("match")
-    if kind == "season":   # every season of the competition, newest first (a season filter would hide the others)
+    if (
+        kind == "season"
+    ):  # every season of the competition, newest first (a season filter would hide the others)
         where, p = Filters(competition=competition).where("match")
-        sql = (f"SELECT m.season AS name FROM matches m WHERE {where} AND m.season IS NOT NULL "
-               "GROUP BY 1 ORDER BY min(m.date) DESC")
+        sql = (
+            f"SELECT m.season AS name FROM matches m WHERE {where} AND m.season IS NOT NULL "
+            "GROUP BY 1 ORDER BY min(m.date) DESC"
+        )
     elif kind == "team":
-        sql = (f"SELECT name FROM (SELECT m.team1 AS name FROM matches m WHERE {where} UNION ALL "
-               f"SELECT m.team2 FROM matches m WHERE {where}) WHERE name IS NOT NULL GROUP BY 1 ORDER BY 1")
+        sql = (
+            f"SELECT name FROM (SELECT m.team1 AS name FROM matches m WHERE {where} UNION ALL "
+            f"SELECT m.team2 FROM matches m WHERE {where}) WHERE name IS NOT NULL GROUP BY 1 ORDER BY 1"
+        )
         p = p + p
     elif kind == "venue":
-        sql = (f"SELECT m.venue AS name FROM matches m WHERE {where} AND m.venue IS NOT NULL "
-               "GROUP BY 1 ORDER BY count(*) DESC, 1")
-    else:   # player: most matches first, so familiar names lead the dropdown
-        sql = (f"SELECT name FROM (SELECT d.match_id, d.batter AS name FROM deliveries d JOIN matches m USING (match_id) "
-               f"WHERE {where} UNION SELECT d.match_id, d.bowler FROM deliveries d JOIN matches m USING (match_id) "
-               f"WHERE {where}) WHERE name IS NOT NULL GROUP BY 1 ORDER BY count(*) DESC, 1")
+        sql = (
+            f"SELECT m.venue AS name FROM matches m WHERE {where} AND m.venue IS NOT NULL "
+            "GROUP BY 1 ORDER BY count(*) DESC, 1"
+        )
+    else:  # player: most matches first, so familiar names lead the dropdown
+        sql = (
+            f"SELECT name FROM (SELECT d.match_id, d.batter AS name FROM deliveries d JOIN matches m USING (match_id) "
+            f"WHERE {where} UNION SELECT d.match_id, d.bowler FROM deliveries d JOIN matches m USING (match_id) "
+            f"WHERE {where}) WHERE name IS NOT NULL GROUP BY 1 ORDER BY count(*) DESC, 1"
+        )
         p = p + p
     return tuple(query(sql, p)["name"].tolist())
 
 
-_CHOICE_KINDS = {"player": "player", "player2": "player", "team": "team", "opposition": "team",
-                 "venue": "venue", "season": "season"}
+_CHOICE_KINDS = {
+    "player": "player",
+    "player2": "player",
+    "team": "team",
+    "opposition": "team",
+    "venue": "venue",
+    "season": "season",
+}
 
 
-def choices(kind: str, competition: str | None = None, season: str | int | list | None = None) -> list[str]:
+def choices(
+    kind: str, competition: str | None = None, season: str | int | list | None = None
+) -> list[str]:
     """Values for a dropdown: kind = player | player2 | team | opposition | venue | season.
 
     Limited to `competition` (None = all men's) and `season` (one or several). Players: most matches first; seasons: newest first;
@@ -236,5 +303,12 @@ def choices(kind: str, competition: str | None = None, season: str | int | list 
     if competition:
         competitions.get(competition)
     path = current_db_path()
-    return list(_choices(str(path), path.stat().st_mtime, _CHOICE_KINDS[kind], competition or None,
-                         tuple(str(x) for x in Filters(season=season).values("season"))))
+    return list(
+        _choices(
+            str(path),
+            path.stat().st_mtime,
+            _CHOICE_KINDS[kind],
+            competition or None,
+            tuple(str(x) for x in Filters(season=season).values("season")),
+        )
+    )

@@ -19,14 +19,23 @@ MIN_BALLS = 60
     title="Performance under pressure",
     category="advanced",
     description="Batters: strike rate and average in chase balls under pressure vs calm chase balls. Bowlers: economy and "
-                "wickets when the chasing side is under pressure vs not. Pressure = the asking rate is 10+ an over, or 5+ "
-                "wickets are down with 5+ overs left (level picks the rule). Chases only; D/L and shortened matches left out.",
+    "wickets when the chasing side is under pressure vs not. Pressure = the asking rate is 10+ an over, or 5+ "
+    "wickets are down with 5+ overs left (level picks the rule). Chases only; D/L and shortened matches left out.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
         ParamSpec("role", "choice", default="batting", choices=("batting", "bowling")),
-        ParamSpec("level", "choice", default="high", choices=tuple(LEVELS),
-                  help="high = required rate >= 10 or 5+ down with 30+ balls left; extreme = required rate >= 12; collapse = 5+ down with 30+ balls left"),
-        ParamSpec("min_balls", "int", help="Hide players with fewer pressure balls than this (default 60 in a ranking; 1 when you pick one player)"),
+        ParamSpec(
+            "level",
+            "choice",
+            default="high",
+            choices=tuple(LEVELS),
+            help="high = required rate >= 10 or 5+ down with 30+ balls left; extreme = required rate >= 12; collapse = 5+ down with 30+ balls left",
+        ),
+        ParamSpec(
+            "min_balls",
+            "int",
+            help="Hide players with fewer pressure balls than this (default 60 in a ranking; 1 when you pick one player)",
+        ),
         ParamSpec("top", "int", default=40, help="Rows to return"),
     ],
     caveats=[
@@ -37,7 +46,13 @@ MIN_BALLS = 60
         "The pressure score (required rate + wickets down) is a rule of thumb, not a win probability.",
     ],
 )
-def pressure(f: Filters, role: str = "batting", level: str = "high", min_balls: int | None = None, top: int = 40) -> pd.DataFrame:
+def pressure(
+    f: Filters,
+    role: str = "batting",
+    level: str = "high",
+    min_balls: int | None = None,
+    top: int = 40,
+) -> pd.DataFrame:
     if min_balls is None:
         min_balls = 1 if getattr(f, "player", None) else MIN_BALLS
     st, sp = ball_state(f)

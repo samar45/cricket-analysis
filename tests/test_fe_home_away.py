@@ -28,7 +28,7 @@ def test_reference_files_are_consistent():
     venues, teams = _reference()
     assert venues.duplicated(["venue", "city"]).sum() == 0
     assert (venues[["country", "region", "site"]] != "").all().all()
-    for t, (kind, places, _) in teams.items():   # every franchise home site exists in the venue file
+    for t, (kind, places, _) in teams.items():  # every franchise home site exists in the venue file
         if kind == "franchise":
             missing = places - set(venues["site"])
             assert missing <= {"Peshawar", "Quetta", "Hyderabad (Sindh)"}, (t, missing)
@@ -43,15 +43,25 @@ def test_sides_fixture(db):
 
 
 def test_player_and_team_rows_fixture(db):
-    bat = api.run("home_away", db_path=db, competition="ipl", player="Yuvraj Singh").data   # Yuvraj played for SRH
+    bat = api.run(
+        "home_away", db_path=db, competition="ipl", player="Yuvraj Singh"
+    ).data  # Yuvraj played for SRH
     assert bat["location"].tolist() == ["home"]
     raw = api.run("batting", db_path=db, competition="ipl", player="Yuvraj Singh").data
-    assert bat["total_runs"].sum() == raw["total_runs"].iloc[0] and bat["balls"].sum() == raw["balls"].iloc[0]
-    bowl = api.run("home_away", db_path=db, competition="ipl", player="B Kumar", role="bowling").data
+    assert (
+        bat["total_runs"].sum() == raw["total_runs"].iloc[0]
+        and bat["balls"].sum() == raw["balls"].iloc[0]
+    )
+    bowl = api.run(
+        "home_away", db_path=db, competition="ipl", player="B Kumar", role="bowling"
+    ).data
     assert bowl["location"].tolist() == ["home"]
     team = api.run("home_away", db_path=db, competition="ipl").data.set_index("team")
-    assert team.loc["Sunrisers Hyderabad", "location"] == "home" and team.loc["Royal Challengers Bengaluru", "location"] == "away"
-    assert team["matches"].sum() == 2 and team["won"].sum() == 1   # one winner, one loser
+    assert (
+        team.loc["Sunrisers Hyderabad", "location"] == "home"
+        and team.loc["Royal Challengers Bengaluru", "location"] == "away"
+    )
+    assert team["matches"].sum() == 2 and team["won"].sum() == 1  # one winner, one loser
 
 
 def test_charts_build(db):
@@ -71,9 +81,14 @@ def test_real_kohli_ipl_adds_up():
 
 @real
 def test_real_csk_home_beats_away():
-    d = api.run("home_away", team="Chennai Super Kings", competition="ipl").data.set_index("location")
+    d = api.run("home_away", team="Chennai Super Kings", competition="ipl").data.set_index(
+        "location"
+    )
     assert d.loc["home", "win_pct"] > d.loc["away", "win_pct"]
-    assert d["matches"].sum() == api.run("teams", team="Chennai Super Kings", competition="ipl").data["played"].iloc[0]
+    assert (
+        d["matches"].sum()
+        == api.run("teams", team="Chennai Super Kings", competition="ipl").data["played"].iloc[0]
+    )
 
 
 @real

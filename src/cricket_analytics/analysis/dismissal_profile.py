@@ -10,11 +10,23 @@ from ..sql.attributes import attributes_cte
 from ..sql.filters import Filters
 from ..sql.fragments import DISMISSAL, phase_sql
 
-KINDS = ("bowled", "lbw", "caught (fielder)", "caught (keeper)", "caught and bowled", "run out", "stumped", "other")
+KINDS = (
+    "bowled",
+    "lbw",
+    "caught (fielder)",
+    "caught (keeper)",
+    "caught and bowled",
+    "run out",
+    "stumped",
+    "other",
+)
 _GROUPS = {
     "kind": ("", ""),
     "phase": (", phase", "CASE phase WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END"),
-    "bowler_kind": (", bowler_kind", "CASE bowler_kind WHEN 'pace' THEN 1 WHEN 'spin' THEN 2 ELSE 3 END"),
+    "bowler_kind": (
+        ", bowler_kind",
+        "CASE bowler_kind WHEN 'pace' THEN 1 WHEN 'spin' THEN 2 ELSE 3 END",
+    ),
 }
 
 
@@ -23,13 +35,20 @@ _GROUPS = {
     title="Dismissal profile",
     category="intermediate",
     description="How a batter (or a filtered group of batters) gets out: counts and % by kind (bowled, lbw, caught by a "
-                "fielder / by the keeper / caught and bowled, run out, stumped, other), optionally split by phase or "
-                "by the bowler's kind (pace / spin).",
+    "fielder / by the keeper / caught and bowled, run out, stumped, other), optionally split by phase or "
+    "by the bowler's kind (pace / spin).",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
-        ParamSpec("group_by", "choice", default="kind", choices=tuple(_GROUPS),
-                  help="kind = one row per dismissal kind; phase / bowler_kind = kinds split by phase or by pace/spin"),
-        ParamSpec("min_outs", "int", default=0, help="Hide batters with fewer dismissals than this"),
+        ParamSpec(
+            "group_by",
+            "choice",
+            default="kind",
+            choices=tuple(_GROUPS),
+            help="kind = one row per dismissal kind; phase / bowler_kind = kinds split by phase or by pace/spin",
+        ),
+        ParamSpec(
+            "min_outs", "int", default=0, help="Hide batters with fewer dismissals than this"
+        ),
     ],
     caveats=[
         "Dismissals come from player_out, so they equal the outs in the batting module (a non-striker run out counts). "

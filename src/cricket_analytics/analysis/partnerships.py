@@ -13,8 +13,11 @@ from ..sql.fragments import BALL_FACED, DISMISSAL
 _GROUPS = {
     "pair": ("batter1, batter2", "batter1, batter2", "runs DESC, balls"),
     "wicket": ("wicket_no", "wicket_no", "wicket_no"),
-    "stand": ("batter1, batter2, wicket_no, match_id, date, team, opposition, unbroken",
-              None, "runs DESC, balls"),
+    "stand": (
+        "batter1, batter2, wicket_no, match_id, date, team, opposition, unbroken",
+        None,
+        "runs DESC, balls",
+    ),
 }
 
 
@@ -23,11 +26,16 @@ _GROUPS = {
     title="Batting partnerships",
     category="intermediate",
     description="Real partnerships: the runs two batters add between one wicket and the next. List the best "
-                "individual stands, total up each pair, or group by wicket number.",
+    "individual stands, total up each pair, or group by wicket number.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue"),
-        ParamSpec("group_by", "choice", default="pair", choices=tuple(_GROUPS),
-                  help="pair = totals per pair of batters; stand = each individual stand; wicket = per wicket number"),
+        ParamSpec(
+            "group_by",
+            "choice",
+            default="pair",
+            choices=tuple(_GROUPS),
+            help="pair = totals per pair of batters; stand = each individual stand; wicket = per wicket number",
+        ),
         ParamSpec("top", "int", default=50, help="Maximum rows returned (ignored for wicket)"),
     ],
     caveats=[

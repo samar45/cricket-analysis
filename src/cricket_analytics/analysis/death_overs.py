@@ -17,12 +17,16 @@ MIN_BALLS = 60
     title="Death-overs index",
     category="advanced",
     description="Batters: death-overs strike rate divided by overall strike rate, times 100. Bowlers: overall economy "
-                "divided by death-overs economy, times 100. Above 100 = better in the death overs than overall. "
-                "Replaces the old 'clutch index'.",
+    "divided by death-overs economy, times 100. Above 100 = better in the death overs than overall. "
+    "Replaces the old 'clutch index'.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue"),
         ParamSpec("role", "choice", default="batting", choices=("batting", "bowling")),
-        ParamSpec("min_balls", "int", help="Hide players with fewer death-overs balls than this (default 60 in a ranking, about 10 overs; 1 when you pick one player)"),
+        ParamSpec(
+            "min_balls",
+            "int",
+            help="Hide players with fewer death-overs balls than this (default 60 in a ranking, about 10 overs; 1 when you pick one player)",
+        ),
         ParamSpec("top", "int", default=40, help="Rows to return (highest index first)"),
     ],
     caveats=[
@@ -34,12 +38,16 @@ MIN_BALLS = 60
         "Naming one player drops the minimum to 1: check death_balls before quoting.",
     ],
 )
-def death_overs(f: Filters, role: str = "batting", min_balls: int | None = None, top: int = 40) -> pd.DataFrame:
+def death_overs(
+    f: Filters, role: str = "batting", min_balls: int | None = None, top: int = 40
+) -> pd.DataFrame:
     ph = phase_sql()
-    if min_balls is None:   # 60 balls = 10 overs: noise of about 13% on the death rate; an explicitly chosen player is never hidden
+    if (
+        min_balls is None
+    ):  # 60 balls = 10 overs: noise of about 13% on the death rate; an explicitly chosen player is never hidden
         min_balls = 1 if getattr(f, "player", None) else MIN_BALLS
     if role == "batting":
-        inn, params = batter_innings(f, [(ph, "phase")])   # one row per batter x innings x phase
+        inn, params = batter_innings(f, [(ph, "phase")])  # one row per batter x innings x phase
         sql = f"""
         WITH a AS (
             SELECT batter, COUNT(DISTINCT match_id)::INTEGER AS matches,

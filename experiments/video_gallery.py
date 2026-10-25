@@ -37,7 +37,12 @@ CASES = [
     ("true_performance", "true_performance", dict(IPL, player=KOHLI), None),
     ("season_awards", "season_awards", dict(IPL, season=2024), "death"),
     ("compare: batters", "compare", dict(IPL, player=KOHLI, player2=ROHIT), None),
-    ("compare: bowlers", "compare", dict(IPL, player=BUMRAH, player2="YS Chahal", role="bowling"), None),
+    (
+        "compare: bowlers",
+        "compare",
+        dict(IPL, player=BUMRAH, player2="YS Chahal", role="bowling"),
+        None,
+    ),
     ("death_overs", "death_overs", dict(IPL, player=KOHLI), None),
     ("pace_vs_spin", "pace_vs_spin", dict(IPL, player=KOHLI), None),
     ("player_profile: batter", "player_profile", dict(player=KOHLI), None),
@@ -56,9 +61,14 @@ overflow:hidden;position:relative;border:1px solid #333}}
 
 
 def shown(fig, h: int, first: bool) -> str:
-    html = fig.to_html(full_html=False, include_plotlyjs=True if first else False,
-                       config=dict(staticPlot=True, displayModeBar=False))
-    return f"<div class='checker' style='width:360px;height:{h}px'><div class='s'>{html}</div></div>"
+    html = fig.to_html(
+        full_html=False,
+        include_plotlyjs=True if first else False,
+        config=dict(staticPlot=True, displayModeBar=False),
+    )
+    return (
+        f"<div class='checker' style='width:360px;height:{h}px'><div class='s'>{html}</div></div>"
+    )
 
 
 def main(out: str) -> None:
@@ -73,7 +83,9 @@ def main(out: str) -> None:
             except Exception as e:  # noqa: BLE001  (a gallery should show what broke, not stop)
                 cells.append(f"<p style='color:#EF5350'>{type(e).__name__}: {e}</p>")
                 print("FAILED", label, aspect, type(e).__name__, e)
-        rows.append(f"<h2>{label}: {mod} {params} focus={focus}</h2><div class='row'>{''.join(cells)}</div>")
+        rows.append(
+            f"<h2>{label}: {mod} {params} focus={focus}</h2><div class='row'>{''.join(cells)}</div>"
+        )
     Path(out).write_text(PAGE.format(body="\n".join(rows)), encoding="utf-8")
     print("wrote", out, f"({len(CASES)} cases)")
 

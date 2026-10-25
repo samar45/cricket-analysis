@@ -21,7 +21,11 @@ def _reference() -> tuple[pd.DataFrame, dict]:
     venues = pd.read_csv(REFERENCE_DIR / "venue_country.csv", keep_default_na=False)
     teams = {}
     for r in pd.read_csv(REFERENCE_DIR / "team_home.csv", keep_default_na=False).itertuples():
-        teams[r.team] = (r.kind, {x for x in r.home.split(";") if x}, {x for x in r.no_home_seasons.split(";") if x})
+        teams[r.team] = (
+            r.kind,
+            {x for x in r.home.split(";") if x},
+            {x for x in r.no_home_seasons.split(";") if x},
+        )
     return venues, teams
 
 
@@ -34,8 +38,13 @@ def match_sides(f: Filters) -> pd.DataFrame:
     """
     venues, teams = _reference()
     where, params = replace(f, team=None, opposition=None, player=None, phase=None).where("match")
-    m = query(f"SELECT m.match_id, m.venue, COALESCE(m.city, '') AS city, m.team1, m.team2, m.season FROM matches m WHERE {where}", params)
-    m = m.merge(venues[["venue", "city", "country", "region", "site"]], on=["venue", "city"], how="left")
+    m = query(
+        f"SELECT m.match_id, m.venue, COALESCE(m.city, '') AS city, m.team1, m.team2, m.season FROM matches m WHERE {where}",
+        params,
+    )
+    m = m.merge(
+        venues[["venue", "city", "country", "region", "site"]], on=["venue", "city"], how="left"
+    )
 
     def is_home(team, country, region, site, season):
         kind, places, no_home = teams.get(team, ("", set(), set()))
@@ -46,16 +55,30 @@ def match_sides(f: Filters) -> pd.DataFrame:
     sides = []
     for a, b in (("team1", "team2"), ("team2", "team1")):
         known = m["site"].notna()
-        h_me = [is_home(t, c, r, s, se) for t, c, r, s, se in zip(m[a], m["country"], m["region"], m["site"], m["season"])]
-        h_op = [is_home(t, c, r, s, se) for t, c, r, s, se in zip(m[b], m["country"], m["region"], m["site"], m["season"])]
+        h_me = [
+            is_home(t, c, r, s, se)
+            for t, c, r, s, se in zip(m[a], m["country"], m["region"], m["site"], m["season"])
+        ]
+        h_op = [
+            is_home(t, c, r, s, se)
+            for t, c, r, s, se in zip(m[b], m["country"], m["region"], m["site"], m["season"])
+        ]
         loc = ["home" if x else "away" if y else "neutral" for x, y in zip(h_me, h_op)]
-        sides.append(pd.DataFrame({"match_id": m["match_id"], "team": m[a], "opp": m[b],
-                                   "location": [v if k else "unknown" for v, k in zip(loc, known)]}))
+        sides.append(
+            pd.DataFrame(
+                {
+                    "match_id": m["match_id"],
+                    "team": m[a],
+                    "opp": m[b],
+                    "location": [v if k else "unknown" for v, k in zip(loc, known)],
+                }
+            )
+        )
     return pd.concat(sides, ignore_index=True)
 
 
 def _run(sql: str, params: list, sides: pd.DataFrame) -> pd.DataFrame:
-    cur = _reader(None).cursor()   # `sides` is registered as view `hv` on this cursor only
+    cur = _reader(None).cursor()  # `sides` is registered as view `hv` on this cursor only
     try:
         cur.register("hv", sides)
         return cur.execute(sql, params).fetchdf()
@@ -71,11 +94,16 @@ _ORDER = "CASE location WHEN 'home' THEN 1 WHEN 'away' THEN 2 WHEN 'neutral' THE
     title="Home vs away",
     category="intermediate",
     description="A player's (batting or bowling) or a team's record split into home, away and neutral matches. "
-                "Give a player to get his batting or bowling split; give a team (or nothing) to get win % and average scores.",
+    "Give a player to get his batting or bowling split; give a team (or nothing) to get win % and average scores.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
-        ParamSpec("role", "choice", default="batting", choices=("batting", "bowling"),
-                  help="For a player: batting or bowling figures. Ignored for team rows"),
+        ParamSpec(
+            "role",
+            "choice",
+            default="batting",
+            choices=("batting", "bowling"),
+            help="For a player: batting or bowling figures. Ignored for team rows",
+        ),
     ],
     caveats=[
         "Home/away/neutral comes from reference/venue_country.csv and team_home.csv (hand-made, with a confidence column). "
@@ -151,4 +179,8 @@ def home_away(f: Filters, role: str = "batting") -> pd.DataFrame:
     # order: busiest team first, its rows home/away/neutral together
     out["_n"] = out.groupby("team")["matches"].transform("sum")
     out["_o"] = out["location"].map({loc_name: i for i, loc_name in enumerate(LOCATIONS)}).fillna(9)
-    return out.sort_values(["_n", "team", "_o"], ascending=[False, True, True]).drop(columns=["_n", "_o"]).reset_index(drop=True)
+    return (
+        out.sort_values(["_n", "team", "_o"], ascending=[False, True, True])
+        .drop(columns=["_n", "_o"])
+        .reset_index(drop=True)
+    )

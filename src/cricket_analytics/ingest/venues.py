@@ -21,159 +21,124 @@ import re
 VENUE_ALIASES: dict[str, str] = {
     # ── India ──────────────────────────────────────────────────────────────
     # Feroz Shah Kotla renamed to Arun Jaitley Stadium in 2019
-    "Feroz Shah Kotla":                      "Arun Jaitley Stadium",
-    "Feroz Shah Kotla, Delhi":               "Arun Jaitley Stadium",
-    "Arun Jaitley Stadium, Delhi":           "Arun Jaitley Stadium",
-
+    "Feroz Shah Kotla": "Arun Jaitley Stadium",
+    "Feroz Shah Kotla, Delhi": "Arun Jaitley Stadium",
+    "Arun Jaitley Stadium, Delhi": "Arun Jaitley Stadium",
     # Wankhede
-    "Wankhede Stadium, Mumbai":              "Wankhede Stadium",
-
+    "Wankhede Stadium, Mumbai": "Wankhede Stadium",
     # Chepauk
     "MA Chidambaram Stadium, Chepauk, Chennai": "MA Chidambaram Stadium, Chepauk",
-    "M.A. Chidambaram Stadium, Chepauk":     "MA Chidambaram Stadium, Chepauk",
-    "MA Chidambaram Stadium":                "MA Chidambaram Stadium, Chepauk",
-
+    "M.A. Chidambaram Stadium, Chepauk": "MA Chidambaram Stadium, Chepauk",
+    "MA Chidambaram Stadium": "MA Chidambaram Stadium, Chepauk",
     # Eden Gardens
-    "Eden Gardens, Kolkata":                 "Eden Gardens",
-
+    "Eden Gardens, Kolkata": "Eden Gardens",
     # Chinnaswamy
-    "M Chinnaswamy Stadium, Bengaluru":      "M Chinnaswamy Stadium",
-    "M. Chinnaswamy Stadium":               "M Chinnaswamy Stadium",
-
+    "M Chinnaswamy Stadium, Bengaluru": "M Chinnaswamy Stadium",
+    "M. Chinnaswamy Stadium": "M Chinnaswamy Stadium",
     # Mohali
     "Punjab Cricket Association Stadium, Mohali": "Punjab Cricket Association IS Bindra Stadium, Mohali",
-    "PCA Stadium, Mohali":                   "Punjab Cricket Association IS Bindra Stadium, Mohali",
+    "PCA Stadium, Mohali": "Punjab Cricket Association IS Bindra Stadium, Mohali",
     "Punjab Cricket Association IS Bindra Stadium": "Punjab Cricket Association IS Bindra Stadium, Mohali",
-
     # Rajiv Gandhi / Uppal
-    "Rajiv Gandhi International Stadium":    "Rajiv Gandhi International Stadium, Uppal",
+    "Rajiv Gandhi International Stadium": "Rajiv Gandhi International Stadium, Uppal",
     "Rajiv Gandhi International Stadium, Hyderabad": "Rajiv Gandhi International Stadium, Uppal",
-
     # Holkar
-    "Holkar Cricket Stadium":                "Holkar Cricket Stadium, Indore",
-    "Holkar Stadium, Indore":                "Holkar Cricket Stadium, Indore",
-
+    "Holkar Cricket Stadium": "Holkar Cricket Stadium, Indore",
+    "Holkar Stadium, Indore": "Holkar Cricket Stadium, Indore",
     # HPCA Dharamsala
-    "Himachal Pradesh Cricket Association Stadium":            "HPCA Stadium, Dharamsala",
+    "Himachal Pradesh Cricket Association Stadium": "HPCA Stadium, Dharamsala",
     "Himachal Pradesh Cricket Association Stadium, Dharamsala": "HPCA Stadium, Dharamsala",
-    "HPCA Stadium":                          "HPCA Stadium, Dharamsala",
-
+    "HPCA Stadium": "HPCA Stadium, Dharamsala",
     # DY Patil
-    "Dr DY Patil Sports Academy":            "Dr. D.Y. Patil Sports Academy, Mumbai",
-    "Dr DY Patil Sports Academy, Mumbai":    "Dr. D.Y. Patil Sports Academy, Mumbai",
-    "Dr. DY Patil Sports Academy":           "Dr. D.Y. Patil Sports Academy, Mumbai",
-
+    "Dr DY Patil Sports Academy": "Dr. D.Y. Patil Sports Academy, Mumbai",
+    "Dr DY Patil Sports Academy, Mumbai": "Dr. D.Y. Patil Sports Academy, Mumbai",
+    "Dr. DY Patil Sports Academy": "Dr. D.Y. Patil Sports Academy, Mumbai",
     # Narendra Modi / Sardar Patel
-    "Sardar Patel Stadium, Motera":          "Narendra Modi Stadium, Ahmedabad",
-    "Sardar Patel Stadium":                  "Narendra Modi Stadium, Ahmedabad",
-
+    "Sardar Patel Stadium, Motera": "Narendra Modi Stadium, Ahmedabad",
+    "Sardar Patel Stadium": "Narendra Modi Stadium, Ahmedabad",
     # Sawai Mansingh
-    "Sawai Mansingh Stadium, Jaipur":        "Sawai Mansingh Stadium",
-
+    "Sawai Mansingh Stadium, Jaipur": "Sawai Mansingh Stadium",
     # Vidarbha
     "Vidarbha Cricket Association Stadium, Jamtha": "VCA Stadium, Nagpur",
-    "Vidarbha Cricket Association Stadium":  "VCA Stadium, Nagpur",
-
+    "Vidarbha Cricket Association Stadium": "VCA Stadium, Nagpur",
     # ── Sri Lanka ───────────────────────────────────────────────────────────
-    "R Premadasa Stadium, Colombo":          "R Premadasa Stadium",
+    "R Premadasa Stadium, Colombo": "R Premadasa Stadium",
     "Sinhalese Sports Club Ground, Colombo": "Sinhalese Sports Club Ground",
-    "P Sara Oval, Colombo":                  "P Sara Oval",
-
+    "P Sara Oval, Colombo": "P Sara Oval",
     # ── Bangladesh ─────────────────────────────────────────────────────────
     "Shere Bangla National Stadium, Mirpur": "Shere Bangla National Stadium",
     "Sher-e-Bangla National Cricket Stadium, Mirpur": "Shere Bangla National Stadium",
     "Sher-e-Bangla National Cricket Stadium": "Shere Bangla National Stadium",
-
     # ── West Indies ─────────────────────────────────────────────────────────
-    "Warner Park, Basseterre, St Kitts":     "Warner Park, Basseterre",
-    "Providence Stadium, Guyana":            "Providence Stadium",
-    "Sabina Park, Kingston, Jamaica":        "Sabina Park, Kingston",
+    "Warner Park, Basseterre, St Kitts": "Warner Park, Basseterre",
+    "Providence Stadium, Guyana": "Providence Stadium",
+    "Sabina Park, Kingston, Jamaica": "Sabina Park, Kingston",
     "Queen's Park Oval, Port of Spain, Trinidad": "Queen's Park Oval, Port of Spain",
-
     # ── Africa ─────────────────────────────────────────────────────────────
     # Punctuation typo: period instead of comma
     "Gahanga International Cricket Stadium. Rwanda": "Gahanga International Cricket Stadium, Rwanda",
-
     # ── Australia ──────────────────────────────────────────────────────────
-    "Western Australia Cricket Association Ground":  "WACA Ground, Perth",
+    "Western Australia Cricket Association Ground": "WACA Ground, Perth",
     "Western Australia Cricket Association Ground, Perth": "WACA Ground, Perth",
-    "Brisbane Cricket Ground, Woolloongabba":         "Gabba, Brisbane",
-    "Brisbane Cricket Ground":                        "Gabba, Brisbane",
-    "Melbourne Cricket Ground, Melbourne":            "Melbourne Cricket Ground",
-    "Sydney Cricket Ground, Sydney":                  "Sydney Cricket Ground",
-
+    "Brisbane Cricket Ground, Woolloongabba": "Gabba, Brisbane",
+    "Brisbane Cricket Ground": "Gabba, Brisbane",
+    "Melbourne Cricket Ground, Melbourne": "Melbourne Cricket Ground",
+    "Sydney Cricket Ground, Sydney": "Sydney Cricket Ground",
     # ── Pakistan ────────────────────────────────────────────────────────────
-    "Gaddafi Stadium":                       "Gaddafi Stadium, Lahore",
-
+    "Gaddafi Stadium": "Gaddafi Stadium, Lahore",
     # ── UAE ─────────────────────────────────────────────────────────────────
-    "Sheikh Zayed Stadium, Abu Dhabi":       "Sheikh Zayed Stadium",
+    "Sheikh Zayed Stadium, Abu Dhabi": "Sheikh Zayed Stadium",
     "Dubai International Cricket Stadium, Dubai": "Dubai International Cricket Stadium",
-
     # ── West Indies (additional) ─────────────────────────────────────────────
     "Kensington Oval, Bridgetown, Barbados": "Kensington Oval, Bridgetown",
-    "Kensington Oval, Barbados":             "Kensington Oval, Bridgetown",
-
+    "Kensington Oval, Barbados": "Kensington Oval, Bridgetown",
     # ── Australia (additional) ───────────────────────────────────────────────
-    "Docklands Stadium, Melbourne":          "Docklands Stadium",
-
+    "Docklands Stadium, Melbourne": "Docklands Stadium",
     # ── India (additional) ──────────────────────────────────────────────────
     "Rajiv Gandhi International Stadium, Uppal, Hyderabad": "Rajiv Gandhi International Stadium, Uppal",
     "Sardar Patel (Gujarat) Stadium, Motera": "Narendra Modi Stadium, Ahmedabad",
     "JSCA International Stadium Complex, Ranchi": "JSCA International Stadium Complex",
     "Greenfield International Stadium, Thiruvananthapuram": "Greenfield International Stadium",
     "Shaheed Veer Narayan Singh International Stadium, Raipur": "Shaheed Veer Narayan Singh International Stadium",
-
     # ── England ──────────────────────────────────────────────────────────────
-    "County Ground, New Road, Worcester":    "County Ground, New Road",
-
+    "County Ground, New Road, Worcester": "County Ground, New Road",
     # ── Bangladesh (additional) ─────────────────────────────────────────────
-    "Bangabandhu National Stadium, Dhaka":   "Bangabandhu National Stadium",
-
+    "Bangabandhu National Stadium, Dhaka": "Bangabandhu National Stadium",
     # ── India (more duplicates found) ──────────────────────────────────────
-    "M.Chinnaswamy Stadium":                 "M Chinnaswamy Stadium",
-    "M Chinnaswamy Stadium, Bangalore":      "M Chinnaswamy Stadium",
-
-    "Brabourne Stadium, Mumbai":             "Brabourne Stadium",
-
-    "Barabati Stadium, Cuttack":             "Barabati Stadium",
-
+    "M.Chinnaswamy Stadium": "M Chinnaswamy Stadium",
+    "M Chinnaswamy Stadium, Bangalore": "M Chinnaswamy Stadium",
+    "Brabourne Stadium, Mumbai": "Brabourne Stadium",
+    "Barabati Stadium, Cuttack": "Barabati Stadium",
     "Bharat Ratna Shri Atal Bihari Vajpai Ekana Cricket Stadium": "Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",
     "Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium": "Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",
-
     "Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium": "Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",
-    "ACA-VDCA Stadium, Visakhapatnam":       "Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",
+    "ACA-VDCA Stadium, Visakhapatnam": "Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",
     "Dr YS Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam": "Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",
-
     "Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur": "Maharaja Yadavindra Singh International Cricket Stadium",
     "Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur, Chandigarh": "Maharaja Yadavindra Singh International Cricket Stadium",
-
     "Maharashtra Cricket Association Stadium": "Maharashtra Cricket Association Stadium, Pune",
-    "MCA International Stadium, Pune":       "Maharashtra Cricket Association Stadium, Pune",
+    "MCA International Stadium, Pune": "Maharashtra Cricket Association Stadium, Pune",
     "Maharashtra Cricket Association Stadium, Gahunje": "Maharashtra Cricket Association Stadium, Pune",
     "Maharashtra Cricket Association Stadium, Gahunje, Pune": "Maharashtra Cricket Association Stadium, Pune",
-
-    "Green Park, Kanpur":                    "Green Park",
-
-    "Nehru Stadium, Indore":                 "Holkar Cricket Stadium, Indore",
-
-
+    "Green Park, Kanpur": "Green Park",
+    "Nehru Stadium, Indore": "Holkar Cricket Stadium, Indore",
     # ── South Africa ───────────────────────────────────────────────────────
-    "Newlands, Cape Town":                   "Newlands",
-    "SuperSport Park, Centurion":            "SuperSport Park",
-    "Kingsmead, Durban":                     "Kingsmead",
-    "St George's Park, Gqeberha":            "St George's Park",
-    "St George's Park, Port Elizabeth":       "St George's Park",
-
+    "Newlands, Cape Town": "Newlands",
+    "SuperSport Park, Centurion": "SuperSport Park",
+    "Kingsmead, Durban": "Kingsmead",
+    "St George's Park, Gqeberha": "St George's Park",
+    "St George's Park, Port Elizabeth": "St George's Park",
     # ── England ────────────────────────────────────────────────────────────
-    "Edgbaston, Birmingham":                 "Edgbaston",
-    "Old Trafford, Manchester":              "Old Trafford",
-    "Sophia Gardens, Cardiff":               "Sophia Gardens",
-    "The Rose Bowl, Southampton":            "The Rose Bowl",
-    "Headingley, Leeds":                     "Headingley",
-    "Trent Bridge, Nottingham":              "Trent Bridge",
+    "Edgbaston, Birmingham": "Edgbaston",
+    "Old Trafford, Manchester": "Old Trafford",
+    "Sophia Gardens, Cardiff": "Sophia Gardens",
+    "The Rose Bowl, Southampton": "The Rose Bowl",
+    "Headingley, Leeds": "Headingley",
+    "Trent Bridge, Nottingham": "Trent Bridge",
 }
 
 # ── Normalisation function ────────────────────────────────────────────────────
+
 
 def normalise_venue(raw: str | None) -> str | None:
     """Return the canonical venue name for a raw Cricsheet venue string."""
@@ -201,12 +166,14 @@ def normalise_venue(raw: str | None) -> str | None:
 
 # ── DB migration ──────────────────────────────────────────────────────────────
 
+
 def migrate_venues(db_path=None) -> int:
     """Apply all alias mappings to the matches table in-place.
 
     Returns the number of rows updated.
     """
     from ..db import get_connection
+
     con = get_connection(db_path)
 
     total_updated = 0
@@ -214,9 +181,7 @@ def migrate_venues(db_path=None) -> int:
         if raw == canonical:
             continue
         # Count rows before update, then update
-        before = con.execute(
-            "SELECT COUNT(*) FROM matches WHERE venue = ?", [raw]
-        ).fetchone()[0]
+        before = con.execute("SELECT COUNT(*) FROM matches WHERE venue = ?", [raw]).fetchone()[0]
         if before:
             con.execute("UPDATE matches SET venue = ? WHERE venue = ?", [canonical, raw])
             total_updated += before
@@ -227,6 +192,7 @@ def migrate_venues(db_path=None) -> int:
 
 if __name__ == "__main__":
     import logging
+
     logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
     n = migrate_venues()
     print(f"Updated {n} venue rows")

@@ -86,7 +86,9 @@ CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament);
 """
 
 
-def get_connection(db_path: Path | None = None, read_only: bool = False) -> duckdb.DuckDBPyConnection:
+def get_connection(
+    db_path: Path | None = None, read_only: bool = False
+) -> duckdb.DuckDBPyConnection:
     """Open a DuckDB connection. Creates the file if it doesn't exist."""
     path = db_path or get_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -97,7 +99,9 @@ def init_schema(db_path: Path | None = None) -> None:
     """Create all tables and indexes if they don't exist."""
     con = get_connection(db_path)
     con.execute(_SCHEMA_SQL)
-    con.execute("ALTER TABLE matches ADD COLUMN IF NOT EXISTS outcome_method VARCHAR")  # DBs built before it existed
+    con.execute(
+        "ALTER TABLE matches ADD COLUMN IF NOT EXISTS outcome_method VARCHAR"
+    )  # DBs built before it existed
     con.close()
 
 

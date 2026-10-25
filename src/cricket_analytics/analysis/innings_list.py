@@ -13,11 +13,17 @@ _RESULT = """CASE WHEN m.winner IS NULL THEN COALESCE(m.result, 'no result')
 _ORDER = {  # (batting, bowling) ORDER BY for each `order`
     "first": ("date, match_id, innings", "date, match_id, innings"),
     "last": ("date DESC, match_id DESC, innings DESC", "date DESC, match_id DESC, innings DESC"),
-    "best": ("runs DESC, out ASC, balls ASC, date DESC", "wickets DESC, runs ASC, balls DESC, date DESC"),
+    "best": (
+        "runs DESC, out ASC, balls ASC, date DESC",
+        "wickets DESC, runs ASC, balls DESC, date DESC",
+    ),
 }
 
 
-_OUTER_BEST = ("runs DESC, (how_out = 'not out') DESC, balls ASC, date DESC", "wickets DESC, runs ASC, balls DESC, date DESC")
+_OUTER_BEST = (
+    "runs DESC, (how_out = 'not out') DESC, balls ASC, date DESC",
+    "wickets DESC, runs ASC, balls DESC, date DESC",
+)
 
 
 @module(
@@ -25,16 +31,26 @@ _OUTER_BEST = ("runs DESC, (how_out = 'not out') DESC, balls ASC, date DESC", "w
     title="Innings list (debut, last N matches, best innings)",
     category="basic",
     description="A player's debut match, first or last N matches or innings, match-by-match scorecard lines and best "
-                "innings or bowling figures: one row per innings (batting) or bowling spell with date, opponent, venue, "
-                "runs, balls, how out, wickets and result. Use order=first n=1 for a debut, order=last n=5 for the last "
-                "5 matches, order=best for the highest score or best figures; leave the player out for the highest "
-                "scores or best figures at a venue or in a season.",
+    "innings or bowling figures: one row per innings (batting) or bowling spell with date, opponent, venue, "
+    "runs, balls, how out, wickets and result. Use order=first n=1 for a debut, order=last n=5 for the last "
+    "5 matches, order=best for the highest score or best figures; leave the player out for the highest "
+    "scores or best figures at a venue or in a season.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue"),
-        ParamSpec("role", "choice", default="batting", choices=("batting", "bowling"),
-                  help="batting: runs and balls; bowling: wickets and runs conceded"),
-        ParamSpec("order", "choice", default="last", choices=("first", "last", "best"),
-                  help="first = earliest (debut), last = most recent, best = most runs / best figures"),
+        ParamSpec(
+            "role",
+            "choice",
+            default="batting",
+            choices=("batting", "bowling"),
+            help="batting: runs and balls; bowling: wickets and runs conceded",
+        ),
+        ParamSpec(
+            "order",
+            "choice",
+            default="last",
+            choices=("first", "last", "best"),
+            help="first = earliest (debut), last = most recent, best = most runs / best figures",
+        ),
         ParamSpec("n", "int", default=10, help="How many innings or spells to return"),
     ],
     caveats=[
@@ -47,12 +63,16 @@ _OUTER_BEST = ("runs DESC, (how_out = 'not out') DESC, balls ASC, date DESC", "w
         "Super-over innings are excluded by default.",
     ],
 )
-def innings_list(f: Filters, role: str = "batting", order: str = "last", n: int = 10) -> pd.DataFrame:
+def innings_list(
+    f: Filters, role: str = "batting", order: str = "last", n: int = 10
+) -> pd.DataFrame:
     n = max(int(n), 1)
     bat = role == "batting"
     top_order = _ORDER[order][0 if bat else 1]
     if bat:
-        inn, params = batter_innings(f, [("m.season", "season"), ("m.venue", "venue"), ("m.competition", "competition")])
+        inn, params = batter_innings(
+            f, [("m.season", "season"), ("m.venue", "venue"), ("m.competition", "competition")]
+        )
         core = f"SELECT batter AS player, date, season, venue, competition, match_id, innings, runs, balls, fours, sixes, out FROM ({inn})"
     else:
         where, params = f.where("bowl")
@@ -89,7 +109,10 @@ def innings_list(f: Filters, role: str = "batting", order: str = "last", n: int 
         LEFT JOIN pos p ON p.match_id = t.match_id AND p.innings = t.innings AND p.name = t.player
         LEFT JOIN outs o ON o.match_id = t.match_id AND o.innings = t.innings AND o.name = t.player
         """
-        return query(f"SELECT * FROM ({sql}) ORDER BY {_OUTER_BEST[0] if order == 'best' else top_order}", params)
+        return query(
+            f"SELECT * FROM ({sql}) ORDER BY {_OUTER_BEST[0] if order == 'best' else top_order}",
+            params,
+        )
     sql = f"""
     WITH top AS (SELECT * FROM ({core}) ORDER BY {top_order} LIMIT {n})
     SELECT t.date, t.season, t.competition, t.player, t.team, t.opposition, t.venue,
@@ -99,4 +122,6 @@ def innings_list(f: Filters, role: str = "batting", order: str = "last", n: int 
            {_RESULT.format(team="t.team")} AS result, t.match_id, t.innings
     FROM top t JOIN matches m USING (match_id)
     """
-    return query(f"SELECT * FROM ({sql}) ORDER BY {_OUTER_BEST[1] if order == 'best' else top_order}", params)
+    return query(
+        f"SELECT * FROM ({sql}) ORDER BY {_OUTER_BEST[1] if order == 'best' else top_order}", params
+    )

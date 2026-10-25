@@ -13,7 +13,11 @@ def _in(col: str, vals: list) -> tuple[str, list]:
     """`col = ?` for one value, `col IN (?, ?)` for several, ('', []) for none. Values are always bound."""
     if not vals:
         return "", []
-    return (f"{col} = ?", list(vals)) if len(vals) == 1 else (f"{col} IN ({', '.join('?' * len(vals))})", list(vals))
+    return (
+        (f"{col} = ?", list(vals))
+        if len(vals) == 1
+        else (f"{col} IN ({', '.join('?' * len(vals))})", list(vals))
+    )
 
 
 @dataclass
@@ -42,6 +46,7 @@ class Filters:
                  records do. For side='bat'/'bowl' the condition is inside .where(); modules that read
                  deliveries with side='match' add `f.innings_sql()` themselves.
     """
+
     competition: str | None = None
     season: str | int | list | tuple | None = None
     team: str | list | tuple | None = None
@@ -59,7 +64,11 @@ class Filters:
         v = getattr(self, name)
         if v is None:
             return []
-        return [x for x in (v if isinstance(v, (list, tuple, set)) else [v]) if x is not None and str(x).strip() != ""]
+        return [
+            x
+            for x in (v if isinstance(v, (list, tuple, set)) else [v])
+            if x is not None and str(x).strip() != ""
+        ]
 
     def _season_sql(self, m: str) -> tuple[str, list]:
         """One condition on m.season / m.competition, or ('', [])."""
@@ -71,12 +80,21 @@ class Filters:
             raise ValueError(f"last_n_years must be 1 or more, got {n}")
         years = [int(x) for x in items if len(x) == 4 and x.isdigit()]
         if items and not (years or lo is not None or hi is not None or n is not None):
-            return _in(f"{m}.season", items)   # plain labels: no need to look at match dates
+            return _in(f"{m}.season", items)  # plain labels: no need to look at match dates
         if not (items or lo is not None or hi is not None or n is not None):
             return "", []
         # one row per season of the scoped competition(s): its year (first match) and its rank, newest first
-        scope, sp = ("gender = ?", [competitions.DEFAULT_GENDER]) if self.competition is None else             ("competition = ? AND gender = ?", [competitions.get(self.competition).competition,
-                                                competitions.get(self.competition).gender])
+        scope, sp = (
+            ("gender = ?", [competitions.DEFAULT_GENDER])
+            if self.competition is None
+            else (
+                "competition = ? AND gender = ?",
+                [
+                    competitions.get(self.competition).competition,
+                    competitions.get(self.competition).gender,
+                ],
+            )
+        )
         conds: list[str] = []
         p: list = []
         if items:
@@ -92,11 +110,15 @@ class Filters:
         if n is not None:
             conds.append("rn <= ?")
             p.append(int(n))
-        sub = (f"SELECT competition, season, year(min(date)) AS y, "
-               f"row_number() OVER (PARTITION BY competition ORDER BY min(date) DESC) AS rn "
-               f"FROM matches WHERE {scope} GROUP BY competition, season")
-        return (f"({m}.competition, {m}.season) IN (SELECT competition, season FROM ({sub}) WHERE {' AND '.join(conds)})",
-                sp + p)
+        sub = (
+            f"SELECT competition, season, year(min(date)) AS y, "
+            f"row_number() OVER (PARTITION BY competition ORDER BY min(date) DESC) AS rn "
+            f"FROM matches WHERE {scope} GROUP BY competition, season"
+        )
+        return (
+            f"({m}.competition, {m}.season) IN (SELECT competition, season FROM ({sub}) WHERE {' AND '.join(conds)})",
+            sp + p,
+        )
 
     def innings_sql(self, d: str = "d") -> str:
         """'d.innings <= 2' unless super overs are included; always a valid boolean expression."""
@@ -144,8 +166,11 @@ class Filters:
 
         if not self.include_super_overs:
             c.append(self.innings_sql(d))
-        mine, other, who = (("batting_team", "bowling_team", "batter") if side == "bat"
-                            else ("bowling_team", "batting_team", "bowler"))
+        mine, other, who = (
+            ("batting_team", "bowling_team", "batter")
+            if side == "bat"
+            else ("bowling_team", "batting_team", "bowler")
+        )
         for col, name in ((mine, "team"), (other, "opposition")):
             sc, sp = _in(f"{d}.{col}", self.values(name))
             if sc:

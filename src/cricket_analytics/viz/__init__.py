@@ -19,33 +19,67 @@ import plotly.io as pio
 from .. import competitions
 
 PALETTE = {
-    "primary": "#2196F3",   # main series (runs, wickets)
+    "primary": "#2196F3",  # main series (runs, wickets)
     "secondary": "#FF9800",  # rolling average / second series
-    "good": "#4CAF50",      # not out, wins, fours
-    "bad": "#EF5350",       # out, losses, sixes
-    "neutral": "#9E9E9E",   # dots, no result
+    "good": "#4CAF50",  # not out, wins, fours
+    "bad": "#EF5350",  # out, losses, sixes
+    "neutral": "#9E9E9E",  # dots, no result
     "light": "#90CAF9",
     "accent": "#E91E63",
     "phases": ["#2196F3", "#FF9800", "#F44336"],  # powerplay, middle, death
 }
 
 _TEXT, _MUTED, _GRID = "#E6EAF0", "#9AA4B2", "rgba(255,255,255,0.09)"
-_AXIS = dict(automargin=True, gridcolor=_GRID, zerolinecolor=_GRID, linecolor=_GRID, title_standoff=8, title_font=dict(size=13))
+_AXIS = dict(
+    automargin=True,
+    gridcolor=_GRID,
+    zerolinecolor=_GRID,
+    linecolor=_GRID,
+    title_standoff=8,
+    title_font=dict(size=13),
+)
 
-pio.templates["cricket"] = go.layout.Template(layout=dict(
-    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Source Sans Pro, sans-serif", size=13, color=_TEXT),
-    colorway=[PALETTE[k] for k in ("primary", "secondary", "good", "bad", "accent", "light", "neutral")],
-    height=450, margin=dict(l=16, r=24, t=24, b=40),
-    title=dict(x=0, xanchor="left", automargin=True, pad=dict(b=14), font=dict(size=18),
-               subtitle=dict(font=dict(size=12, color=_MUTED))),
-    # legend sits in the bottom margin, whatever the figure height is
-    legend=dict(orientation="h", yref="container", y=0, yanchor="bottom", x=0.5, xanchor="center", title_text="", traceorder="normal"),
-    xaxis=_AXIS, yaxis=_AXIS,
-    polar=dict(bgcolor="rgba(0,0,0,0)", radialaxis=dict(gridcolor=_GRID), angularaxis=dict(gridcolor=_GRID)),
-    annotationdefaults=dict(font=dict(size=13, color=_TEXT)),
-    hoverlabel=dict(font_size=12),
-))
+pio.templates["cricket"] = go.layout.Template(
+    layout=dict(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Source Sans Pro, sans-serif", size=13, color=_TEXT),
+        colorway=[
+            PALETTE[k]
+            for k in ("primary", "secondary", "good", "bad", "accent", "light", "neutral")
+        ],
+        height=450,
+        margin=dict(l=16, r=24, t=24, b=40),
+        title=dict(
+            x=0,
+            xanchor="left",
+            automargin=True,
+            pad=dict(b=14),
+            font=dict(size=18),
+            subtitle=dict(font=dict(size=12, color=_MUTED)),
+        ),
+        # legend sits in the bottom margin, whatever the figure height is
+        legend=dict(
+            orientation="h",
+            yref="container",
+            y=0,
+            yanchor="bottom",
+            x=0.5,
+            xanchor="center",
+            title_text="",
+            traceorder="normal",
+        ),
+        xaxis=_AXIS,
+        yaxis=_AXIS,
+        polar=dict(
+            bgcolor="rgba(0,0,0,0)",
+            radialaxis=dict(gridcolor=_GRID),
+            angularaxis=dict(gridcolor=_GRID),
+        ),
+        annotationdefaults=dict(font=dict(size=13, color=_TEXT)),
+        hoverlabel=dict(font_size=12),
+    )
+)
 pio.templates.default = "plotly_dark+cricket"
 
 _FILTERS = ("competition", "season", "team", "opposition", "venue", "phase", "player", "player2")
@@ -55,7 +89,9 @@ def subtitle(result) -> str:
     """'IPL, 2024, V Kohli': only the data filters the module ran with (no group_by / weights / flags).
     Without a competition filter it says so, so a chart never looks scope-less."""
     p = result.meta["params"]
-    parts = [str(p[k]) for k in _FILTERS if p.get(k) not in (None, "") and not isinstance(p[k], bool)]
+    parts = [
+        str(p[k]) for k in _FILTERS if p.get(k) not in (None, "") and not isinstance(p[k], bool)
+    ]
     comp = p.get("competition")
     if comp in competitions.COMPETITIONS:
         parts[0] = competitions.COMPETITIONS[comp].label
@@ -64,14 +100,16 @@ def subtitle(result) -> str:
     return ", ".join(parts)
 
 
-def style(fig: go.Figure, title: str, result=None, note: str = "", height: int | None = None) -> go.Figure:
+def style(
+    fig: go.Figure, title: str, result=None, note: str = "", height: int | None = None
+) -> go.Figure:
     """Set the title (+ the filters as a grey subtitle line, + `note`), the height, and room for the legend."""
     sub = " | ".join(s for s in (subtitle(result) if result is not None else "", note) if s)
     fig.update_layout(title=dict(text=title, subtitle=dict(text=sub)))
     if height:
         fig.update_layout(height=height)
     if sum(t.showlegend is not False and bool(t.name) for t in fig.data) > 1:
-        fig.update_layout(margin_b=80)   # the legend lives in the bottom margin
+        fig.update_layout(margin_b=80)  # the legend lives in the bottom margin
     return fig
 
 

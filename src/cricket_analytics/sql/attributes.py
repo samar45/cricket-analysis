@@ -22,11 +22,28 @@ from ..reference import ATTRIBUTES_CSV, OVERRIDES_CSV
 # Fixed vocabularies (tests check the CSVs against these).
 ROLES = ("batter", "bowler", "all-rounder", "unknown")
 KEEPERS = ("yes", "sometimes")
-BAT_SLOTS = ("opener", "top order", "middle", "finisher", "tail", "unknown")   # values of hint_bat_slot
-BOWL_PHASE_ROLES = ("powerplay", "middle", "death", "all-phase")   # values of hint_bowl_phase_role
+BAT_SLOTS = (
+    "opener",
+    "top order",
+    "middle",
+    "finisher",
+    "tail",
+    "unknown",
+)  # values of hint_bat_slot
+BOWL_PHASE_ROLES = ("powerplay", "middle", "death", "all-phase")  # values of hint_bowl_phase_role
 BOWL_KINDS = ("pace", "spin")
-BOWL_TYPES = ("right-arm fast", "right-arm fast-medium", "right-arm medium", "left-arm fast", "left-arm fast-medium",
-              "left-arm medium", "right-arm off spin", "right-arm leg spin", "left-arm orthodox", "left-arm wrist spin")
+BOWL_TYPES = (
+    "right-arm fast",
+    "right-arm fast-medium",
+    "right-arm medium",
+    "left-arm fast",
+    "left-arm fast-medium",
+    "left-arm medium",
+    "right-arm off spin",
+    "right-arm leg spin",
+    "left-arm orthodox",
+    "left-arm wrist spin",
+)
 BAT_HANDS = ("right", "left")
 CONFIDENCES = ("high", "medium", "low")
 
@@ -55,35 +72,39 @@ def attributes_cte(name: str = "pa") -> str:
     n = lambda c: f"NULLIF({c}, '')"  # noqa: E731
     # the override file may or may not carry a keeper_confidence column (the reviewed list is still being extended)
     with open(OVERRIDES_CSV, encoding="utf-8-sig") as fh:
-        keeper_conf = n("o.keeper_confidence") if "keeper_confidence" in fh.readline().strip().split(",") else "NULL"
+        keeper_conf = (
+            n("o.keeper_confidence")
+            if "keeper_confidence" in fh.readline().strip().split(",")
+            else "NULL"
+        )
     return f"""{name} AS (
     SELECT COALESCE(a.name, o.name) AS name,
-           {n('a.gender')} AS gender,
-           TRY_CAST({n('a.matches')} AS INTEGER) AS matches,
-           TRY_CAST({n('a.last_date')} AS DATE) AS last_date,
-           COALESCE({n('o.role')}, {n('a.role')}) AS role,
-           CASE WHEN {n('o.role')} IS NOT NULL THEN o.source ELSE {n('a.role_source')} END AS role_source,
-           CASE WHEN {n('o.role')} IS NOT NULL THEN NULL ELSE {n('a.role_confidence')} END AS role_confidence,
-           {n('o.keeper')} AS keeper,
-           CASE WHEN {n('o.keeper')} IS NOT NULL THEN o.source END AS keeper_source,
-           CASE WHEN {n('o.keeper')} IS NOT NULL THEN {keeper_conf} END AS keeper_confidence,
-           {n('o.bowl_type')} AS bowl_type,
-           CASE WHEN {n('o.bowl_type')} IS NOT NULL THEN o.source END AS bowl_type_source,
-           CASE WHEN {n('o.bowl_type')} IS NOT NULL THEN {n('o.bowl_type_confidence')} END AS bowl_type_confidence,
-           CASE WHEN {n('o.bowl_type')} IS NULL THEN NULL
+           {n("a.gender")} AS gender,
+           TRY_CAST({n("a.matches")} AS INTEGER) AS matches,
+           TRY_CAST({n("a.last_date")} AS DATE) AS last_date,
+           COALESCE({n("o.role")}, {n("a.role")}) AS role,
+           CASE WHEN {n("o.role")} IS NOT NULL THEN o.source ELSE {n("a.role_source")} END AS role_source,
+           CASE WHEN {n("o.role")} IS NOT NULL THEN NULL ELSE {n("a.role_confidence")} END AS role_confidence,
+           {n("o.keeper")} AS keeper,
+           CASE WHEN {n("o.keeper")} IS NOT NULL THEN o.source END AS keeper_source,
+           CASE WHEN {n("o.keeper")} IS NOT NULL THEN {keeper_conf} END AS keeper_confidence,
+           {n("o.bowl_type")} AS bowl_type,
+           CASE WHEN {n("o.bowl_type")} IS NOT NULL THEN o.source END AS bowl_type_source,
+           CASE WHEN {n("o.bowl_type")} IS NOT NULL THEN {n("o.bowl_type_confidence")} END AS bowl_type_confidence,
+           CASE WHEN {n("o.bowl_type")} IS NULL THEN NULL
                 WHEN o.bowl_type LIKE '%spin%' OR o.bowl_type LIKE '%orthodox%' THEN 'spin' ELSE 'pace' END AS bowl_kind,
-           CASE WHEN {n('o.bowl_type')} IS NOT NULL THEN o.source END AS bowl_kind_source,
-           CASE WHEN {n('o.bowl_type')} IS NOT NULL THEN {n('o.bowl_type_confidence')} END AS bowl_kind_confidence,
-           {n('o.bat_hand')} AS bat_hand,
-           CASE WHEN {n('o.bat_hand')} IS NOT NULL THEN o.source END AS bat_hand_source,
-           CASE WHEN {n('o.bat_hand')} IS NOT NULL THEN {n('o.bat_hand_confidence')} END AS bat_hand_confidence,
-           {n('a.hint_keeper')} AS hint_keeper,
-           {n('a.hint_keeper_confidence')} AS hint_keeper_confidence,
-           {n('a.hint_bowl_kind')} AS hint_bowl_kind,
-           {n('a.hint_bowl_kind_confidence')} AS hint_bowl_kind_confidence,
-           TRY_CAST({n('a.hint_bat_position')} AS DOUBLE) AS hint_bat_position,
-           {n('a.hint_bat_slot')} AS hint_bat_slot,
-           {n('a.hint_bat_slot_confidence')} AS hint_bat_slot_confidence,
-           {n('a.hint_bowl_phase_role')} AS hint_bowl_phase_role
+           CASE WHEN {n("o.bowl_type")} IS NOT NULL THEN o.source END AS bowl_kind_source,
+           CASE WHEN {n("o.bowl_type")} IS NOT NULL THEN {n("o.bowl_type_confidence")} END AS bowl_kind_confidence,
+           {n("o.bat_hand")} AS bat_hand,
+           CASE WHEN {n("o.bat_hand")} IS NOT NULL THEN o.source END AS bat_hand_source,
+           CASE WHEN {n("o.bat_hand")} IS NOT NULL THEN {n("o.bat_hand_confidence")} END AS bat_hand_confidence,
+           {n("a.hint_keeper")} AS hint_keeper,
+           {n("a.hint_keeper_confidence")} AS hint_keeper_confidence,
+           {n("a.hint_bowl_kind")} AS hint_bowl_kind,
+           {n("a.hint_bowl_kind_confidence")} AS hint_bowl_kind_confidence,
+           TRY_CAST({n("a.hint_bat_position")} AS DOUBLE) AS hint_bat_position,
+           {n("a.hint_bat_slot")} AS hint_bat_slot,
+           {n("a.hint_bat_slot_confidence")} AS hint_bat_slot_confidence,
+           {n("a.hint_bowl_phase_role")} AS hint_bowl_phase_role
     FROM {a} a FULL OUTER JOIN {o} o ON a.name = o.name
 )"""

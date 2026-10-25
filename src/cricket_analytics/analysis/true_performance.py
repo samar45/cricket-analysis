@@ -5,8 +5,16 @@ import pandas as pd
 from ..db import query
 from ..registry import ParamSpec, module, std
 from ..sql.filters import Filters
-from ..sql.fragments import (BALL_FACED, BOWLER_WICKET, IS_DOT, IS_FOUR, IS_SIX, LEGAL_BALL, RUNS_CONCEDED,
-                             phase_sql)
+from ..sql.fragments import (
+    BALL_FACED,
+    BOWLER_WICKET,
+    IS_DOT,
+    IS_FOUR,
+    IS_SIX,
+    LEGAL_BALL,
+    RUNS_CONCEDED,
+    phase_sql,
+)
 
 
 @module(
@@ -14,12 +22,16 @@ from ..sql.fragments import (BALL_FACED, BOWLER_WICKET, IS_DOT, IS_FOUR, IS_SIX,
     title="True strike rate / true economy",
     category="advanced",
     description="Phase-adjusted strike rate (role=batting) or economy (role=bowling). Every ball is compared with the "
-                "league rate for the same competition, season and phase (powerplay / middle / death), then scaled to "
-                "the league's overall rate.",
+    "league rate for the same competition, season and phase (powerplay / middle / death), then scaled to "
+    "the league's overall rate.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
         ParamSpec("role", "choice", default="batting", choices=("batting", "bowling")),
-        ParamSpec("min_balls", "int", help="Hide players below this many balls (default 30 faced when batting, 60 legal when bowling)"),
+        ParamSpec(
+            "min_balls",
+            "int",
+            help="Hide players below this many balls (default 30 faced when batting, 60 legal when bowling)",
+        ),
         ParamSpec("top", "int", default=40, help="Rows to return (best true rate first)"),
     ],
     caveats=[
@@ -29,16 +41,26 @@ from ..sql.fragments import (BALL_FACED, BOWLER_WICKET, IS_DOT, IS_FOUR, IS_SIX,
         "Phases come from over numbers (The Hundred: first 25 balls powerplay, last 25 death). Wickets fallen, target and venue are not adjusted for.",
     ],
 )
-def true_performance(f: Filters, role: str = "batting", min_balls: int | None = None, top: int = 40) -> pd.DataFrame:
+def true_performance(
+    f: Filters, role: str = "batting", min_balls: int | None = None, top: int = 40
+) -> pd.DataFrame:
     base_where, base_params = Filters(competition=f.competition, season=f.season).where("match")
     ph = phase_sql()
     if role == "batting":
         who, side, minb = "batter", "bat", 30
-        base_den, base_num, ball = f"COUNT(*) FILTER (WHERE {BALL_FACED})", "SUM(d.runs_batter)", BALL_FACED
+        base_den, base_num, ball = (
+            f"COUNT(*) FILTER (WHERE {BALL_FACED})",
+            "SUM(d.runs_batter)",
+            BALL_FACED,
+        )
         runs = "d.runs_batter"
     else:
         who, side, minb = "bowler", "bowl", 60
-        base_den, base_num, ball = f"COUNT(*) FILTER (WHERE {LEGAL_BALL})", f"SUM{RUNS_CONCEDED}", LEGAL_BALL
+        base_den, base_num, ball = (
+            f"COUNT(*) FILTER (WHERE {LEGAL_BALL})",
+            f"SUM{RUNS_CONCEDED}",
+            LEGAL_BALL,
+        )
         runs = RUNS_CONCEDED
     where, params = f.where(side)
     # base = league runs per ball in each cell and in the whole competition-season (lg_rpb)
@@ -87,14 +109,18 @@ def true_performance(f: Filters, role: str = "batting", min_balls: int | None = 
                ROUND(dots * 100.0 / balls, 1) AS dot_pct,
                econ_powerplay, econ_middle, econ_death
         FROM agg WHERE balls >= ? ORDER BY true_economy ASC NULLS LAST, bowler LIMIT ?"""
-    return query(cte + sel, base_params + params + [int(min_balls if min_balls is not None else minb), int(top)])
+    return query(
+        cte + sel,
+        base_params + params + [int(min_balls if min_balls is not None else minb), int(top)],
+    )
 
 
 def _phase_cols(runs: str, ball: str, ph: str, role: str) -> str:
     k, mult, nd = ("sr", 100.0, 2) if role == "batting" else ("econ", 6.0, 2)
     return ", ".join(
         f"ROUND(SUM({runs}) FILTER (WHERE {ph} = '{p}') * {mult} / NULLIF(COUNT(*) FILTER (WHERE {ph} = '{p}' AND {ball}), 0), {nd}) AS {k}_{p}"
-        for p in ("powerplay", "middle", "death"))
+        for p in ("powerplay", "middle", "death")
+    )
 
 
 def _extra_cols(role: str) -> str:

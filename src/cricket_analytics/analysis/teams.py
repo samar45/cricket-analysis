@@ -19,11 +19,16 @@ _GROUPS = {
     title="Team records",
     category="basic",
     description="Per-team matches played, won, lost, tied, no result, win%, toss wins, and bat-first vs chasing "
-                "records, for any competition, season, venue or opposition.",
+    "records, for any competition, season, venue or opposition.",
     params=[
         *std("team", "opposition", "competition", "season", "venue", super_overs=False),
-        ParamSpec("group_by", "choice", default="team", choices=tuple(_GROUPS),
-                  help="team = one row per team; season = per team per season"),
+        ParamSpec(
+            "group_by",
+            "choice",
+            default="team",
+            choices=tuple(_GROUPS),
+            help="team = one row per team; season = per team per season",
+        ),
         ParamSpec("min_matches", "int", default=0, help="Hide teams with fewer matches than this"),
     ],
     caveats=[

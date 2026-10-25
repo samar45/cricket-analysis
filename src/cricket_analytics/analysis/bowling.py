@@ -5,14 +5,28 @@ import pandas as pd
 from ..db import query
 from ..registry import ParamSpec, module, std
 from ..sql.filters import Filters
-from ..sql.fragments import BALL_FACED, BOWLER_WICKET, IS_DOT, IS_FOUR, IS_SIX, LEGAL_BALL, RUNS_CONCEDED, phase_sql
+from ..sql.fragments import (
+    BALL_FACED,
+    BOWLER_WICKET,
+    IS_DOT,
+    IS_FOUR,
+    IS_SIX,
+    LEGAL_BALL,
+    RUNS_CONCEDED,
+    phase_sql,
+)
 
 # group_by -> (group keys as (SQL expr, output name), ORDER BY of the final query)
 _GROUPS = {
     "player": ([], "wickets DESC, economy"),
-    "season": ([("m.competition", "competition"), ("m.season", "season")], "bowler, MIN(first_date)"),
-    "phase": ([(phase_sql(), "phase")],
-              "bowler, MIN(CASE phase WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END)"),
+    "season": (
+        [("m.competition", "competition"), ("m.season", "season")],
+        "bowler, MIN(first_date)",
+    ),
+    "phase": (
+        [(phase_sql(), "phase")],
+        "bowler, MIN(CASE phase WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END)",
+    ),
     "year": ([("year(m.date)", "year")], "bowler, year"),
     "venue": ([("m.venue", "venue")], "bowler, wickets DESC"),
     "opposition": ([("d.batting_team", "opposition")], "bowler, wickets DESC"),
@@ -24,13 +38,20 @@ _GROUPS = {
     title="Bowling stats",
     category="basic",
     description="Per-bowler wickets, runs conceded, economy, average, strike rate, dot%, boundaries conceded, "
-                "wides, no-balls, 3-/5-wicket hauls and best figures, grouped by player, season, phase, calendar year, venue or opposition.",
+    "wides, no-balls, 3-/5-wicket hauls and best figures, grouped by player, season, phase, calendar year, venue or opposition.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
-        ParamSpec("group_by", "choice", default="player", choices=tuple(_GROUPS),
-                  help="player = one row per bowler; season / phase / year (calendar year of the match) / venue / opposition "
-                       "= one row per bowler per group, to compare side by side"),
-        ParamSpec("min_balls", "int", default=0, help="Hide rows with fewer legal balls bowled than this"),
+        ParamSpec(
+            "group_by",
+            "choice",
+            default="player",
+            choices=tuple(_GROUPS),
+            help="player = one row per bowler; season / phase / year (calendar year of the match) / venue / opposition "
+            "= one row per bowler per group, to compare side by side",
+        ),
+        ParamSpec(
+            "min_balls", "int", default=0, help="Hide rows with fewer legal balls bowled than this"
+        ),
     ],
     caveats=[
         "Runs conceded = bat runs + wides + no-balls; byes, leg-byes and penalty runs are not charged to the bowler.",

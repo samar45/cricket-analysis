@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 IPL = dict(competition="ipl")
 KOHLI, ROHIT, BUMRAH = "V Kohli", "RG Sharma", "JJ Bumrah"
 
-MAIN = [   # (label, module, params)
+MAIN = [  # (label, module, params)
     ("batting", "batting", IPL),
     ("bowling", "bowling", IPL),
     ("teams", "teams", IPL),
@@ -36,7 +36,11 @@ EXTRA = [
     ("batting by phase (many)", "batting", dict(IPL, group_by="phase")),
     ("batting by phase (one)", "batting", dict(IPL, group_by="phase", player=KOHLI)),
     ("batting by season (many)", "batting", dict(IPL, group_by="season")),
-    ("batting by season (one)", "batting", dict(IPL, group_by="season", player=KOHLI, include_super_overs=True)),
+    (
+        "batting by season (one)",
+        "batting",
+        dict(IPL, group_by="season", player=KOHLI, include_super_overs=True),
+    ),
     ("bowling, one player", "bowling", dict(IPL, player=BUMRAH)),
     ("bowling by phase (many)", "bowling", dict(IPL, group_by="phase")),
     ("bowling by season (one)", "bowling", dict(IPL, group_by="season", player=BUMRAH)),
@@ -66,7 +70,9 @@ def main(out: str) -> None:
     cards, first = [], True
     for label, mod, params in MAIN + EXTRA:
         try:
-            fig = importlib.import_module(f"cricket_analytics.viz.{mod}").figure(api.run(mod, **params))
+            fig = importlib.import_module(f"cricket_analytics.viz.{mod}").figure(
+                api.run(mod, **params)
+            )
             html = fig.to_html(full_html=False, include_plotlyjs="cdn" if first else False)
             first = False
         except Exception as e:  # noqa: BLE001  (a gallery should show what broke, not stop)

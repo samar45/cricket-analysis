@@ -3,10 +3,20 @@ the winner of the row is amber, and the subtitle says who leads how many rows.""
 
 from . import butterfly, message_card, num, scope_text, source_note
 
-BAT = [("Runs", "runs", False, 0), ("Average", "average", False, 1), ("Strike rate", "strike_rate", False, 0),
-       ("Sixes", "sixes", False, 0), ("Hundreds", "hundreds", False, 0)]
-BOWL = [("Wickets", "wickets", False, 0), ("Average", "average", True, 1), ("Economy", "economy", True, 1),
-        ("Strike rate", "strike_rate", True, 1), ("Dot balls %", "dot_pct", False, 0)]
+BAT = [
+    ("Runs", "runs", False, 0),
+    ("Average", "average", False, 1),
+    ("Strike rate", "strike_rate", False, 0),
+    ("Sixes", "sixes", False, 0),
+    ("Hundreds", "hundreds", False, 0),
+]
+BOWL = [
+    ("Wickets", "wickets", False, 0),
+    ("Average", "average", True, 1),
+    ("Economy", "economy", True, 1),
+    ("Strike rate", "strike_rate", True, 1),
+    ("Dot balls %", "dot_pct", False, 0),
+]
 
 
 def video_figure(result, aspect="9:16", focus=None):

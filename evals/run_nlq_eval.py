@@ -5,6 +5,7 @@
 Scores (exact match in Python, no LLM judge): module accuracy, param accuracy (per param and all-correct),
 clarification precision/recall, golden-number presence in the answer, seconds per question.
 """
+
 import argparse
 import datetime as dt
 import json
@@ -18,7 +19,11 @@ DEFAULT_MODEL = "nemotron-3.5-bolt:e4b-q4_K_M"
 
 
 def load_questions(path=HERE / "nlq_questions.jsonl"):
-    return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line)
+        for line in Path(path).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
 
 
 def _norm(v):
@@ -28,7 +33,9 @@ def _norm(v):
         return v[0] if len(v) == 1 else sorted(map(str, v))
     if isinstance(v, bool):
         return v
-    if isinstance(v, (int, float)) or (isinstance(v, str) and re.fullmatch(r"-?\d+(\.0+)?", v.strip())):
+    if isinstance(v, (int, float)) or (
+        isinstance(v, str) and re.fullmatch(r"-?\d+(\.0+)?", v.strip())
+    ):
         return float(v)
     return str(v).strip().casefold()
 
@@ -61,7 +68,8 @@ def score_one(case, out):
     mod, tool_params = _call(out)
     params = out.get("resolved_params") or tool_params
     cands = [(case["expected_module"], case["expected_params"])] + [
-        (a["module"], a.get("params", {})) for a in case.get("acceptable_alternatives", [])]
+        (a["module"], a.get("params", {})) for a in case.get("acceptable_alternatives", [])
+    ]
     match = next(((m, p) for m, p in cands if m == mod), None)
     s["module_ok"] = match is not None
     exp = (match or cands[0])[1]
@@ -81,13 +89,16 @@ def summarize(scores, seconds):
     # a question that should NOT trigger a clarification but did counts as a miss for module accuracy
     r = lambda a, b: round(a / b, 3) if b else None  # noqa: E731
     return {
-        "n": len(scores), "n_answerable": len(ex),
+        "n": len(scores),
+        "n_answerable": len(ex),
         "module_accuracy": r(sum(s["module_ok"] for s in ex), len(ex)),
         "param_accuracy_per_param": r(sum(ph), len(ph)),
         "param_accuracy_all_correct": r(sum(s["params_ok"] for s in ex), len(ex)),
-        "clarification_precision": r(tp, pred), "clarification_recall": r(tp, exp),
+        "clarification_precision": r(tp, pred),
+        "clarification_recall": r(tp, exp),
         "false_clarifications": sum(s["clar_pred"] and not s["clar_expected"] for s in scores),
-        "golden_present": r(sum(gold), len(gold)), "golden_n": len(gold),
+        "golden_present": r(sum(gold), len(gold)),
+        "golden_n": len(gold),
         "seconds_mean": round(sum(seconds) / len(seconds), 2) if seconds else None,
         "seconds_max": round(max(seconds), 2) if seconds else None,
     }
@@ -102,7 +113,9 @@ def main(argv=None):
     try:
         from cricket_analytics.ask import ask  # lazy: the module is built separately
     except ImportError as e:
-        sys.exit(f"cricket_analytics.ask is not available yet ({e}). Build src/cricket_analytics/ask.py first.")
+        sys.exit(
+            f"cricket_analytics.ask is not available yet ({e}). Build src/cricket_analytics/ask.py first."
+        )
     cases = load_questions()
     if a.ids:
         want = set(a.ids.split(","))
@@ -119,16 +132,28 @@ def main(argv=None):
         s = score_one(c, out)
         scores.append(s)
         secs.append(dt_s)
-        rows.append({**s, "question": c["question"], "seconds": round(dt_s, 2), "error": err,
-                     "tool_call": out.get("tool_call"), "resolved_params": out.get("resolved_params"),
-                     "answer": out.get("answer"), "status": out.get("status")})
+        rows.append(
+            {
+                **s,
+                "question": c["question"],
+                "seconds": round(dt_s, 2),
+                "error": err,
+                "tool_call": out.get("tool_call"),
+                "resolved_params": out.get("resolved_params"),
+                "answer": out.get("answer"),
+                "status": out.get("status"),
+            }
+        )
         flag = "ok " if (s.get("params_ok") or (s["clar_expected"] and s["clar_pred"])) else "BAD"
         print(f"{flag} {c['id']} {dt_s:5.1f}s  {c['question'][:60]}")
     summ = summarize(scores, secs)
     res = HERE / "results"
     res.mkdir(exist_ok=True)
     f = res / f"{dt.date.today()}_{re.sub(r'[^A-Za-z0-9._-]', '_', a.model)}.json"
-    f.write_text(json.dumps({"model": a.model, "summary": summ, "questions": rows}, indent=1, default=str), encoding="utf-8")
+    f.write_text(
+        json.dumps({"model": a.model, "summary": summ, "questions": rows}, indent=1, default=str),
+        encoding="utf-8",
+    )
     print("\n" + "\n".join(f"{k:30} {v}" for k, v in summ.items()) + f"\n\nwritten: {f}")
 
 

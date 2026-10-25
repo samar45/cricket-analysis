@@ -11,7 +11,9 @@ from ..sql.filters import Filters
 from ..sql.fragments import phase_sql
 from ..sql.innings import batter_innings
 
-_SCOPE_ORDER = "CASE scope WHEN 'overall' THEN 0 WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END"
+_SCOPE_ORDER = (
+    "CASE scope WHEN 'overall' THEN 0 WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END"
+)
 
 _BAT_PARTS = """
     SELECT batter AS player, match_id, innings, 'overall' AS scope, SUM(runs) AS runs, SUM(balls) AS balls,
@@ -33,8 +35,10 @@ _BAT_OUT = f"""
            CASE WHEN scope = 'overall' THEN COUNT(*) FILTER (WHERE runs >= 100)::INTEGER END AS hundreds,
            CASE WHEN scope = 'overall' THEN COUNT(*) FILTER (WHERE runs = 0 AND outs > 0)::INTEGER END AS ducks"""
 
-_BOWL_SUMS = ("SUM(runs_conceded) AS runs_conceded, SUM(legal_balls) AS legal_balls, SUM(wickets) AS wickets, "
-              "SUM(dots) AS dots, SUM(boundaries) AS boundaries, SUM(faced) AS faced")
+_BOWL_SUMS = (
+    "SUM(runs_conceded) AS runs_conceded, SUM(legal_balls) AS legal_balls, SUM(wickets) AS wickets, "
+    "SUM(dots) AS dots, SUM(boundaries) AS boundaries, SUM(faced) AS faced"
+)
 _BOWL_OUT = f"""
     SELECT player, scope, COUNT(*)::INTEGER AS innings, SUM(wickets)::INTEGER AS wickets,
            SUM(runs_conceded)::INTEGER AS runs_conceded, SUM(legal_balls)::INTEGER AS balls,
@@ -51,9 +55,14 @@ _BOWL_OUT = f"""
     title="Player comparison",
     category="advanced",
     description="Two players side by side, as batters (role=batting) or bowlers (role=bowling): one row per player and "
-                "scope (overall, powerplay, middle, death).",
+    "scope (overall, powerplay, middle, death).",
     params=[
-        ParamSpec("player", "player", required=True, help="First player, exact name as in the data (use resolve first)"),
+        ParamSpec(
+            "player",
+            "player",
+            required=True,
+            help="First player, exact name as in the data (use resolve first)",
+        ),
         ParamSpec("player2", "player2", required=True, help="Second player, exact name"),
         *std("competition", "season", "team", "opposition", "venue"),
         ParamSpec("role", "choice", default="batting", choices=("batting", "bowling")),
@@ -72,9 +81,14 @@ def compare(f: Filters, player2: str, role: str = "batting") -> pd.DataFrame:
     order = f"ORDER BY CASE player WHEN ? THEN 0 ELSE 1 END, {_SCOPE_ORDER}"
     if role == "batting":
         # one query: two batter_innings subqueries (each filtered to its player) glued with UNION ALL
-        parts = [batter_innings(dataclasses.replace(f, player=p), [(phase_sql(), "phase")]) for p in (f.player, player2)]
-        sql = (f"WITH b AS ({' UNION ALL '.join(f'SELECT * FROM ({q})' for q, _ in parts)}), parts AS ({_BAT_PARTS})"
-               f"{_BAT_OUT} FROM parts GROUP BY player, scope {order}")
+        parts = [
+            batter_innings(dataclasses.replace(f, player=p), [(phase_sql(), "phase")])
+            for p in (f.player, player2)
+        ]
+        sql = (
+            f"WITH b AS ({' UNION ALL '.join(f'SELECT * FROM ({q})' for q, _ in parts)}), parts AS ({_BAT_PARTS})"
+            f"{_BAT_OUT} FROM parts GROUP BY player, scope {order}"
+        )
         params = parts[0][1] + parts[1][1] + [f.player]
     else:
         where, params = dataclasses.replace(f, player=None).where("bowl")

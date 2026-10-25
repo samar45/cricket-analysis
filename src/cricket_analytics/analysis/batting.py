@@ -12,8 +12,10 @@ from ..sql.innings import batter_innings
 _GROUPS = {
     "player": ([], "total_runs DESC"),
     "season": ([("m.competition", "competition"), ("m.season", "season")], "batter, MIN(date)"),
-    "phase": ([(phase_sql(), "phase")],
-              "batter, MIN(CASE phase WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END)"),
+    "phase": (
+        [(phase_sql(), "phase")],
+        "batter, MIN(CASE phase WHEN 'powerplay' THEN 1 WHEN 'middle' THEN 2 ELSE 3 END)",
+    ),
     "year": ([("year(m.date)", "year")], "batter, year"),
     "venue": ([("m.venue", "venue")], "batter, total_runs DESC"),
     "opposition": ([("d.bowling_team", "opposition")], "batter, total_runs DESC"),
@@ -25,12 +27,17 @@ _GROUPS = {
     title="Batting stats",
     category="basic",
     description="Per-batter innings, runs, average, strike rate, 50s/100s, ducks, 4s/6s, dot% and boundary%, "
-                "grouped by player, season, phase of the innings, calendar year, venue or opposition.",
+    "grouped by player, season, phase of the innings, calendar year, venue or opposition.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
-        ParamSpec("group_by", "choice", default="player", choices=tuple(_GROUPS),
-                  help="player = one row per batter; season / phase / year (calendar year of the match) / venue / opposition "
-                       "= one row per batter per group, to compare side by side"),
+        ParamSpec(
+            "group_by",
+            "choice",
+            default="player",
+            choices=tuple(_GROUPS),
+            help="player = one row per batter; season / phase / year (calendar year of the match) / venue / opposition "
+            "= one row per batter per group, to compare side by side",
+        ),
         ParamSpec("min_balls", "int", default=0, help="Hide rows with fewer balls faced than this"),
     ],
     caveats=[

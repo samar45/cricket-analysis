@@ -6,7 +6,20 @@ from typing import Callable
 from .sql.fragments import PHASES
 
 CATEGORIES = ("basic", "intermediate", "advanced", "experimental")
-KINDS = ("player", "player2", "team", "opposition", "competition", "season", "venue", "phase", "int", "float", "bool", "choice")
+KINDS = (
+    "player",
+    "player2",
+    "team",
+    "opposition",
+    "competition",
+    "season",
+    "venue",
+    "phase",
+    "int",
+    "float",
+    "bool",
+    "choice",
+)
 MULTI_KINDS = ("team", "opposition", "season", "venue")
 
 
@@ -18,7 +31,7 @@ class ParamSpec:
     default: object = None
     choices: tuple | None = None
     help: str = ""
-    multi: bool = False   # accepts one value or a list (JSON schema: an array)
+    multi: bool = False  # accepts one value or a list (JSON schema: an array)
 
     def __post_init__(self):
         if self.kind not in KINDS:
@@ -34,28 +47,54 @@ class ParamSpec:
 # The standard Filters fields as ready-made specs: params=[*std("player", "competition"), ...]
 # "season" brings its range and last-N siblings with it, so a module that takes seasons takes all three ways.
 _STD = {
-    "player":      ParamSpec("player", "player", help="Exact player name as in the data, e.g. 'V Kohli' (use resolve first)"),
-    "player2":     ParamSpec("player2", "player2", help="Second player (e.g. the bowler in a matchup)"),
-    "competition": ParamSpec("competition", "competition", help="Competition key; omit for all (men's)"),
-    "season":      ParamSpec("season", "season", multi=True,
-                             help="Cricsheet season label or a year, e.g. 2024; several allowed"),
-    "team":        ParamSpec("team", "team", multi=True, help="Exact team name; several allowed"),
-    "opposition":  ParamSpec("opposition", "opposition", multi=True,
-                             help="Exact opposition team name; several allowed"),
-    "venue":       ParamSpec("venue", "venue", multi=True,
-                             help="Exact venue name; several allowed (names contain commas, so pass a list)"),
-    "phase":       ParamSpec("phase", "phase", help="powerplay | middle | death"),
+    "player": ParamSpec(
+        "player",
+        "player",
+        help="Exact player name as in the data, e.g. 'V Kohli' (use resolve first)",
+    ),
+    "player2": ParamSpec("player2", "player2", help="Second player (e.g. the bowler in a matchup)"),
+    "competition": ParamSpec(
+        "competition", "competition", help="Competition key; omit for all (men's)"
+    ),
+    "season": ParamSpec(
+        "season",
+        "season",
+        multi=True,
+        help="Cricsheet season label or a year, e.g. 2024; several allowed",
+    ),
+    "team": ParamSpec("team", "team", multi=True, help="Exact team name; several allowed"),
+    "opposition": ParamSpec(
+        "opposition", "opposition", multi=True, help="Exact opposition team name; several allowed"
+    ),
+    "venue": ParamSpec(
+        "venue",
+        "venue",
+        multi=True,
+        help="Exact venue name; several allowed (names contain commas, so pass a list)",
+    ),
+    "phase": ParamSpec("phase", "phase", help="powerplay | middle | death"),
 }
 
 
 _SEASON_RANGE = [
-    ParamSpec("season_from", "int", help="First year, inclusive (a season's year = year of its first match)"),
+    ParamSpec(
+        "season_from",
+        "int",
+        help="First year, inclusive (a season's year = year of its first match)",
+    ),
     ParamSpec("season_to", "int", help="Last year, inclusive"),
-    ParamSpec("last_n_years", "int", help="The N most recent seasons of each competition (seasons, not calendar years)"),
+    ParamSpec(
+        "last_n_years",
+        "int",
+        help="The N most recent seasons of each competition (seasons, not calendar years)",
+    ),
 ]
 
-_SUPER_OVERS = ParamSpec("include_super_overs", "bool",
-                         help="Count super-over innings (innings 3+); off by default, as in official records")
+_SUPER_OVERS = ParamSpec(
+    "include_super_overs",
+    "bool",
+    help="Count super-over innings (innings 3+); off by default, as in official records",
+)
 
 
 def std(*names: str, super_overs: bool = True) -> list[ParamSpec]:
@@ -82,8 +121,15 @@ class Module:
 _REGISTRY: dict[str, Module] = {}
 
 
-def module(*, id: str, title: str, category: str, description: str,
-           params: list[ParamSpec], caveats: list[str] | None = None):
+def module(
+    *,
+    id: str,
+    title: str,
+    category: str,
+    description: str,
+    params: list[ParamSpec],
+    caveats: list[str] | None = None,
+):
     """Register `fn(f: Filters, **extra) -> DataFrame` as an analysis module."""
     if category not in CATEGORIES:
         raise ValueError(f"module {id}: bad category {category!r}")
@@ -91,8 +137,11 @@ def module(*, id: str, title: str, category: str, description: str,
     def deco(fn):
         if id in _REGISTRY:
             raise ValueError(f"Duplicate module id {id!r}")
-        _REGISTRY[id] = Module(id, title, category, description, list(params), list(caveats or []), fn)
+        _REGISTRY[id] = Module(
+            id, title, category, description, list(params), list(caveats or []), fn
+        )
         return fn
+
     return deco
 
 
@@ -114,8 +163,15 @@ def all_modules() -> list[Module]:
 
 def _prop(p: ParamSpec) -> dict:
     from .competitions import COMPETITIONS
-    t = dict({"int": {"type": "integer"}, "float": {"type": "number"}, "bool": {"type": "boolean"},
-              "season": {"type": ["string", "integer"]}}.get(p.kind, {"type": "string"}))
+
+    t = dict(
+        {
+            "int": {"type": "integer"},
+            "float": {"type": "number"},
+            "bool": {"type": "boolean"},
+            "season": {"type": ["string", "integer"]},
+        }.get(p.kind, {"type": "string"})
+    )
     if p.kind == "competition":
         t["enum"] = list(COMPETITIONS)
     elif p.kind == "phase":

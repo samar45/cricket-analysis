@@ -5,7 +5,15 @@ import pandas as pd
 from ..db import query
 from ..registry import ParamSpec, module, std
 from ..sql.filters import Filters
-from ..sql.fragments import BALL_FACED, BOWLER_WICKET, IS_DOT, IS_FOUR, IS_SIX, LEGAL_BALL, RUNS_CONCEDED
+from ..sql.fragments import (
+    BALL_FACED,
+    BOWLER_WICKET,
+    IS_DOT,
+    IS_FOUR,
+    IS_SIX,
+    LEGAL_BALL,
+    RUNS_CONCEDED,
+)
 
 
 @module(
@@ -13,15 +21,26 @@ from ..sql.fragments import BALL_FACED, BOWLER_WICKET, IS_DOT, IS_FOUR, IS_SIX, 
     title="Player impact score",
     category="intermediate",
     description="All-rounder value per player: batting points (runs x strike rate) plus bowling points (wickets plus "
-                "runs saved against a par economy), summed over matches. Weights are parameters.",
+    "runs saved against a par economy), summed over matches. Weights are parameters.",
     params=[
         *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
-        ParamSpec("min_matches", "int", default=3, help="Hide players with fewer matches than this"),
+        ParamSpec(
+            "min_matches", "int", default=3, help="Hide players with fewer matches than this"
+        ),
         ParamSpec("top", "int", default=30, help="Rows to return (best total impact first)"),
-        ParamSpec("bat_weight", "float", default=0.6, help="Batting points per match = runs * strike_rate/100 * this"),
+        ParamSpec(
+            "bat_weight",
+            "float",
+            default=0.6,
+            help="Batting points per match = runs * strike_rate/100 * this",
+        ),
         ParamSpec("wicket_points", "float", default=20.0, help="Bowling points per wicket"),
-        ParamSpec("econ_par", "float", default=8.0,
-                  help="Par economy. Bowling points also get (par - economy) * overs * econ_weight (never below 0)"),
+        ParamSpec(
+            "econ_par",
+            "float",
+            default=8.0,
+            help="Par economy. Bowling points also get (par - economy) * overs * econ_weight (never below 0)",
+        ),
         ParamSpec("econ_weight", "float", default=0.4, help="Weight of the economy bonus"),
     ],
     caveats=[
@@ -30,8 +49,15 @@ from ..sql.fragments import BALL_FACED, BOWLER_WICKET, IS_DOT, IS_FOUR, IS_SIX, 
         "The match-level score has no context (target, pitch, opposition), only the player's own batting and bowling.",
     ],
 )
-def impact(f: Filters, min_matches: int = 3, top: int = 30, bat_weight: float = 0.6, wicket_points: float = 20.0,
-           econ_par: float = 8.0, econ_weight: float = 0.4) -> pd.DataFrame:
+def impact(
+    f: Filters,
+    min_matches: int = 3,
+    top: int = 30,
+    bat_weight: float = 0.6,
+    wicket_points: float = 20.0,
+    econ_par: float = 8.0,
+    econ_weight: float = 0.4,
+) -> pd.DataFrame:
     wb, pb = f.where("bat")
     wo, po = f.where("bowl")
     sql = f"""
