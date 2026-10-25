@@ -8,6 +8,7 @@ numbers: names are resolved to exact data names in Python (ambiguous -> candidat
 through api.run, and the answer sentence is built from the result rows.
 """
 
+import json
 import re
 import time
 from pathlib import Path
@@ -15,13 +16,13 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-from . import api, competitions, registry
+from . import api, applog, competitions, registry
 from .db import use_db
 
 OLLAMA_URL = "http://localhost:11434"
 DEFAULT_MODEL = "nemotron-3.5-bolt:e4b-q4_K_M"
 _KEEP_KINDS = {"player", "player2", "team", "opposition", "competition", "phase", "choice"}
-_KEEP_INTS = {"last_n_years", "season_from", "season_to", "top", "min_balls"}
+_KEEP_INTS = {"last_n_years", "season_from", "season_to", "top", "min_balls", "n"}
 _KEEP_FALLBACK_NAMES = {"season"}   # the one multi/season param, flattened to a plain string for the model
 _ABBREV = {"csk": "Chennai Super Kings", "mi": "Mumbai Indians", "rcb": "Royal Challengers Bengaluru",
            "kkr": "Kolkata Knight Riders", "srh": "Sunrisers Hyderabad", "dc": "Delhi Capitals",
@@ -185,6 +186,15 @@ def question_filters(q: str) -> dict:
         f["season_from"], f["season_to"] = int(m[1]), int(m[2])
     elif m := re.findall(r"\b((?:19|20)\d{2})\b", q):
         f["season"] = int(m[0]) if len(m) == 1 else [int(x) for x in m]
+    # innings_list wording ("matches/innings/games" is NOT a season count: only years/seasons set last_n_years)
+    if m := re.search(r"\b(first|last)\s+(?:(\d+|" + "|".join(_NUM) + r")\s+)?(?:matches|match|innings|games?)\b", q):
+        f["order"], f["n"] = m[1], (int(m[2]) if m[2] and m[2].isdigit() else _NUM.get(m[2], 1))
+    elif re.search(r"\bdebut\b", q):
+        f["order"], f["n"] = "first", 1
+    elif re.search(r"\b(?:best|top)\s+(?:innings|figures|bowling)|highest score|top score", q):
+        f["order"] = "best"
+        if re.search(r"figures|bowling", q):
+            f["role"] = "bowling"
     for word, ph in (("powerplay", "powerplay"), ("power play", "powerplay"), ("death", "death"), ("middle overs", "middle")):
         if word in q:
             f["phase"] = ph
@@ -209,6 +219,8 @@ def resolve(tool: dict, picks: dict | None = None, question: str = "") -> tuple[
         else:
             a["season"] = s
     qf = question_filters(question)
+    if "order" in qf and "last_n_years" not in qf:
+        a.pop("last_n_years", None)   # the model confuses "last 5 matches" with last 5 seasons
     if qf:
         if {"season", "season_from", "season_to", "last_n_years"} & qf.keys():
             for k in ("season", "season_from", "season_to", "last_n_years"):
@@ -289,6 +301,7 @@ def execute(question: str, tool: dict, picks: dict | None = None, db_path: Path 
         out["answer"] = make_answer(r)
     except ValueError as e:   # bad params, missing required player...
         out["status"], out["answer"] = "error", f"I could not run that: {e}"
+        out["error_id"] = getattr(e, "error_id", None) or applog.log_error("ask.execute", e, question=question, tool=tool)
     finally:
         timings["run_s"] = round(time.perf_counter() - t, 2)
         timings["total_s"] = round(sum(v for k, v in timings.items() if k != "total_s"), 2)
@@ -296,18 +309,33 @@ def execute(question: str, tool: dict, picks: dict | None = None, db_path: Path 
 
 
 def ask(question: str, model: str = DEFAULT_MODEL, db_path: Path | None = None) -> dict:
-    """question -> {question, tool_call, resolved_params, clarify, notes, result{meta, rows}, answer, status, timings}.
+    """question -> {id, question, tool_call, resolved_params, clarify, notes, result{meta, rows}, answer, status, timings}.
 
     status: ok | clarify (a name was ambiguous: see `clarify`) | no_tool (model found no module) | error.
-    Raises AskError when Ollama cannot be reached.
+    Raises AskError when Ollama cannot be reached. Every call is appended to logs/ask.jsonl (see applog).
     """
-    t = time.perf_counter()
-    resp = _chat(question, model)
+    ask_id, t = applog.new_id("A"), time.perf_counter()
+    try:
+        resp = _chat(question, model)
+    except AskError as e:
+        eid = applog.log_error("ask.chat", e, question=question, model=model)
+        applog.log_ask({"id": ask_id, "question": question, "model": model, "status": "error", "error_id": eid, "answer": str(e)})
+        e.error_id = eid
+        raise
     timings = {"model_s": round(time.perf_counter() - t, 2)}
     tool = _tool_call(resp)
+    raw = json.dumps((resp.get("message") or {}), default=str)
     if tool is None or tool["name"] not in {m.id for m in registry.all_modules()}:
         text = ((resp.get("message") or {}).get("content") or "").strip()
-        return {"question": question, "tool_call": tool, "resolved_params": None, "clarify": [], "notes": [],
-                "result": None, "status": "no_tool", "timings": {**timings, "total_s": timings["model_s"]},
-                "answer": "No analysis module fits this question." + (f" Model said: {text[:200]}" if text else "")}
-    return execute(question, tool, db_path=db_path, timings=timings)
+        out = {"question": question, "tool_call": tool, "resolved_params": None, "clarify": [], "notes": [],
+               "result": None, "status": "no_tool", "timings": {**timings, "total_s": timings["model_s"]},
+               "answer": "No analysis module fits this question." + (f" Model said: {text[:200]}" if text else "")}
+        out["error_id"] = applog.log_note("ask.no_tool", "model returned no usable tool", question=question, model=model, tool=tool)
+    else:
+        out = execute(question, tool, db_path=db_path, timings=timings)
+    out["id"] = ask_id
+    applog.log_ask({"id": ask_id, "question": question, "model": model, "raw": raw, "tool_call": out["tool_call"],
+                    "resolved_params": out["resolved_params"], "status": out["status"], "clarify": out["clarify"],
+                    "notes": out["notes"], "row_count": (out["result"] or {}).get("meta", {}).get("row_count"),
+                    "answer": out["answer"], "timings": out["timings"], "error_id": out.get("error_id")})
+    return out

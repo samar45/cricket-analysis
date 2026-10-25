@@ -93,3 +93,22 @@ def test_ollama_down_is_a_clear_error(monkeypatch):
 def test_live_model_kohli():
     out = A.ask("Kohli's IPL strike rate in 2024", db_path=DB)
     assert out["tool_call"]["name"] == "batting" and out["resolved_params"].get("player") == "V Kohli"
+
+
+def test_innings_list_wording_rules():
+    qf = A.question_filters
+    assert qf("naman dhir last 5 matches") == {"order": "last", "n": 5}
+    assert qf("his last match") == {"order": "last", "n": 1}
+    assert qf("naman dhir debut match score ipl") == {"order": "first", "n": 1}
+    assert qf("first three innings") == {"order": "first", "n": 3}
+    assert qf("best innings of kohli") == {"order": "best"} and qf("best bowling figures")["role"] == "bowling"
+    assert qf("last 3 seasons") == {"last_n_years": 3}   # seasons stay a season filter
+    assert "n" in A._KEEP_INTS
+
+
+@needs_db
+def test_last_matches_drops_models_last_n_years(monkeypatch):
+    fake(monkeypatch, canned("innings_list", player="Naman Dhir", last_n_years=5))
+    out = A.ask("naman dhir last 5 matches", db_path=DB)
+    assert out["resolved_params"]["order"] == "last" and out["resolved_params"]["n"] == 5
+    assert "last_n_years" not in out["resolved_params"]

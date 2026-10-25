@@ -3,7 +3,11 @@
 import os
 from pathlib import Path
 
+import tempfile
+
 import pytest
+
+os.environ.setdefault("CRICKET_LOG_DIR", tempfile.mkdtemp(prefix="cricket_logs_"))   # tests never write to <repo>/logs
 
 _DEFAULT = Path(__file__).parent.parent / "data" / "cricket_analytics.duckdb"
 if os.environ.get("CRICKET_TEST_NO_DB"):

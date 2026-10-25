@@ -54,3 +54,6 @@ data/runs/
 
 # any DuckDB file stays local (the tracked slim DB is already in git/LFS and is unaffected)
 *.duckdb
+
+# Error + ask logs
+logs/

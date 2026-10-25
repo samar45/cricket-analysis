@@ -10,7 +10,7 @@ import health
 import streamlit as st
 import ui
 
-from cricket_analytics import competitions, registry
+from cricket_analytics import applog, competitions, registry
 
 st.set_page_config(page_title="Cricket Analytics", page_icon="🏏", layout="wide")
 
@@ -23,8 +23,10 @@ def guarded(page):
         except ValueError as e:   # bad or missing user input (e.g. matchup with no player): a hint, not a failure
             st.warning(f"Check your filters: {e}")
         except Exception as e:  # noqa: BLE001
+            eid = applog.log_error(f"dashboard:{page.__name__}", e, module=st.session_state.get("module"),
+                                   params={k: v for k, v in st.session_state.items() if k.startswith("p_")})
             st.error("This filter combination couldn't be run. Try removing one filter at a time; "
-                     "if it keeps failing, it's a bug worth reporting.")
+                     f"if it keeps failing, it's a bug worth reporting (error id {eid}).")
             with st.expander("Technical details"):
                 st.code(f"{type(e).__name__}: {e}")
     return wrapper
@@ -124,9 +126,45 @@ def ask_page():
     st.title("Ask your cricket data")
     st.caption("A small local model (Ollama) only picks the module and fills its filters. Names are matched in Python and "
                "every number comes from the data. Slow on first use while the model loads.")
-    if not A.ollama_up():
+    if A.ollama_up():
+        _ask_body(A)
+    else:
         st.warning("Ollama is not running. Start it with `ollama serve`, then reload.")
+    _ask_log_table()
+
+
+def _feedback(out: dict):
+    """Thumbs up/down on an answer; both are appended to logs/ask.jsonl next to the ask itself."""
+    aid = out.get("id")
+    if not aid:
         return
+    up, _ = st.columns([1, 8])
+    if up.button("👍", key=f"fb_up_{aid}", help="This answer was right"):
+        applog.log_feedback(aid, "up")
+        st.toast("Thanks, logged.")
+    with st.expander("👎 Wrong answer? Tell me what was wrong"):
+        with st.form(f"fb_form_{aid}", clear_on_submit=True):
+            comment = st.text_input("What was wrong?")
+            mods = [None] + [m.id for m in registry.all_modules()]
+            exp = st.selectbox("Which module should it have been?", mods, format_func=lambda m: "(not sure)" if m is None else m)
+            if st.form_submit_button("👎 Send"):
+                applog.log_feedback(aid, "down", comment, exp)
+                st.success("Logged. Thanks.")
+
+
+def _ask_log_table():
+    import pandas as pd
+    with st.expander("Ask log (last 20)"):
+        rows = applog.read_asks(20)
+        if not rows:
+            st.caption("No questions logged yet.")
+            return
+        st.dataframe(pd.DataFrame([{"time": a["ts"], "question": a["question"], "module": (a.get("tool_call") or {}).get("name"),
+                                    "status": a["status"], "rating": a["rating"], "error id": a.get("error_id")} for a in reversed(rows)]),
+                     hide_index=True, width="stretch")
+
+
+def _ask_body(A):
     q = st.text_input("Question", key="ask_q", placeholder="Kohli's IPL strike rate in 2024")
     if st.button("Ask", type="primary") and q.strip():
         with st.spinner("Thinking..."):
@@ -134,7 +172,7 @@ def ask_page():
                 st.session_state["ask_out"] = A.ask(q.strip())
             except A.AskError as e:
                 st.session_state["ask_out"] = None
-                st.error(str(e))
+                st.error(f"{e} (error id {getattr(e, 'error_id', '-')})")
     out = st.session_state.get("ask_out")
     if not out:
         return
@@ -147,8 +185,8 @@ def ask_page():
     for c in out["clarify"]:   # ambiguous name: let the user pick, then run without the model
         pick = st.radio(f"Which {c['param']} did you mean by '{c['said']}'?", c["candidates"], key=f"ask_pick_{c['param']}")
         if pick and st.button("Use this", key=f"ask_use_{c['param']}"):
-            st.session_state["ask_out"] = A.execute(out["question"], out["tool_call"], picks={c["param"]: pick},
-                                                    timings=out["timings"])
+            st.session_state["ask_out"] = {**A.execute(out["question"], out["tool_call"], picks={c["param"]: pick},
+                                                       timings=out["timings"]), "id": out.get("id")}
             st.rerun()
     if out["result"]:
         import pandas as pd
@@ -157,10 +195,14 @@ def ask_page():
         chart_tab, table_tab = st.tabs(["Chart", "Table"])
         with chart_tab:
             fig = _figure(r.meta["module"], r)
-            st.plotly_chart(fig, width="stretch", theme=None) if fig is not None else st.caption("This module has no chart yet.")
+            if fig is None:   # a statement, not a one-line `a if c else b`: Streamlit would print that expression's value
+                st.caption("This module has no chart yet.")
+            else:
+                st.plotly_chart(fig, width="stretch", theme=None)
         with table_tab:
             st.dataframe(r.data, hide_index=True, width="stretch")
-    st.caption(f"Seconds: {out['timings']}")
+    st.caption(f"Seconds: {out['timings']}" + (f" | error id {out['error_id']}" if out.get("error_id") else ""))
+    _feedback(out)
 
 
 with st.sidebar:

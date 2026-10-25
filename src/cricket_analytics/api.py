@@ -73,7 +73,18 @@ def _coerce_one(spec: registry.ParamSpec, value):
 
 
 def run(module_id: str, *, db_path: Path | None = None, **params) -> Result:
-    """Run one analysis module. Unknown params, bad choices or missing required params raise ValueError."""
+    """Run one analysis module. Unknown params, bad choices or missing required params raise ValueError.
+
+    Any failure is written to the error log and the exception carries `.error_id`."""
+    try:
+        return _run(module_id, db_path, params)
+    except Exception as e:
+        from .applog import log_error
+        log_error("api.run", e, module=module_id, params=params)
+        raise
+
+
+def _run(module_id: str, db_path: Path | None, params: dict) -> Result:
     mod = registry.get(module_id)
     params = {k: v for k, v in params.items() if v is not None and not (isinstance(v, (list, tuple)) and not v)}
     unknown = set(params) - {p.name for p in mod.params}

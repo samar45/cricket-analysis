@@ -11,12 +11,27 @@
 
 import json
 import logging
+import sys
 from pathlib import Path
 
 import click
 
 
-@click.group()
+class _LoggedGroup(click.Group):
+    """Any unexpected exception in a command goes to logs/errors.log; the user sees the message plus an error id."""
+
+    def invoke(self, ctx):
+        try:
+            return super().invoke(ctx)
+        except (click.ClickException, click.exceptions.Exit, click.Abort):
+            raise
+        except Exception as e:
+            from .applog import log_error
+            eid = log_error(f"cli:{ctx.invoked_subcommand}", e, argv=sys.argv[1:])
+            raise click.ClickException(f"{type(e).__name__}: {e} (error id {eid})") from e
+
+
+@click.group(cls=_LoggedGroup)
 @click.option("-v", "--verbose", is_flag=True, help="Enable debug logging")
 def cli(verbose: bool):
     """Cricket Analytics Platform."""
@@ -297,6 +312,29 @@ def ask(question, model, as_json):
     if out["result"]:
         import pandas as pd
         click.echo(pd.DataFrame(out["result"]["rows"]).head(10).to_string(index=False))
+
+
+@cli.command("ask-log")
+@click.option("--last", default=10, show_default=True, help="How many asks to show")
+@click.option("--bad", is_flag=True, help="Only thumbs-down, errors and no-tool asks")
+@click.option("--to-eval", "to_eval", type=click.Path(dir_okay=False, path_type=Path), default=None,
+              help="Write draft eval lines (thumbs-down asks with an expected module) to this file")
+def ask_log(last, bad, to_eval):
+    """Show recent asks from logs/ask.jsonl, or turn thumbs-down items into draft evals/nlq_questions.jsonl lines."""
+    from .applog import read_asks
+    if to_eval:
+        rows = [a for a in read_asks(bad_only=True) if a["rating"] == "down" and a["expected_module"]]
+        to_eval.write_text("".join(json.dumps({
+            "id": f"draft{i:02d}", "question": a["question"], "expected_module": a["expected_module"],
+            "expected_params": a.get("resolved_params") or {}, "golden": None, "expect_clarification": False}) + "\n"
+            for i, a in enumerate(rows, 1)),
+                           encoding="utf-8")
+        click.echo(f"Wrote {len(rows)} draft line(s) to {to_eval}. expected_params are the model's guess and golden is empty: fix both, then review before adding to the eval set.")
+        return
+    for a in read_asks(last, bad):
+        mod = (a.get("tool_call") or {}).get("name") or "-"
+        click.echo(f"{a['ts']}  {a['status']:8} {mod:14} {a['rating'] or '-':5} {a['question']}"
+                   + (f"  [{a['comment']}]" if a["comment"] else "") + (f"  ({a['error_id']})" if a.get("error_id") else ""))
 
 
 if __name__ == "__main__":
