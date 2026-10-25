@@ -1,0 +1,1 @@
+MILESTONE: 7A fielding module built (analysis/fielding.py, viz/fielding.py, viz/video/fielding.py, tests/test_fielding.py). IPL golden (measured): MS Dhoni 265 matches, 158 catches, 47 stumpings, 53 run-outs (16 direct); top non-keeper catcher V Kohli 126; IPL caught dismissals 9,720 = 9,310 catches + 410 caught-and-bowled.
