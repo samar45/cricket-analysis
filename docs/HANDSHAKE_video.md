@@ -42,7 +42,7 @@ The pipeline should keep `meta` next to the numbers it uses and print `data_thro
 ## 3b. `facts.json` shape (`cricket facts`)
 ```json
 {
-  "meta": {"facts_version": 1, "player": "V Kohli", "role": "batting", "params": {"player": "V Kohli", "competition": "ipl"},
+  "meta": {"facts_version": 2, "player": "V Kohli", "role": "batting", "params": {"player": "V Kohli", "competition": "ipl"},
            "generated": "2026-10-25T12:00:00", "data_through": "2026-05-31", "db_modified": "...", "source": "Cricsheet (ODC-BY)",
            "competition_note": null, "caveats": ["..."],
            "calls": [{"module": "batting", "params": {"...": "..."}}], "skipped": [{"section": "x", "reason": "no data"}]},
@@ -87,6 +87,8 @@ The pipeline should keep `meta` next to the numbers it uses and print `data_thro
 | teams / venues | win-loss donut / bat-first vs chase donut | team or ground stories |
 | impact / true_performance | leaderboard / raw vs adjusted bars | "underrated" picks |
 | player_profile | fact card + "usually bats at No.5–6 (52%)" mixes | player intro |
+| stories | the hook's two numbers as big numbers (`focus` = hook rank) | "his real story" |
+| underrated | top 10 leaderboard by underrated score (heuristic) | "underrated picks" |
 
 ## 5. Suggested flow inside Edit Pipeline
 1. Script names a player → `cricket resolve` → pick the Cricsheet name.
@@ -105,3 +107,4 @@ The pipeline should keep `meta` next to the numbers it uses and print `data_thro
 - This file is the contract. A breaking change to a command, a JSON key or a module name bumps the version here, with a line below.
 - v1 2026-10-24: first version.
 - v2 2026-10-25: `cricket facts` and `cricket chart` implemented (sections 2, 3b); `cricket update` added; module count 18. No breaking change to v1 commands.
+- v3 2026-10-25: `cricket facts` output is `facts_version` 2: new `stories` section (top 5 hooks of the `stories` module; keys `stories.<1-5>.{theme,kind,sentence,label_a,value_a,n_a,label_b,value_b,n_b,score}`, e.g. token `{stories.1.sentence}`; records have no `label_b`/`value_b`). New modules `stories` (hooks for one player) and `underrated` (ranking by strong numbers + low fame, a heuristic) with video charts. No existing key changed.

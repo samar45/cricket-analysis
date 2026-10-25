@@ -1,6 +1,6 @@
 """One JSON of headline facts for a player, for a reel: `cricket facts --player "V Kohli" --competition ipl --out facts.json`.
 
-    {"meta": {provenance, "facts_version": 1, "generated", "calls": [...], "skipped": [...]},
+    {"meta": {provenance, "facts_version": 2, "generated", "calls": [...], "skipped": [...]},
      "facts": {"career": {"source": [{"module", "params"}], "runs": 9336, ...}, "by_phase": {"death": {...}}, ...},
      "tokens": {"career.runs": "9,336", ...},        # display strings, for {career.runs} substitution
      "tokens_raw": {"career.runs": 9336, ...}}       # the same keys, raw numbers
@@ -16,7 +16,7 @@ import pandas as pd
 from . import api
 from .db import use_db
 
-FACTS_VERSION = 1
+FACTS_VERSION = 2
 MIN_BALLS = 300  # a side of the game (bat or bowl) joins the career card at this many balls
 PHASES = ("powerplay", "middle", "death")
 ORDER = (
@@ -29,7 +29,9 @@ ORDER = (
     "pressure",
     "dismissals",
     "profile",
+    "stories",
 )
+STORIES_TOP = 5
 
 
 class PlayerNotFound(ValueError):
@@ -341,6 +343,27 @@ def build(
             ),
         }
 
+    def stories():
+        r, s = call("stories", role=role, top=STORIES_TOP)
+        if r.data.empty:
+            return None
+        cols = [
+            "theme",
+            "kind",
+            "sentence",
+            "label_a",
+            "value_a",
+            "n_a",
+            "label_b",
+            "value_b",
+            "n_b",
+            "score",
+        ]
+        return {
+            "source": [s],
+            **{str(row["rank"]): _pick(row, cols) for _, row in r.data.iterrows()},
+        }
+
     section("best_season", best_season)
     section("by_phase", by_phase)
     if role == "batting":  # these three are batter views; a bowler's tail-end numbers would mislead
@@ -351,6 +374,7 @@ def build(
     if role == "batting":
         section("dismissals", dismissals)
     section("profile", profile)
+    section("stories", stories)
     facts = {k: facts[k] for k in ORDER if k in facts}
 
     raw: dict = {}

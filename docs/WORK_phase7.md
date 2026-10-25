@@ -1,1 +1,4 @@
 MILESTONE: 7A fielding module built (analysis/fielding.py, viz/fielding.py, viz/video/fielding.py, tests/test_fielding.py). IPL golden (measured): MS Dhoni 265 matches, 158 catches, 47 stumpings, 53 run-outs (16 direct); top non-keeper catcher V Kohli 126; IPL caught dismissals 9,720 = 9,310 catches + 410 caught-and-bowled.
+MILESTONE (7B stories/underrated): modules `stories` (hooks per player, 9 themes + record, score = relative gap x sample confidence) and `underrated` (quality x obscurity heuristic, weights as params) added with dashboard + video charts.
+MILESTONE (7B facts): `cricket facts` has a `stories` section (top 5), facts_version 2; HANDSHAKE v3. Nested api.run inside modules must pass db_path=current_db_path() (else fixture DBs fall back to the default DB).
+MILESTONE (7B tests): tests/test_stories.py 10 tests (fixture + requires_real_db); full pytest 423 passed; CRICKET_TEST_NO_DB=1 293 passed, 130 skipped.

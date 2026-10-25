@@ -35,7 +35,7 @@ def test_facts_batter_keys_and_provenance(db):
     assert set(d) == {"meta", "facts", "tokens", "tokens_raw"}
     m = d["meta"]
     assert (
-        m["facts_version"] == 1
+        m["facts_version"] == 2
         and m["source"].startswith("Cricsheet")
         and m["data_through"]
         and m["generated"]
@@ -88,7 +88,7 @@ def test_cli_facts_exit_codes(db, tmp_path):
         "facts", "--player", "Yuvraj Singh", "--competition", "ipl", "--db", db, "--out", out
     )
     assert ok.exit_code == 0, ok.output
-    assert json.loads(out.read_text(encoding="utf-8"))["meta"]["facts_version"] == 1
+    assert json.loads(out.read_text(encoding="utf-8"))["meta"]["facts_version"] == 2
     bad = invoke(
         "facts",
         "--player",
