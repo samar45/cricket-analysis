@@ -281,3 +281,15 @@ def test_models_season_guess_is_dropped_and_this_season_is_read(monkeypatch):
     fake(monkeypatch, canned("batting", player="Kohli", season="2019"))
     out = A.ask("Kohli IPL runs this season", db_path=DB)
     assert out["resolved_params"]["season"] == "2026"  # the newest IPL season in the DB
+
+
+@needs_db
+def test_venue_the_model_made_up_is_dropped(monkeypatch):
+    fake(monkeypatch, canned("home_away", team="CSK", venue="Wankhede"))
+    out = A.ask("CSK home vs away", db_path=DB)
+    assert "venue" not in out["resolved_params"] and len(out["result"]["rows"]) == 3
+    fake(monkeypatch, canned("innings_list", venue="Chepauk", order="best"))
+    out = A.ask("highest score at Chepauk", db_path=DB)
+    assert out["resolved_params"]["venue"] == ["MA Chidambaram Stadium, Chepauk"] or (
+        out["resolved_params"]["venue"] == "MA Chidambaram Stadium, Chepauk"
+    )

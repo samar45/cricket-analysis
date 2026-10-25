@@ -494,6 +494,14 @@ def resolve(
         a["group_by"] = g
     if mod.id == "partnerships":
         a["group_by"] = ask_rules.partnership_group(question)
+    if "venue" in a and question:  # a ground the model made up (not in the question) is dropped
+        qt = _tokens(question)
+        said = [t for t in _tokens(str(a["venue"])) if t not in _GENERIC]
+        said = [_VENUE_ALIAS.get(t, t) for t in said]
+        if not said or not all(
+            any(_sim(w, t) >= 0.85 or _VENUE_ALIAS.get(t) == w for t in qt) for w in said
+        ):
+            notes.append(f"dropped venue={a.pop('venue')!r}: the question does not name it")
     if "venue" in allowed and "venue" not in a and question:
         if v := venue_in_question(question, a.get("competition")):
             a["venue"] = v
