@@ -1,0 +1,3 @@
+- MILESTONE: evals/nlq_questions.jsonl (50 q, 5 clarification, 24 golden) + evals/run_nlq_eval.py written (phase 6B).
+- MILESTONE: tests/test_nlq_eval.py green (5 tests). Real run --limit 10 (nemotron-3.5-bolt): module 50%, all-params 50%, 4 no_tool/clarify false alarms; results in evals/results/.
+- MILESTONE: ask.py + `cricket ask` + dashboard Ask page done; tools trimmed from registry (one-shot, 18 tools), text-call parser, aliases, question-regex season/phase. Eval 50q: module acc 0.80, ~7 s/q warm. tests/test_ask.py 9 pass; full suite 352 pass.

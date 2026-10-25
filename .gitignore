@@ -42,3 +42,18 @@ Thumbs.db
 
 # Environment
 .env
+
+# external, unlicensed data (local only)
+data/external/
+data/cricket_analytics_prev_*.duckdb
+data/*_updtest*.duckdb
+*.updating.duckdb*
+
+# Run logs (one JSON per update/health run)
+data/runs/
+
+# any DuckDB file stays local (the tracked slim DB is already in git/LFS and is unaffected)
+*.duckdb
+
+# Error + ask logs
+logs/

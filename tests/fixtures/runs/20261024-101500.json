@@ -1,0 +1,149 @@
+{
+ "schema": 1,
+ "error": null,
+ "db_path": "data/cricket_analytics.duckdb",
+ "args": {
+  "days": 30
+ },
+ "skipped_events": [
+  {
+   "event": "Mystery T20 Cup",
+   "match_type": "T20",
+   "gender": "male",
+   "count": 3
+  }
+ ],
+ "changed_matches": [],
+ "swapped": true,
+ "backup": "cricket_analytics_prev_2026-10-24.duckdb",
+ "new_by_competition": {
+  "ipl": {
+   "matches": 2,
+   "earliest": "2026-05-31",
+   "latest": "2026-06-01"
+  }
+ },
+ "golden": [
+  {
+   "name": "Kohli IPL runs to 2025",
+   "expected": 8661,
+   "actual": 8661,
+   "status": "pass"
+  },
+  {
+   "name": "Buttler IPL 2022 runs",
+   "expected": 863,
+   "actual": 863,
+   "status": "pass"
+  }
+ ],
+ "run_id": "20261024-101500",
+ "kind": "update",
+ "started": "2026-10-24T10:15:00",
+ "finished": "2026-10-24T10:16:12",
+ "ok": true,
+ "steps": [
+  {
+   "name": "download",
+   "status": "pass",
+   "seconds": 8.2,
+   "details": {}
+  },
+  {
+   "name": "load",
+   "status": "pass",
+   "seconds": 41.0,
+   "details": {}
+  },
+  {
+   "name": "checks",
+   "status": "pass",
+   "seconds": 12.5,
+   "details": {}
+  },
+  {
+   "name": "swap",
+   "status": "pass",
+   "seconds": 0.4,
+   "details": {}
+  }
+ ],
+ "checks": [
+  {
+   "name": "all_loaded",
+   "status": "pass",
+   "expected": "2",
+   "actual": "2",
+   "message": ""
+  },
+  {
+   "name": "no_duplicate_keys",
+   "status": "pass",
+   "expected": "0",
+   "actual": "0",
+   "message": ""
+  },
+  {
+   "name": "old_data_unchanged",
+   "status": "pass",
+   "expected": "identical",
+   "actual": "identical",
+   "message": ""
+  },
+  {
+   "name": "new_dates_plausible",
+   "status": "warn",
+   "expected": "<= today",
+   "actual": "2026-06-01",
+   "message": "one match is 4 days old"
+  }
+ ],
+ "freshness_before": {
+  "ipl": {
+   "matches": 1190,
+   "latest": "2026-05-31"
+  },
+  "t20i": {
+   "matches": 3300,
+   "latest": "2026-10-14"
+  }
+ },
+ "freshness_after": {
+  "ipl": {
+   "matches": 1192,
+   "latest": "2026-06-01"
+  },
+  "t20i": {
+   "matches": 3300,
+   "latest": "2026-10-14"
+  }
+ },
+ "fingerprint_before": {
+  "ipl": {
+   "matches": 1190,
+   "balls": 280000,
+   "runs": 370000,
+   "wickets": 13000
+  },
+  "t20i": {
+   "matches": 3300,
+   "balls": 700000,
+   "runs": 900000,
+   "wickets": 36000
+  }
+ },
+ "fingerprint_after": {
+  "ipl": {
+   "matches": 1192,
+   "balls": 280480,
+   "runs": 370640,
+   "wickets": 13022
+  },
+  "t20i": {
+   "matches": 3300,
+   "balls": 700000,
+   "runs": 900000,
+   "wickets": 36000
+  }
+ }
+}

@@ -1,0 +1,985 @@
+name,bowl_type,bowl_type_confidence,bat_hand,bat_hand_confidence,role,keeper,source,note
+R Ashwin,right-arm off spin,high,right,high,,,manual-llm,
+SP Narine,right-arm off spin,high,left,high,,,manual-llm,
+B Kumar,right-arm fast-medium,high,right,high,,,manual-llm,verified espncricinfo.com 2026-10-24
+RA Jadeja,left-arm orthodox,high,left,high,,,manual-llm,
+YS Chahal,right-arm leg spin,high,right,high,,,manual-llm,
+PP Chawla,right-arm leg spin,high,left,high,,,manual-llm,
+JJ Bumrah,right-arm fast,high,right,high,,,manual-llm,
+AR Patel,left-arm orthodox,high,left,high,,,manual-llm,
+Rashid Khan,right-arm leg spin,high,right,high,,,manual-llm,
+Harbhajan Singh,right-arm off spin,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+A Mishra,right-arm leg spin,high,right,high,,,manual-llm,
+Sandeep Sharma,right-arm fast-medium,high,right,medium,,,manual-llm,
+DJ Bravo,right-arm fast-medium,medium,right,high,,,manual-llm,
+UT Yadav,right-arm fast,high,right,high,,,manual-llm,
+Mohammed Shami,right-arm fast-medium,high,right,high,,,manual-llm,
+SL Malinga,right-arm fast,high,right,high,,,manual-llm,
+TA Boult,left-arm fast,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+KH Pandya,left-arm orthodox,high,left,high,,,manual-llm,
+Mohammed Siraj,right-arm fast-medium,high,right,high,,,manual-llm,
+P Kumar,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+HV Patel,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+I Sharma,right-arm fast-medium,high,right,high,,,manual-llm,
+MM Sharma,right-arm fast-medium,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+JD Unadkat,left-arm fast-medium,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+K Rabada,right-arm fast,high,left,high,,,manual-llm,verified wisden.com 2026-10-24
+Kuldeep Yadav,left-arm wrist spin,high,left,high,,,manual-llm,
+SN Thakur,right-arm fast-medium,high,right,high,,,manual-llm,
+Z Khan,left-arm fast-medium,high,right,high,,,manual-llm,
+DW Steyn,right-arm fast,high,right,high,,,manual-llm,
+CV Varun,right-arm leg spin,high,right,medium,,,manual-llm,
+R Vinay Kumar,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+DL Chahar,right-arm fast-medium,medium,right,high,,,manual-llm,
+IK Pathan,left-arm fast-medium,high,left,high,,,manual-llm,
+Arshdeep Singh,left-arm fast-medium,high,left,high,,,manual-llm,
+SR Watson,right-arm fast-medium,high,right,high,,,manual-llm,
+A Nehra,left-arm fast-medium,high,right,medium,,,manual-llm,
+PP Ojha,left-arm orthodox,high,left,high,,,manual-llm,
+PJ Cummins,right-arm fast,high,right,high,,,manual-llm,
+AD Russell,right-arm fast,medium,right,high,,,manual-llm,
+Ravi Bishnoi,right-arm leg spin,high,right,medium,,,manual-llm,verified wisden.com 2026-10-24
+DS Kulkarni,right-arm fast-medium,high,right,medium,,,manual-llm,
+RP Singh,left-arm fast-medium,high,right,high,,,manual-llm,"web: espncricinfo.com (Rudra Pratap Singh; may be a different RP Singh, low certainty) 2026-10-25"
+Avesh Khan,right-arm fast-medium,high,right,medium,,,manual-llm,
+HH Pandya,right-arm fast-medium,high,right,high,,,manual-llm,
+JH Kallis,right-arm fast-medium,high,right,high,,,manual-llm,
+M Prasidh Krishna,right-arm fast-medium,medium,right,medium,,,manual-llm,
+JA Morkel,right-arm fast-medium,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+CH Morris,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+RD Chahar,right-arm leg spin,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+KK Ahmed,left-arm fast-medium,high,left,low,,,manual-llm,
+R Bhatia,right-arm medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+M Morkel,right-arm fast,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+KV Sharma,right-arm leg spin,high,left,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+JC Archer,right-arm fast,high,right,high,,,manual-llm,
+T Natarajan,left-arm fast-medium,high,left,medium,,,manual-llm,
+M Muralitharan,right-arm off spin,high,left,medium,,,manual-llm,
+AB Dinda,right-arm fast-medium,high,right,medium,,,manual-llm,
+L Balaji,right-arm fast-medium,high,right,medium,,,manual-llm,
+SK Trivedi,right-arm medium,medium,right,medium,,,manual-llm,
+KA Pollard,right-arm medium,high,right,high,,,manual-llm,
+Shakib Al Hasan,left-arm orthodox,high,left,high,,,manual-llm,
+S Nadeem,left-arm orthodox,high,left,low,,,manual-llm,
+Mustafizur Rahman,left-arm fast-medium,high,left,high,,,manual-llm,
+MM Patel,right-arm fast-medium,high,right,medium,,,manual-llm,
+Imran Tahir,right-arm leg spin,high,right,high,,,manual-llm,
+MJ McClenaghan,left-arm fast-medium,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+SM Curran,left-arm fast-medium,high,left,high,,,manual-llm,
+MG Johnson,left-arm fast,high,left,high,,,manual-llm,verified wikipedia.org 2026-10-24
+JP Faulkner,left-arm fast-medium,high,left,high,,,manual-llm,
+JO Holder,right-arm fast-medium,high,right,high,,,manual-llm,
+S Kaul,right-arm fast-medium,high,right,medium,,,manual-llm,
+TG Southee,right-arm fast-medium,high,right,high,,,manual-llm,
+SK Warne,right-arm leg spin,high,right,high,,,manual-llm,
+MA Starc,left-arm fast,high,left,high,,,manual-llm,
+JR Hazlewood,right-arm fast-medium,high,left,medium,,,manual-llm,
+Washington Sundar,right-arm off spin,high,left,high,,,manual-llm,verified wisden.com 2026-10-24
+M Kartik,left-arm orthodox,high,left,medium,,,manual-llm,
+YK Pathan,right-arm off spin,high,right,high,,,manual-llm,
+A Nortje,right-arm fast,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+TU Deshpande,right-arm fast-medium,high,right,medium,,,manual-llm,
+Noor Ahmad,left-arm wrist spin,high,left,low,,,manual-llm,
+LH Ferguson,right-arm fast,high,right,high,,,manual-llm,
+SB Jakati,left-arm orthodox,high,right,medium,,,manual-llm,
+GJ Maxwell,right-arm off spin,high,right,high,,,manual-llm,verified espncricinfo.com 2026-10-24
+M Jansen,left-arm fast,high,left,high,,,manual-llm,
+VR Aaron,right-arm fast,high,right,medium,,,manual-llm,
+S Gopal,right-arm leg spin,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+A Kumble,right-arm leg spin,high,right,high,,,manual-llm,
+MC Henriques,right-arm medium,high,right,high,,,manual-llm,
+MP Stoinis,right-arm medium,high,right,high,,,manual-llm,
+R Sharma,right-arm leg spin,medium,right,low,,,manual-llm,
+Iqbal Abdulla,left-arm orthodox,medium,left,low,,,manual-llm,
+SK Raina,right-arm off spin,high,left,high,,,manual-llm,verified wikipedia.org 2026-10-24
+MS Gony,right-arm fast-medium,high,right,medium,,,manual-llm,
+DT Christian,right-arm fast-medium,high,right,high,,,manual-llm,
+S Sreesanth,right-arm fast-medium,high,right,high,,,manual-llm,
+M Theekshana,right-arm off spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+B Lee,right-arm fast,high,right,high,,,manual-llm,
+Yash Dayal,left-arm fast-medium,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+M Ashwin,right-arm leg spin,high,right,medium,,,manual-llm,
+Yuvraj Singh,left-arm orthodox,high,left,high,,,manual-llm,
+VG Arora,right-arm fast-medium,high,right,medium,,,manual-llm,
+Harpreet Brar,left-arm orthodox,high,left,high,,,manual-llm,web: wisden.com 2026-10-25
+NM Coulter-Nile,right-arm fast,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+PJ Sangwan,left-arm fast-medium,high,left,low,,,manual-llm,
+MM Ali,right-arm off spin,high,left,high,,,manual-llm,
+R Tewatia,right-arm leg spin,high,left,high,,,manual-llm,
+RJ Harris,right-arm fast,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+Mukesh Kumar,right-arm fast-medium,high,right,medium,,,manual-llm,
+Suyash Sharma,right-arm leg spin,high,right,low,,,manual-llm,
+PWH de Silva,right-arm leg spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+AD Mathews,right-arm medium,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+AB Agarkar,right-arm fast-medium,high,right,high,,,manual-llm,
+DL Vettori,left-arm orthodox,high,left,high,,,manual-llm,
+S Aravind,left-arm fast-medium,high,left,low,,,manual-llm,
+M Markande,right-arm leg spin,high,right,medium,,,manual-llm,
+P Awana,right-arm fast-medium,medium,right,medium,,,manual-llm,
+Kartik Tyagi,right-arm fast-medium,high,right,medium,,,manual-llm,
+WD Parnell,left-arm fast-medium,high,left,high,,,manual-llm,
+P Negi,left-arm orthodox,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+M Pathirana,right-arm fast,high,right,medium,,,manual-llm,
+NLTC Perera,right-arm fast-medium,high,left,high,,,manual-llm,
+J Botha,right-arm off spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+BA Stokes,right-arm fast-medium,high,left,high,,,manual-llm,
+MJ Santner,left-arm orthodox,high,left,high,,,manual-llm,
+AJ Tye,right-arm fast-medium,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+JP Duminy,right-arm off spin,high,left,high,,,manual-llm,
+CJ Jordan,right-arm fast-medium,high,right,high,,,manual-llm,
+R Dhawan,right-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+PV Tambe,right-arm leg spin,high,right,medium,,,manual-llm,
+Shahbaz Ahmed,left-arm orthodox,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Mohsin Khan,left-arm fast-medium,high,left,medium,,,manual-llm,
+Harshit Rana,right-arm fast-medium,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+Shivam Mavi,right-arm fast-medium,high,right,medium,,,manual-llm,
+DP Nannes,left-arm fast,high,right,low,,,manual-llm,
+L Ngidi,right-arm fast,medium,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+STR Binny,right-arm medium,high,right,high,,,manual-llm,
+K Gowtham,right-arm off spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+NA Saini,right-arm fast,high,right,medium,,,manual-llm,
+KK Cooper,right-arm medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+DE Bollinger,left-arm fast,high,left,high,,,manual-llm,
+C Green,right-arm fast-medium,high,right,high,,,manual-llm,
+MR Marsh,right-arm fast-medium,high,right,high,,,manual-llm,
+CH Gayle,right-arm off spin,high,left,high,,,manual-llm,verified espncricinfo.com 2026-10-24
+DS Rathi,right-arm leg spin,medium,right,low,,,manual-llm,verified wikipedia.org 2026-10-24
+DR Smith,right-arm medium,high,right,high,,,manual-llm,
+Azhar Mahmood,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+AS Rajpoot,right-arm fast-medium,medium,right,low,,,manual-llm,
+A Symonds,right-arm medium,low,right,high,,,manual-llm,
+Harmeet Singh,left-arm orthodox,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+AU Rashid,right-arm leg spin,high,right,high,,,manual-llm,
+IS Sodhi,right-arm leg spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+A Zampa,right-arm leg spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Shahid Afridi,right-arm leg spin,high,right,high,,,manual-llm,
+Shadab Khan,right-arm leg spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+Sikandar Raza,right-arm off spin,medium,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+Shaheen Shah Afridi,left-arm fast,high,left,high,,,manual-llm,
+AJ Hosein,left-arm orthodox,high,left,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+MR Adair,right-arm fast-medium,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+Haris Rauf,right-arm fast,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+B Muzarabani,right-arm fast,high,right,medium,,,manual-llm,
+R Ngarava,left-arm fast,medium,left,low,,,manual-llm,
+Taskin Ahmed,right-arm fast,high,left,high,,,manual-llm,web: wisden.com 2026-10-25
+PVD Chameera,right-arm fast,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+S Lamichhane,right-arm leg spin,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+BM Scholtz,left-arm orthodox,medium,right,low,,,manual-llm,verified wikipedia.org 2026-10-24
+MRJ Watt,left-arm orthodox,medium,left,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+T Shamsi,left-arm wrist spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+PA van Meekeren,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Imad Wasim,left-arm orthodox,high,left,high,,,manual-llm,
+Saeed Ajmal,right-arm off spin,high,right,medium,,,manual-llm,
+R Shepherd,right-arm fast-medium,high,right,medium,,,manual-llm,verified wisden.com 2026-10-24
+SM Sharif,right-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+GH Dockrell,left-arm orthodox,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+Mohammad Amir,left-arm fast,high,left,high,,,manual-llm,
+J Little,left-arm fast,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+CA Young,right-arm fast-medium,high,right,medium,,,manual-llm,
+RE van der Merwe,left-arm orthodox,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+BJ McCarthy,right-arm fast-medium,high,right,medium,,,manual-llm,verified wisden.com 2026-10-24
+Mohammad Hafeez,right-arm off spin,high,right,high,,,manual-llm,
+WP Masakadza,left-arm orthodox,medium,left,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+Mohammad Nawaz,left-arm orthodox,high,left,medium,,,manual-llm,
+KMDN Kulasekara,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Sohail Tanvir,left-arm fast-medium,high,left,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+Rishad Hossain,right-arm leg spin,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Umar Gul,right-arm fast,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+SCJ Broad,right-arm fast-medium,high,left,high,,,manual-llm,
+Faheem Ashraf,right-arm fast-medium,medium,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+AF Milne,right-arm fast,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+Shoriful Islam,left-arm fast-medium,high,left,medium,,,manual-llm,
+Hasan Ali,right-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+TL Chatara,right-arm fast-medium,high,right,medium,,,manual-llm,
+NL McCullum,right-arm off spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+MG Erasmus,right-arm off spin,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+SC Williams,left-arm orthodox,high,left,high,,,manual-llm,
+KA Maharaj,left-arm orthodox,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+R Trumpelmann,left-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+DJ Willey,left-arm fast-medium,high,left,high,,,manual-llm,
+LA Dawson,left-arm orthodox,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+TS Mills,left-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+SR Patel,left-arm orthodox,high,left,high,,,manual-llm,
+DR Sams,left-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+D Wiese,right-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+DR Briggs,left-arm orthodox,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+NT Ellis,right-arm fast,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+SA Abbott,right-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+L Wood,left-arm fast,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+KW Richardson,right-arm fast,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+CP Wood,left-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Mujeeb Ur Rahman,right-arm off spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+Wahab Riaz,left-arm fast,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+CR Brathwaite,right-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+JP Behrendorff,left-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+AS Joseph,right-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+RJW Topley,left-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Fawad Ahmed,right-arm leg spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+JDS Neesham,right-arm fast-medium,high,left,high,,,manual-llm,
+RP Meredith,right-arm fast,medium,right,low,,,manual-llm,
+RS Bopara,right-arm medium,high,right,high,,,manual-llm,
+AC Agar,left-arm orthodox,high,left,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+C Overton,right-arm fast-medium,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+Mohammad Nabi,right-arm off spin,high,right,high,,,manual-llm,
+CF Parkinson,right-arm leg spin,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+SR Harmer,right-arm off spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+LS Livingstone,right-arm leg spin,medium,right,high,,,manual-llm,
+PM Siddle,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+JT Ball,right-arm fast-medium,high,right,medium,,,manual-llm,
+S Badree,right-arm leg spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+R Rampaul,right-arm fast-medium,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+J Overton,right-arm fast-medium,high,left,high,,,manual-llm,
+OC McCoy,left-arm fast-medium,high,left,high,,,manual-llm,web: wisden.com 2026-10-25
+MS Crane,right-arm leg spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Usama Mir,right-arm leg spin,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+Naseem Shah,right-arm fast,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+FJ Klaassen,left-arm fast-medium,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+SS Cottrell,left-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+TMJ Smith,left-arm orthodox,high,right,high,,,manual-llm,web: wikipedia.org (hand was already right; bowl fixed) 2026-10-25
+GF Linde,left-arm orthodox,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+JK Fuller,right-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+RL Chase,right-arm off spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+TT Bresnan,right-arm fast-medium,high,right,medium,,,manual-llm,
+BCJ Cutting,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+MW Parkinson,right-arm leg spin,high,right,medium,,,manual-llm,
+BW Sanderson,right-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+HF Gurney,left-arm fast-medium,high,right,medium,,,manual-llm,
+M de Lange,right-arm fast,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+JA Thompson,right-arm fast-medium,medium,right,low,,,manual-llm,
+D Pretorius,right-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+Naveen-ul-Haq,right-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+MJ Henry,right-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+ST Finn,right-arm fast-medium,high,right,medium,,,manual-llm,
+JA Richardson,right-arm fast,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+JS Patel,right-arm off spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+MG Hogan,right-arm fast-medium,medium,right,low,,,manual-llm,
+DJG Sammy,right-arm medium,high,right,high,,,manual-llm,
+SW Tait,right-arm fast,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+CR Woakes,right-arm fast-medium,high,right,high,,,manual-llm,
+G Motie,left-arm orthodox,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+SJ Cook,right-arm fast-medium,medium,right,low,,,manual-llm,
+SNJ O'Keefe,left-arm orthodox,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+MJ Swepson,right-arm leg spin,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+GB Hogg,left-arm wrist spin,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+OP Stone,right-arm fast,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+S Mahmood,right-arm fast,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+XC Bartlett,right-arm fast-medium,high,right,medium,,,manual-llm,verified espncricinfo.com 2026-10-24
+V Kohli,right-arm medium,high,right,high,,,web-verified,web: wisden.com 2026-10-24
+JC Buttler,,,right,high,,yes,manual-llm,
+DA Warner,,,left,high,,,manual-llm,
+RG Sharma,right-arm off spin,high,right,high,,,web-verified,web: wisden.com 2026-10-24
+JM Vince,,,right,high,,,manual-llm,
+Babar Azam,,,right,high,,,manual-llm,
+AJ Finch,,,right,high,,,manual-llm,
+AD Hales,,,right,high,,,manual-llm,
+C Munro,,,left,high,,,manual-llm,
+S Dhawan,,,left,high,,,manual-llm,verified wisden.com 2026-10-24
+F du Plessis,,,right,high,,,manual-llm,
+Q de Kock,,,left,high,,yes,manual-llm,
+JJ Roy,,,right,high,,,manual-llm,
+DA Miller,,,left,high,,,manual-llm,
+CA Lynn,,,right,high,,,manual-llm,
+N Pooran,,,left,high,,yes,manual-llm,
+KL Rahul,,,right,high,,,manual-llm,
+DJ Malan,,,left,high,,,manual-llm,
+BB McCullum,,,right,high,,,manual-llm,
+Mohammad Rizwan,,,right,high,,yes,manual-llm,
+Shoaib Malik,,,right,high,,,manual-llm,
+PD Salt,,,right,high,,,manual-llm,
+SW Billings,,,right,high,,,manual-llm,
+MS Dhoni,,,right,high,,yes,manual-llm,
+AB de Villiers,,,right,high,,,manual-llm,
+KS Williamson,,,right,high,,,manual-llm,
+SA Yadav,,,right,high,,,manual-llm,
+EJG Morgan,,,left,high,,,manual-llm,
+MJ Guptill,,,right,high,,,manual-llm,
+SV Samson,,,right,high,,yes,manual-llm,
+SE Marsh,,,left,high,,,manual-llm,
+AM Rahane,,,right,high,,,manual-llm,verified wisden.com 2026-10-24
+LMP Simmons,,,right,high,,,manual-llm,
+DJM Short,,,left,high,,,manual-llm,
+Fakhar Zaman,,,left,high,,,manual-llm,
+LJ Evans,,,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+CA Ingram,,,left,high,,,manual-llm,
+JM Bairstow,,,right,high,,yes,manual-llm,
+SPD Smith,,,right,high,,,manual-llm,
+JM Clarke,,,right,high,,,manual-llm,
+PR Stirling,,,right,high,,,manual-llm,verified cricketireland.ie 2026-10-24
+SS Iyer,,,right,high,,,manual-llm,
+KC Sangakkara,,,left,high,,,manual-llm,verified espncricinfo.com 2026-10-24
+G Gambhir,,,left,high,,,manual-llm,
+RR Rossouw,,,left,high,,,manual-llm,verified wisden.com 2026-10-24
+KD Karthik,,,right,high,,yes,manual-llm,
+J Charles,,,right,high,,,manual-llm,
+SO Hetmyer,,,left,high,,,manual-llm,
+T Kohler-Cadmore,,,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+ADS Fletcher,,,right,high,,,manual-llm,
+WG Jacks,right-arm off spin,high,right,high,,,web-verified,web: wisden.com 2026-10-24
+LJ Wright,,,right,high,,,manual-llm,
+RV Uthappa,,,right,high,,yes,manual-llm,
+SD Hope,,,right,high,,,manual-llm,verified wisden.com 2026-10-24
+BM Duckett,,,left,high,,,manual-llm,
+BR McDermott,,,right,high,,,manual-llm,
+TH David,,,right,high,,,manual-llm,
+MK Pandey,,,right,high,,,manual-llm,
+Shubman Gill,,,right,high,,,manual-llm,
+GD Phillips,,,right,high,,,manual-llm,
+Ishan Kishan,,,left,high,,yes,manual-llm,
+LRPL Taylor,,,right,high,,,manual-llm,
+MS Wade,,,left,high,,yes,manual-llm,
+WL Madsen,,,right,high,,,manual-llm,
+AK Markram,right-arm off spin,high,right,high,,,web-verified,web: wisden.com 2026-10-24
+TL Seifert,,,right,high,,,manual-llm,
+E Lewis,,,left,high,,,manual-llm,
+RR Pant,,,left,high,,yes,manual-llm,verified wisden.com 2026-10-24
+JL Denly,,,right,high,,,manual-llm,
+DJ Bell-Drummond,,,right,high,,,manual-llm,
+AT Rayudu,,,right,high,,,manual-llm,
+TM Head,,,left,high,,,manual-llm,verified wisden.com 2026-10-24
+H Klaasen,,,right,high,,yes,manual-llm,
+HC Brook,,,right,high,,,manual-llm,
+DP Conway,,,left,high,,,manual-llm,verified wisden.com 2026-10-24
+DPMD Jayawardene,,,right,high,,,manual-llm,
+RR Hendricks,,,right,high,,,manual-llm,
+TM Dilshan,right-arm off spin,high,right,high,,,web-verified,verified wikipedia.org 2026-10-24
+SE Rutherford,,,left,high,,,manual-llm,
+JP Inglis,,,right,high,,,manual-llm,
+MEK Hussey,,,left,high,,,manual-llm,
+CT Bancroft,,,right,high,,,manual-llm,
+AL Davies,,,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+Shan Masood,,,left,high,,,manual-llm,
+R Powell,,,right,high,,,manual-llm,
+CJ Green,right-arm off spin,high,right,high,,,manual-llm,
+TK Curran,right-arm fast-medium,high,right,high,,,manual-llm,
+BJ Dwarshuis,left-arm fast-medium,high,left,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+DA Payne,left-arm fast-medium,high,left,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+BAC Howell,right-arm medium,high,right,high,,,manual-llm,
+L Gregory,right-arm fast-medium,high,right,high,,,manual-llm,
+NA Sowter,right-arm leg spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+DB Sharma,right-arm off spin,high,left,high,,,manual-llm,
+RJ Gleeson,right-arm fast-medium,high,right,medium,,,manual-llm,
+MJJ Critchley,right-arm leg spin,high,right,high,,,manual-llm,
+BA Raine,right-arm fast-medium,high,right,high,,,manual-llm,
+T van der Gugten,right-arm fast-medium,high,right,high,,,manual-llm,web: glamorgancricket.com 2026-10-25
+TG Helm,right-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+S Ecclestone,left-arm orthodox,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+Nida Dar,right-arm off spin,high,right,high,,,manual-llm,
+B Laughlin,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+ML Schutt,right-arm fast-medium,high,right,medium,,,manual-llm,
+Ehsan Khan,left-arm orthodox,medium,,,,,manual-llm,
+CJ Boyce,right-arm leg spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+MG Neser,right-arm fast-medium,high,right,high,,,manual-llm,
+N McAndrew,right-arm fast-medium,medium,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+AC Kerr,right-arm leg spin,high,right,high,,,manual-llm,
+JB Lintott,left-arm wrist spin,low,,,,,manual-llm,
+PR Brown,right-arm fast-medium,medium,right,medium,,,manual-llm,
+DJ Worrall,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+HK Matthews,right-arm off spin,high,right,high,,,manual-llm,
+JW Dernbach,right-arm fast-medium,high,right,high,,,manual-llm,
+Nahida Akter,left-arm orthodox,high,,,,,manual-llm,
+ASS Fletcher,right-arm leg spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+PI Walter,right-arm fast-medium,medium,left,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+JE Taylor,right-arm fast,high,right,high,,,manual-llm,
+Rehan Ahmed,right-arm leg spin,high,right,high,,,manual-llm,
+SJ Mullaney,right-arm medium,high,right,high,,,manual-llm,
+Nashra Sandhu,left-arm orthodox,high,,,,,manual-llm,
+MJ Potts,right-arm fast-medium,high,right,high,,,manual-llm,
+Virandeep Singh,right-arm off spin,low,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+S Ismail,right-arm fast,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+MTC Waller,right-arm leg spin,high,right,high,,,manual-llm,
+M Kapp,right-arm fast-medium,high,right,high,,,manual-llm,
+Mohammad Hasnain,right-arm fast,high,right,medium,,,manual-llm,
+Abrar Ahmed,right-arm leg spin,high,right,medium,,,manual-llm,
+KMA Paul,right-arm fast-medium,high,right,high,,,manual-llm,
+Qais Ahmad,right-arm leg spin,high,right,high,,,manual-llm,
+Mohammad Irfan,right-arm fast,high,left,medium,,,manual-llm,
+GJ Batty,right-arm off spin,high,right,high,,,manual-llm,
+B Stanlake,right-arm fast,high,right,medium,,,manual-llm,
+TW Hartley,left-arm orthodox,high,left,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+GG White,left-arm orthodox,high,,,,,manual-llm,
+JM Bird,right-arm fast-medium,high,right,medium,,,manual-llm,
+BL D'Oliveira,right-arm leg spin,high,right,high,,,manual-llm,
+RP Yadav,left-arm orthodox,high,right,medium,,,manual-llm,
+RF Higgins,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+FH Edwards,right-arm fast,high,right,high,,,manual-llm,
+NJ Rimmington,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+TS Rogers,left-arm fast-medium,low,,,,,manual-llm,
+EG Barnard,right-arm medium,high,right,high,,,manual-llm,
+K Pierre,left-arm orthodox,high,,,,,manual-llm,
+G Stewart,right-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+RR Emrit,right-arm fast-medium,high,right,high,,,manual-llm,
+GHS Garton,left-arm fast-medium,high,left,high,,,manual-llm,
+Mohammad Wasim,right-arm fast,high,right,high,,,manual-llm,
+Junaid Khan,left-arm fast,medium,,,,,manual-llm,verified wikipedia.org 2026-10-24
+BC Fortuin,left-arm orthodox,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+KH Brunt,right-arm fast-medium,high,right,high,,,manual-llm,
+KOK Williams,right-arm fast-medium,medium,,,,,manual-llm,
+JH Davey,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+JL Jonassen,left-arm orthodox,high,left,high,,,manual-llm,
+Karan KC,right-arm fast-medium,medium,,,,,manual-llm,verified espncricinfo.com 2026-10-24
+Yasim Murtaza,right-arm off spin,medium,,,,,manual-llm,
+SW Currie,right-arm fast-medium,medium,right,high,,,manual-llm,web: espncricinfo.com (Scott Currie) 2026-10-25
+N Mlaba,left-arm orthodox,high,,,,,manual-llm,verified wikipedia.org 2026-10-24
+CJ McKay,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+OF Smith,right-arm fast-medium,medium,right,high,,,manual-llm,
+JW Hastings,right-arm fast-medium,high,right,high,,,manual-llm,
+J Clark,right-arm fast-medium,high,right,high,,,manual-llm,
+A Khaka,right-arm fast-medium,high,right,medium,,,manual-llm,
+KJ Abbott,right-arm fast-medium,high,right,high,,,manual-llm,
+BGF Green,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+L Trevaskis,left-arm orthodox,medium,,,,,manual-llm,
+A Gardner,right-arm off spin,high,right,high,,,manual-llm,
+Sompal Kami,right-arm fast-medium,medium,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+FA Allen,left-arm orthodox,high,right,high,,,manual-llm,
+GS Sandhu,left-arm fast-medium,high,,,,,manual-llm,
+EA Perry,right-arm fast-medium,high,right,high,,,manual-llm,
+MT Steketee,right-arm fast-medium,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+WA Agar,right-arm fast-medium,high,right,medium,,,manual-llm,
+Mohammad Nawaz (3),left-arm orthodox,high,left,high,,,manual-llm,
+BA Carse,right-arm fast,high,right,high,,,manual-llm,
+ER Oza,right-arm leg spin,medium,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+TAI Taylor,right-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+I Ranaweera,left-arm orthodox,high,,,,,manual-llm,
+Mahedi Hasan,right-arm off spin,high,right,high,,,manual-llm,
+SFM Devine,right-arm medium,high,right,high,,,manual-llm,
+K Santokie,left-arm fast-medium,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+GLS Scrimshaw,right-arm fast,medium,right,medium,,,manual-llm,
+LMM Tahuhu,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+GC Viljoen,right-arm fast,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+LE Plunkett,right-arm fast,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+KDU Prabodhani,right-arm medium,medium,,,,,manual-llm,
+DA Douthwaite,right-arm fast-medium,high,right,high,,,manual-llm,
+CN Ackermann,right-arm off spin,high,right,high,,,manual-llm,
+LJ Fletcher,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+L Delany,right-arm off spin,high,right,high,,,manual-llm,
+DY Pennington,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+LBK Hollman,right-arm leg spin,high,right,high,,,manual-llm,
+Junaid Siddique,left-arm orthodox,medium,,,,,manual-llm,
+Usman Tariq,right-arm off spin,medium,,,,,manual-llm,
+AL Hughes,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Bilal Khan,left-arm fast-medium,medium,,,,,manual-llm,
+WB Rankin,right-arm fast-medium,high,right,high,,,manual-llm,
+HR Walsh,right-arm leg spin,high,right,high,,,manual-llm,
+M Carter,right-arm off spin,medium,,,,,manual-llm,
+S Glenn,right-arm leg spin,high,right,medium,,,manual-llm,
+Sana Mir,right-arm off spin,high,right,high,,,manual-llm,
+OE Robinson,right-arm fast-medium,high,right,medium,,,manual-llm,verified wisden.com 2026-10-24
+Zaman Khan,right-arm fast,medium,right,medium,,,manual-llm,
+SH Johnson,left-arm fast,high,left,high,,,manual-llm,
+ME Claydon,right-arm fast-medium,high,right,high,,,manual-llm,
+AG Salter,right-arm off spin,high,right,high,,,manual-llm,
+LV van Beek,right-arm fast-medium,high,right,high,,,manual-llm,
+Renuka Singh,right-arm fast-medium,high,right,medium,,,manual-llm,
+P Hatzoglou,left-arm wrist spin,medium,,,,,manual-llm,
+SM Boland,right-arm fast-medium,high,right,high,,,manual-llm,
+BTJ Wheal,right-arm fast-medium,high,right,medium,,,manual-llm,
+O Prendergast,right-arm medium,medium,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+BW Hilfenhaus,right-arm fast-medium,high,right,high,,,manual-llm,
+Ali Khan,right-arm fast,medium,right,medium,,,manual-llm,
+V Permaul,left-arm orthodox,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+MP Kuhnemann,left-arm orthodox,high,left,high,,,manual-llm,
+WAT Beer,right-arm leg spin,high,right,high,,,manual-llm,
+NR Sciver,right-arm medium,high,right,high,,,manual-llm,
+JJ Cobb,right-arm off spin,high,right,high,,,manual-llm,
+Abbas Afridi,right-arm fast,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Salma Khatun,right-arm off spin,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+AN Kelly,right-arm fast-medium,medium,,,,,manual-llm,
+N de Klerk,right-arm fast-medium,high,right,high,,,manual-llm,
+A Shrubsole,right-arm fast-medium,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+JA Duffy,right-arm fast-medium,high,right,medium,,,manual-llm,
+O Thomas,right-arm fast,high,right,medium,,,manual-llm,
+PD Collingwood,right-arm medium,high,right,high,,,manual-llm,
+SD Parry,left-arm wrist spin,high,left,medium,,,manual-llm,
+CL Tryon,left-arm orthodox,high,right,medium,,,manual-llm,
+Fatima Sana,right-arm medium,medium,right,medium,,,manual-llm,verified wisden.com 2026-10-24
+DM Bess,right-arm off spin,high,right,high,,,manual-llm,
+Saad Bin Zafar,right-arm medium,medium,,,,,manual-llm,
+DJ Lamb,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+ME Milnes,right-arm fast-medium,high,right,medium,,,manual-llm,
+C de Grandhomme,right-arm medium,high,right,high,,,manual-llm,
+GG Wagg,left-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Mohammad Sami,right-arm fast,high,right,high,,,manual-llm,
+G Wareham,right-arm leg spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+W Sutherland,right-arm fast-medium,high,right,high,,,manual-llm,web: melbournerenegades.com.au 2026-10-25
+F Nsubuga,left-arm orthodox,medium,,,,,manual-llm,
+S Snater,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org (Shane Snater) 2026-10-25
+KE Bryce,right-arm medium,medium,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+Yasir Arafat,right-arm fast-medium,high,right,high,,,manual-llm,
+OJ Hannon-Dalby,right-arm fast-medium,high,right,medium,,,manual-llm,
+L Pope,right-arm leg spin,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+Usman Shinwari,left-arm fast-medium,high,left,medium,,,manual-llm,
+DS Airee,right-arm off spin,high,right,high,,,manual-llm,
+MW Short,right-arm off spin,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+DKH Mitchell,right-arm medium,high,right,high,,,manual-llm,
+R Clarke,right-arm fast-medium,high,right,high,,,manual-llm,
+Poonam Yadav,right-arm leg spin,high,right,medium,,,manual-llm,
+AAP Atkinson,right-arm fast,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+H Kerr,left-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com (Hayden Kerr) 2026-10-25
+T Sangha,right-arm leg spin,high,right,medium,,,manual-llm,
+JC Tredwell,right-arm off spin,high,left,high,,,manual-llm,
+BAW Mendis,right-arm off spin,low,right,medium,,,manual-llm,
+ZJ Chappell,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+D Moriarty,left-arm orthodox,high,,,,,manual-llm,
+CE Dean,right-arm off spin,high,right,high,,,manual-llm,
+MT Coles,right-arm fast-medium,high,left,high,,,manual-llm,
+Saim Ayub,right-arm off spin,high,left,high,,,manual-llm,
+DR Mousley,right-arm off spin,high,left,high,,,manual-llm,verified wikipedia.org 2026-10-24
+CN Miles,right-arm fast-medium,high,right,high,,,manual-llm,
+MN Samuels,right-arm off spin,high,right,high,,,manual-llm,
+JD Wildermuth,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+MG Bracewell,right-arm off spin,high,left,high,,,manual-llm,
+Zahir Khan,left-arm wrist spin,high,left,medium,,,manual-llm,
+DMW Rawlins,left-arm orthodox,high,left,high,,,manual-llm,
+SS Connell,right-arm fast,medium,,,,,manual-llm,
+Rabeya Khan,left-arm orthodox,medium,,,,,manual-llm,
+P Vastrakar,right-arm fast-medium,medium,right,high,,,manual-llm,
+AC Thomas,right-arm fast-medium,high,right,medium,,,manual-llm,
+A Mohammed,right-arm off spin,high,right,medium,,,manual-llm,
+Hassan Khan,left-arm orthodox,medium,right,high,,,manual-llm,web: wikipedia.org (Melbourne Renegades squad table; single source) 2026-10-25
+Rumman Raees,left-arm fast-medium,high,left,medium,,,manual-llm,
+C Bosch,right-arm fast-medium,high,right,high,,,manual-llm,web: wisden.com 2026-10-25
+GJ Delany,right-arm leg spin,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+MA Wood,right-arm fast,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+SJ Benn,left-arm orthodox,high,left,medium,,,manual-llm,
+DW Lawrence,right-arm off spin,high,right,high,,,manual-llm,
+JR Hopes,right-arm medium,high,,,,,manual-llm,
+DI Stevens,right-arm medium,high,right,high,,,manual-llm,
+AM Hardie,right-arm fast-medium,high,right,high,,,manual-llm,
+D Hazell,right-arm off spin,high,right,medium,,,manual-llm,
+K Ramharack,right-arm off spin,high,,,,,manual-llm,
+SJ Croft,right-arm off spin,medium,right,high,,,manual-llm,
+KR Mayers,right-arm medium,high,left,high,,,manual-llm,
+JM Coles,left-arm orthodox,medium,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+MA Beer,left-arm orthodox,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+Anwar Ali,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Usman Qadir,right-arm leg spin,high,right,medium,,,manual-llm,
+Anam Amin,left-arm orthodox,medium,,,,,manual-llm,
+OEG Baartman,right-arm fast,high,right,medium,,,manual-llm,
+RK Kleinveldt,right-arm fast-medium,high,right,high,,,manual-llm,
+HJH Brookes,right-arm fast,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Mahmudullah,right-arm off spin,high,right,high,,,manual-llm,verified espncricinfo.com 2026-10-24
+KA Jamieson,right-arm fast-medium,high,right,high,,,manual-llm,
+JM Kerr,right-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Rumana Ahmed,right-arm leg spin,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+P Coughlin,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+SG Borthwick,right-arm leg spin,high,left,high,,,manual-llm,verified wikipedia.org 2026-10-24
+JA Chohan,right-arm leg spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+AM Lilley,right-arm off spin,high,right,high,,,manual-llm,web: wikipedia.org (Arron Lilley) 2026-10-25
+Mashrafe Mortaza,right-arm fast-medium,high,right,high,,,manual-llm,
+D van Niekerk,right-arm leg spin,high,right,high,,,manual-llm,
+M Klaas,right-arm fast-medium,medium,,,,,manual-llm,
+A Reddy,right-arm fast-medium,high,right,high,,,manual-llm,web: bcci.tv 2026-10-25
+C Rushworth,right-arm fast-medium,high,right,medium,,,manual-llm,
+LK Bell,right-arm fast,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+HASD Siriwardene,left-arm orthodox,high,,,,,manual-llm,
+BWM Mike,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+S Joseph,right-arm fast,high,right,high,,,manual-llm,
+DC Drakes,left-arm fast-medium,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+LP Goldsworthy,left-arm orthodox,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Sohail Khan,right-arm fast,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+JEC Franklin,left-arm fast-medium,high,left,high,,,manual-llm,
+MW Forde,right-arm fast-medium,medium,right,high,,,manual-llm,web: wisden.com 2026-10-25
+GD Elliott,right-arm medium,high,right,high,,,manual-llm,
+RP Burl,right-arm leg spin,high,left,high,,,manual-llm,
+Sufiyan Muqeem,left-arm wrist spin,medium,,,,,manual-llm,
+CP Tremain,right-arm fast-medium,high,right,medium,,,manual-llm,
+SN Netravalkar,left-arm fast-medium,high,left,medium,,,manual-llm,
+AL Phehlukwayo,right-arm fast-medium,high,left,high,,,manual-llm,
+J Theron,right-arm fast-medium,medium,right,medium,,,manual-llm,
+KJ O'Brien,right-arm fast-medium,high,right,high,,,manual-llm,
+JS Paris,left-arm fast-medium,high,,,,,manual-llm,
+S Molineux,left-arm orthodox,high,left,high,,,manual-llm,
+N Burger,left-arm fast,high,,,,,manual-llm,
+RS Gayakwad,left-arm orthodox,high,,,,,manual-llm,
+S Luus,right-arm leg spin,high,right,high,,,manual-llm,
+EAJ Richardson,right-arm off spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+BJ Webster,right-arm medium,high,right,high,,,manual-llm,
+Jahanara Alam,right-arm fast-medium,medium,,,,,manual-llm,
+D Heyliger,left-arm orthodox,medium,,,,,manual-llm,
+GT Griffiths,right-arm fast-medium,medium,right,medium,,,manual-llm,
+OU Ranasinghe,right-arm off spin,medium,,,,,manual-llm,
+Marufa Akter,right-arm fast-medium,medium,,,,,manual-llm,
+Diana Baig,right-arm fast,high,right,medium,,,manual-llm,
+J Shaw,right-arm fast-medium,high,right,medium,,,manual-llm,
+GL van Buuren,left-arm orthodox,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+I Udana,left-arm fast-medium,high,left,high,,,manual-llm,
+JL Pattinson,right-arm fast,high,right,high,,,manual-llm,
+Zafar Gohar,left-arm orthodox,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+S Prasanna,right-arm leg spin,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+TS Roland-Jones,right-arm fast-medium,high,right,high,,,manual-llm,
+B Doggett,right-arm fast-medium,high,right,medium,,,manual-llm,
+Waqar Salamkheil,right-arm leg spin,medium,right,medium,,,manual-llm,
+LM Kasperek,right-arm off spin,high,right,medium,,,manual-llm,
+Mohammad Saifuddin,right-arm fast-medium,high,left,high,,,manual-llm,
+MA Leask,right-arm off spin,high,right,high,,,manual-llm,
+RRS Cornwall,right-arm off spin,high,right,high,,,manual-llm,
+GK Berg,right-arm medium,high,right,medium,,,manual-llm,verified wisden.com 2026-10-24
+KJ Garth,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+JD Shantry,left-arm fast-medium,high,left,medium,,,manual-llm,
+NL Buck,right-arm fast-medium,high,right,medium,,,manual-llm,
+RJ Peterson,left-arm orthodox,high,left,high,,,manual-llm,
+LM Jongwe,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+N Thushara,right-arm fast,high,right,medium,,,manual-llm,
+Shakeel Ahmed,left-arm orthodox,medium,,,,,manual-llm,
+JN Frylinck,right-arm fast-medium,medium,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+PWA Mulder,right-arm fast-medium,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+MD Shanaka,right-arm fast-medium,high,right,high,,,manual-llm,
+JNT Seales,right-arm fast,high,right,medium,,,manual-llm,
+AR Nurse,right-arm off spin,high,right,high,,,manual-llm,
+JM Anderson,right-arm fast-medium,high,left,high,,,manual-llm,
+RA Mair,right-arm fast-medium,high,right,medium,,,manual-llm,
+G Coetzee,right-arm fast,high,right,high,,,manual-llm,
+KD Mills,right-arm fast-medium,high,right,high,,,manual-llm,
+M Kelly,right-arm fast-medium,high,right,medium,,,manual-llm,
+P Sisodiya,left-arm orthodox,high,,,,,manual-llm,
+Azeem Rafiq,right-arm off spin,high,right,high,,,manual-llm,
+AJ Turner,right-arm off spin,high,right,high,,,manual-llm,
+CAJ Meschede,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Mohammad Ali,right-arm fast,medium,,,,,manual-llm,
+A Dananjaya,right-arm off spin,high,right,medium,,,manual-llm,
+A Sutherland,right-arm medium,medium,right,high,,,manual-llm,
+E Malinga,left-arm fast-medium,low,,,,,manual-llm,
+Rohan Mustafa,right-arm off spin,medium,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+R McLaren,right-arm fast-medium,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+CA Henry,right-arm fast-medium,medium,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+DJS Dottin,right-arm fast-medium,high,right,high,,,manual-llm,
+Fazalhaq Farooqi,left-arm fast,high,,,,,manual-llm,
+Nasum Ahmed,left-arm orthodox,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+BFW de Leede,right-arm fast-medium,high,right,high,,,manual-llm,
+DJ Hussey,right-arm off spin,high,right,high,,,manual-llm,
+Simi Singh,right-arm off spin,high,right,high,,,manual-llm,
+MD Fisher,right-arm fast-medium,high,right,medium,,,manual-llm,
+XJ Doherty,left-arm orthodox,high,left,medium,,,manual-llm,
+Iftikhar Ahmed,right-arm off spin,high,right,high,,,manual-llm,
+Azharullah,right-arm fast-medium,high,right,medium,,,manual-llm,
+Imran Qayyum,left-arm orthodox,high,left,medium,,,manual-llm,
+S Baker,right-arm fast,medium,right,medium,,,manual-llm,
+S Pandey,right-arm fast-medium,high,right,high,,,manual-llm,
+Ahmed Raza,left-arm orthodox,medium,,,,,manual-llm,
+LB Williams,right-arm fast,high,right,medium,,,manual-llm,
+RA Reifer,left-arm fast-medium,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+CJ Anderson,left-arm fast-medium,high,left,high,,,manual-llm,
+DM Kimmince,right-arm fast-medium,medium,,,,,manual-llm,
+HNK Jensen,right-arm off spin,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+KT Maphaka,left-arm fast,high,left,medium,,,manual-llm,verified espncricinfo.com 2026-10-24
+AA Alleyne,right-arm fast-medium,medium,,,,,manual-llm,verified wikipedia.org 2026-10-24
+RR Beaton,right-arm fast,high,right,medium,,,manual-llm,
+MK Andersson,right-arm medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+B Evans,right-arm fast-medium,medium,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Tanzim Hasan Sakib,right-arm fast-medium,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+NM Lyon,right-arm off spin,high,right,high,,,manual-llm,verified wisden.com 2026-10-24
+NO Miller,left-arm orthodox,high,left,medium,,,manual-llm,
+Akif Javed,left-arm fast-medium,high,,,,,manual-llm,
+Yasir Shah,right-arm leg spin,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+MJ Waite,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+Khushdil Shah,left-arm orthodox,high,left,high,,,manual-llm,
+MR Quinn,right-arm fast-medium,high,right,medium,,,manual-llm,
+WR Smith,right-arm off spin,high,left,high,,,manual-llm,
+GP Swann,right-arm off spin,high,right,high,,,manual-llm,
+U Arshad,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+JDP Oram,right-arm fast-medium,high,left,high,,,manual-llm,
+BC Cullen,right-arm fast-medium,high,right,medium,,,manual-llm,
+JL Gunn,right-arm medium,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+GR Napier,right-arm fast-medium,high,right,high,,,manual-llm,
+J Leach,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+LCN Smith,left-arm orthodox,high,,,,,manual-llm,
+D Brown,right-arm fast,high,right,medium,,,manual-llm,verified espncricinfo.com 2026-10-24
+RAJ Smith,right-arm fast-medium,high,right,medium,,,manual-llm,
+TD Groenewald,right-arm fast-medium,high,right,medium,,,manual-llm,
+C Campher,right-arm fast-medium,high,right,high,,,manual-llm,
+BD Glover,right-arm fast-medium,medium,right,medium,,,manual-llm,
+FJ Hudson-Prentice,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+FC Jonas,left-arm orthodox,high,,,,,manual-llm,
+ML Revis,right-arm fast-medium,low,,,,,manual-llm,
+Shahnawaz Dhani,right-arm fast,high,right,medium,,,manual-llm,
+S Dube,right-arm medium,high,left,high,,,manual-llm,
+ZGF Foulkes,right-arm fast-medium,high,right,medium,,,manual-llm,
+SMSM Senanayake,right-arm off spin,high,right,high,,,manual-llm,
+BJ Currie,right-arm fast-medium,high,right,medium,,,manual-llm,
+ASS Nijjar,left-arm orthodox,high,left,high,,,manual-llm,
+N Shree Charani,left-arm orthodox,high,,,,,manual-llm,
+DA Cosker,left-arm orthodox,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+KAJ Roach,right-arm fast,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+TS Sekhukhune,right-arm medium,medium,,,,,manual-llm,verified wikipedia.org 2026-10-24
+SP Crook,right-arm fast-medium,high,right,high,,,manual-llm,
+Rahat Ali,left-arm fast-medium,high,,,,,manual-llm,
+SA Patterson,right-arm fast-medium,high,right,high,,,manual-llm,
+HTRY Thornton,right-arm fast-medium,high,,,,,manual-llm,
+WJ Weighell,right-arm fast-medium,medium,,,,,manual-llm,
+AD Mascarenhas,right-arm medium,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+Mir Hamza,left-arm fast-medium,high,,,,,manual-llm,
+SB Styris,right-arm medium,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+AM Ghazanfar,right-arm off spin,high,right,medium,,,manual-llm,
+JC Tongue,right-arm fast,high,right,medium,,,manual-llm,
+AT Thomson,right-arm off spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+J Edwards,right-arm fast-medium,medium,,,,,manual-llm,
+LR Morris,right-arm fast,high,right,medium,,,manual-llm,
+JA Brooks,right-arm fast-medium,high,right,high,,,manual-llm,
+SC Kuggeleijn,right-arm fast-medium,high,right,medium,,,manual-llm,
+SE Bond,right-arm fast,high,right,high,,,manual-llm,
+LA Marsh,right-arm off spin,high,right,high,,,manual-llm,web: espncricinfo.com 2026-10-25
+ST Jayasuriya,left-arm orthodox,high,left,high,,,manual-llm,
+CJ Liddle,left-arm fast-medium,low,,,,,manual-llm,
+P Utseya,right-arm off spin,high,right,medium,,,manual-llm,
+Umran Malik,right-arm fast,high,right,high,,,manual-llm,
+MW Pillans,right-arm fast-medium,high,right,high,,,manual-llm,web: wikipedia.org 2026-10-25
+AC Evans,right-arm fast-medium,high,right,medium,,,manual-llm,
+DJ Mitchell,right-arm medium,high,right,high,,,manual-llm,
+Salman Mirza,right-arm fast-medium,high,,,,,manual-llm,
+DN Wellalage,left-arm orthodox,high,left,high,,,manual-llm,
+JE Root,right-arm off spin,high,right,high,,,manual-llm,
+BE Hendricks,left-arm fast,high,,,,,manual-llm,
+RM Farrell,right-arm fast-medium,high,right,medium,,,manual-llm,
+SW Bates,right-arm medium,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+JKH Naik,left-arm orthodox,high,,,,,manual-llm,
+AG Cremer,right-arm leg spin,high,right,high,,,manual-llm,
+BV Sears,right-arm fast,high,right,medium,,,manual-llm,
+LA Patterson-White,left-arm orthodox,high,left,high,,,manual-llm,
+M Labuschagne,right-arm leg spin,high,right,high,,,manual-llm,
+CBRLS Kumara,right-arm fast,high,right,medium,,,manual-llm,
+Al-Amin Hossain,right-arm fast-medium,high,right,medium,,,manual-llm,
+B Fernando,left-arm fast-medium,high,left,medium,,,manual-llm,
+Aayan Afzal Khan,left-arm orthodox,medium,,,,,manual-llm,
+EJ Carson,right-arm off spin,low,,,,,manual-llm,
+AJ Healy,,,left,high,,yes,manual-llm,
+Nigar Sultana,,,right,high,,yes,manual-llm,web: wikipedia.org 2026-10-25
+Kamran Akmal,,,right,high,,yes,manual-llm,
+T Bhatia,,,right,medium,,yes,manual-llm,verified wikipedia.org 2026-10-24
+AE Jones,,,right,high,,yes,manual-llm,
+RM Ghosh,,,right,high,,yes,manual-llm,
+SJ Bryce,,,right,high,,yes,manual-llm,
+D Ramdin,,,right,high,,yes,manual-llm,
+OB Cox,,,right,high,,yes,manual-llm,
+MAA Sanjeewani,,,,,,yes,manual-llm,
+SJ Taylor,,,right,high,,yes,manual-llm,verified wikipedia.org 2026-10-24
+AM Rossington,,,right,high,,yes,manual-llm,
+JA Simpson,,,left,high,,yes,manual-llm,web: wikipedia.org 2026-10-25
+Mushfiqur Rahim,,,right,high,,yes,manual-llm,
+WP Saha,,,right,high,,yes,manual-llm,
+TJ Moores,,,left,high,,yes,manual-llm,
+MV Waldron,,,,,,yes,manual-llm,
+Sarfraz Ahmed,,,right,high,,yes,manual-llm,
+LD McManus,,,right,high,,yes,manual-llm,
+Muneeba Ali,,,left,high,,yes,manual-llm,web: espncricinfo.com 2026-10-25
+Sidra Nawaz,,,,,,yes,manual-llm,
+SA Campbelle,,,right,high,,yes,manual-llm,web: wikipedia.org 2026-10-25
+Batool Fatima,,,,,,yes,manual-llm,
+BKG Mendis,,,right,high,,yes,manual-llm,
+AJA Wheater,,,right,high,,yes,manual-llm,
+L Ronchi,,,right,high,,yes,manual-llm,verified wikipedia.org 2026-10-24
+JR Philippe,,,right,high,,yes,manual-llm,
+CB Cooke,,,right,high,,yes,manual-llm,
+JJ Peirson,,,right,high,,yes,manual-llm,
+T Chetty,,,right,high,,yes,manual-llm,
+AT Carey,,,left,high,,yes,manual-llm,
+MR Aguilleira,,,right,high,,yes,manual-llm,
+James Bracey,,,left,high,,yes,manual-llm,
+Shamima Sultana,,,,,,yes,manual-llm,
+KJ Martin,,,right,high,,yes,manual-llm,
+AC Gilchrist,,,left,high,,yes,manual-llm,
+PA Patel,,,left,high,,yes,manual-llm,
+A Hunter,,,right,high,,yes,manual-llm,web: cricketireland.ie 2026-10-25
+MH Cross,,,right,high,,yes,manual-llm,
+Liton Das,,,right,high,,yes,manual-llm,
+L Tucker,,,right,high,,yes,manual-llm,
+PSP Handscomb,,,right,high,,sometimes,manual-llm,
+Azam Khan,,,right,high,,yes,manual-llm,
+DC Thomas,,,right,high,,yes,manual-llm,
+DJ Vilas,,,right,high,,yes,manual-llm,
+IC Gaze,,,right,high,,yes,manual-llm,
+SB Harper,,,right,high,,yes,manual-llm,
+MD Patel,,,right,high,,yes,manual-llm,verified wikipedia.org 2026-10-24
+BJ Haddin,,,right,high,,yes,manual-llm,
+MGK Burgess,,,right,high,,yes,manual-llm,
+GC Wilson,,,right,high,,yes,manual-llm,verified wikipedia.org 2026-10-24
+SA Edwards,,,right,high,,yes,manual-llm,
+S Jafta,,,,,,yes,manual-llm,
+SW Poynter,,,right,high,,yes,manual-llm,
+BT Foakes,,,right,high,,yes,manual-llm,
+OG Robinson,,,right,high,,yes,manual-llm,
+T Banton,,,right,high,,yes,manual-llm,
+RD Rickelton,,,left,high,,yes,manual-llm,
+CAK Walton,,,right,high,,yes,manual-llm,
+TD Paine,,,right,high,,yes,manual-llm,
+NV Ojha,,,right,high,,yes,manual-llm,
+JS Foster,,,right,high,,yes,manual-llm,
+NJ O'Brien,,,left,high,,yes,manual-llm,
+Nurul Hasan,,,right,high,,yes,manual-llm,web: espncricinfo.com 2026-10-25
+MJ Richardson,,,right,medium,,yes,manual-llm,
+YH Bhatia,,,left,high,,yes,manual-llm,verified wisden.com 2026-10-24
+JM Sharma,,,right,high,,yes,manual-llm,
+D Ferreira,,,right,high,,sometimes,manual-llm,
+BD Guest,,,right,high,,yes,manual-llm,
+JLB Davies,,,left,high,,yes,manual-llm,
+PM Nevill,,,right,high,,yes,manual-llm,
+Umar Akmal,,,right,high,,yes,manual-llm,
+SE Gotch,,,right,high,,yes,manual-llm,web: wikipedia.org 2026-10-25
+JL Smith,,,right,high,,yes,manual-llm,
+TR Ambrose,,,right,high,,yes,manual-llm,
+SP Goswami,,,left,high,,yes,manual-llm,
+LD Chandimal,,,right,high,,yes,manual-llm,
+MS Bisla,,,right,high,,yes,manual-llm,
+AP Tare,,,right,high,,yes,manual-llm,
+CMW Read,,,right,high,,yes,manual-llm,verified wikipedia.org 2026-10-24
+MDKJ Perera,,,left,high,,yes,manual-llm,verified wikipedia.org 2026-10-24
+MA Wallace,,,left,high,,yes,manual-llm,
+SM Davies,,,left,high,,yes,manual-llm,
+P Mustard,,,left,high,,yes,manual-llm,
+C Kieswetter,,,right,high,,yes,manual-llm,
+SM Whiteman,,,left,high,,yes,manual-llm,web: wikipedia.org 2026-10-25
+GO Jones,,,right,high,,yes,manual-llm,
+EJH Eckersley,,,right,high,,yes,manual-llm,
+BR Dunk,,,left,high,,sometimes,manual-llm,
+JM Cox,,,right,high,,yes,manual-llm,
+JS Lenton,,,right,medium,,yes,manual-llm,
+Mohammad Haris,,,right,high,,yes,manual-llm,verified wikipedia.org 2026-10-24
+DH Yagnik,,,right,high,,yes,manual-llm,
+TWM Latham,,,left,high,,yes,manual-llm,
+TP Alsop,,,left,high,,yes,manual-llm,verified espncricinfo.com 2026-10-24
+AJ Hodd,,,right,high,,yes,manual-llm,
+BL Mooney,,,left,high,,yes,manual-llm,
+K Lewis,,,left,high,,yes,manual-llm,
+RC Davies,,,right,high,,yes,manual-llm,web: wikipedia.org 2026-10-25
+TP Ludeman,,,right,high,,yes,manual-llm,
+JB Cracknell,,,right,medium,,yes,manual-llm,
+JA Tattersall,,,right,high,,yes,manual-llm,web: wikipedia.org 2026-10-25
+MD Bates,,,right,medium,,yes,manual-llm,
+GH Roderick,,,right,high,,yes,manual-llm,
+RH Priest,,,right,high,,yes,manual-llm,
+D Smit,,,right,high,,yes,manual-llm,
+MV Boucher,,,right,high,,yes,manual-llm,
+MJ Prior,,,right,high,,yes,manual-llm,
+Jaker Ali,,,right,high,,yes,manual-llm,
+R Vasconcelos,,,right,high,,yes,manual-llm,
+OJ Pope,,,right,high,,yes,manual-llm,
+HJ Nielsen,,,left,high,,yes,manual-llm,web: cricket.com.au 2026-10-25
+J Da Silva,,,right,high,,yes,manual-llm,
+HJ Swindells,,,right,high,,yes,manual-llm,web: wikipedia.org 2026-10-25
+LJ Hill,,,right,medium,,yes,manual-llm,
+A Bagai,,,right,high,,yes,manual-llm,web: wikipedia.org 2026-10-25
+SP Khakurel,,,right,medium,,yes,manual-llm,
+Haseebullah Khan,,,left,high,,yes,manual-llm,verified espncricinfo.com 2026-10-24
+Basil Thampi,right-arm fast-medium,high,right,medium,,,manual-llm,
+Vijaykumar Vyshak,right-arm fast-medium,high,right,medium,,,manual-llm,
+A Kamboj,right-arm fast-medium,high,right,medium,,,manual-llm,
+Rasikh Salam,right-arm fast-medium,high,right,medium,,,manual-llm,
+BB Sran,left-arm fast-medium,high,left,medium,,,manual-llm,
+Mukesh Choudhary,left-arm fast-medium,high,left,medium,,,manual-llm,
+Yash Thakur,right-arm fast-medium,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+R Sai Kishore,left-arm orthodox,high,left,high,,,manual-llm,
+IC Pandey,right-arm fast-medium,high,right,medium,,,manual-llm,
+Prince Yadav,right-arm fast-medium,medium,,,,,manual-llm,
+C Sakariya,left-arm fast-medium,high,left,medium,,,manual-llm,
+RR Powar,right-arm off spin,high,left,high,,,manual-llm,
+Bipul Sharma,left-arm orthodox,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+J Suchith,left-arm orthodox,high,,,,,manual-llm,
+MF Maharoof,right-arm fast-medium,high,right,high,,,manual-llm,
+Anureet Singh,right-arm fast-medium,high,right,medium,,,manual-llm,
+J Yadav,right-arm off spin,high,right,high,,,manual-llm,
+DJ Hooda,right-arm off spin,high,right,high,,,manual-llm,
+Abhishek Sharma,left-arm orthodox,high,left,high,,,manual-llm,
+Arshad Khan,left-arm fast-medium,medium,left,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+VRV Singh,right-arm fast,high,right,medium,,,manual-llm,
+Azmatullah Omarzai,right-arm fast-medium,high,right,high,,,manual-llm,
+Akash Madhwal,right-arm fast-medium,high,right,medium,,,manual-llm,
+AN Ahmed,right-arm fast-medium,high,right,medium,,,manual-llm,
+Nithish Kumar Reddy,right-arm fast-medium,high,right,high,,,manual-llm,
+GD McGrath,right-arm fast-medium,high,right,high,,,manual-llm,
+AS Roy,left-arm orthodox,high,left,medium,,,manual-llm,
+R Parag,right-arm off spin,high,right,high,,,manual-llm,
+LR Shukla,right-arm medium,high,right,medium,,,manual-llm,verified wisden.com 2026-10-24
+Pankaj Singh,right-arm fast-medium,high,right,medium,,,manual-llm,
+BA Bhatt,left-arm orthodox,high,,,,,manual-llm,
+V Nigam,right-arm leg spin,medium,,,,,manual-llm,
+Lalit Yadav,right-arm off spin,high,right,medium,,,manual-llm,verified espncricinfo.com 2026-10-24
+A Mithun,right-arm fast-medium,high,right,medium,,,manual-llm,
+WPUJC Vaas,left-arm fast-medium,high,left,high,,,manual-llm,
+K Kartikeya,left-arm orthodox,high,,,,,manual-llm,
+Akash Deep,right-arm fast-medium,high,right,medium,,,manual-llm,
+SC Ganguly,right-arm medium,high,left,high,,,manual-llm,
+SM Pollock,right-arm fast-medium,high,right,high,,,manual-llm,
+Joginder Sharma,right-arm medium,high,right,high,,,manual-llm,
+Akash Singh,left-arm fast-medium,medium,,,,,manual-llm,
+Simarjeet Singh,right-arm fast-medium,high,right,medium,,,manual-llm,
+V Shankar,right-arm medium,high,right,high,,,manual-llm,
+JD Ryder,right-arm medium,high,left,high,,,manual-llm,verified wikipedia.org 2026-10-24
+CRD Fernando,right-arm fast,high,right,medium,,,manual-llm,
+A Chandila,right-arm fast-medium,medium,right,medium,,,manual-llm,
+BJ Hodge,right-arm off spin,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+AM Nayar,right-arm medium,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+MP Yadav,right-arm fast,high,right,medium,,,manual-llm,
+N Rana,right-arm off spin,high,left,high,,,manual-llm,verified wisden.com 2026-10-24
+Y Venugopal Rao,right-arm off spin,medium,right,high,,,manual-llm,
+KC Cariappa,right-arm leg spin,high,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
+M Ntini,right-arm fast,high,right,high,,,manual-llm,
+S Tyagi,right-arm fast-medium,high,right,medium,,,manual-llm,
+VS Malik,right-arm fast-medium,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+V Pratap Singh,right-arm fast-medium,medium,,,,,manual-llm,verified wikipedia.org 2026-10-24
+HR Shokeen,right-arm off spin,high,right,medium,,,manual-llm,
+Zeeshan Ansari,right-arm leg spin,high,right,medium,,,manual-llm,
+Parvez Rasool,right-arm off spin,high,right,high,,,manual-llm,
+Mohammad Asif,right-arm fast-medium,high,left,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+Harsh Dubey,left-arm orthodox,high,left,medium,,,manual-llm,
+AB McDonald,right-arm fast-medium,high,right,high,,,manual-llm,
+M Siddharth,left-arm orthodox,high,,,,,manual-llm,
+Ashwani Kumar,left-arm fast-medium,high,,,,,manual-llm,
+KL Nagarkoti,right-arm fast,high,right,medium,,,manual-llm,
+KP Pietersen,right-arm off spin,high,right,high,,,manual-llm,
+S Randiv,right-arm off spin,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+S Sandeep Warrier,right-arm fast-medium,high,right,medium,,,manual-llm,
+Swapnil Singh,left-arm orthodox,high,right,medium,,,manual-llm,verified wikipedia.org 2026-10-24
+CK Langeveldt,right-arm fast-medium,high,right,high,,,manual-llm,
+K Khejroliya,left-arm fast-medium,high,left,medium,,,manual-llm,
+SB Bangar,right-arm medium,high,right,medium,,,manual-llm,
+AM Salvi,right-arm fast-medium,high,right,medium,,,manual-llm,
+Yudhvir Singh,right-arm fast-medium,high,right,medium,,,manual-llm,
+Mayank Dagar,left-arm orthodox,high,,,,,manual-llm,
+V Sehwag,right-arm off spin,high,right,high,,,manual-llm,verified wisden.com 2026-10-24
+KM Asif,right-arm fast-medium,high,right,medium,,,manual-llm,
+Arjun Tendulkar,left-arm fast-medium,high,left,high,,,manual-llm,
+MK Lomror,left-arm orthodox,high,left,high,,,manual-llm,
+Navdeep Saini,right-arm fast,high,right,high,,,manual-llm,
+AL Menaria,left-arm orthodox,high,left,high,,,manual-llm,web: wikipedia.org 2026-10-25
+A Singh,right-arm fast-medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+Ankit Sharma,left-arm orthodox,high,left,high,,,web-verified,web: wikipedia.org 2026-10-24
+VY Mahesh,right-arm fast-medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+SJ Srivastava,left-arm fast-medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+Brijesh Sharma,right-arm fast-medium,high,right,high,,,web-verified,web: iplt20.com 2026-10-24
+AG Murtaza,left-arm orthodox,high,left,high,,,web-verified,web: wikipedia.org 2026-10-24
+A Ashish Reddy,right-arm medium,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+Sakib Hussain,right-arm fast-medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+AA Chavan,left-arm orthodox,high,left,high,,,web-verified,web: wikipedia.org 2026-10-24
+KR Sen,right-arm fast,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+Shivang Kumar,left-arm wrist spin,high,right,high,,,web-verified,web: wisden.com 2026-10-24
+KP Appanna,left-arm orthodox,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+YA Abdulla,left-arm fast-medium,high,left,high,,,web-verified,web: wikipedia.org 2026-10-24
+Karanveer Singh,right-arm leg spin,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+S Kaushik,left-arm wrist spin,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+J Syed Mohammad,left-arm orthodox,high,left,high,,,web-verified,web: wikipedia.org 2026-10-24
+B Akhil,right-arm fast-medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+Yash Raj Punja,right-arm leg spin,high,right,high,,,web-verified,web: khelnow.com 2026-10-24
+Kamran Khan,left-arm fast-medium,high,left,high,,,web-verified,web: wikipedia.org 2026-10-24
+PP Hinge,right-arm fast-medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+P Parameswaran,left-arm medium,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+DP Vijaykumar,right-arm medium,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+PC Valthaty,right-arm medium,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+Gurjapneet Singh,left-arm fast-medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+TL Suman,right-arm off spin,high,right,high,,,web-verified,web: wisden.com 2026-10-24
+Anand Rajan,right-arm medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+R Sathish,right-arm medium,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+T Thushara,left-arm fast-medium,high,left,high,,,web-verified,web: wikipedia.org 2026-10-24
+P Amarnath,right-arm medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+Ashok Sharma,right-arm fast-medium,high,right,high,,,web-verified,web: gujarattitansipl.com 2026-10-24
+R Shukla,right-arm medium,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+Shivam Sharma,right-arm off spin,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+Ankit Soni,right-arm leg spin,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+S Narwal,right-arm medium,high,left,high,,,web-verified,web: wisden.com 2026-10-24
+P Sahu,right-arm leg spin,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+Jaskaran Singh,right-arm medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+Shoaib Ahmed,right-arm fast-medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+SB Wagh,left-arm fast-medium,high,left,high,,,web-verified,web: wikipedia.org 2026-10-24
+A Choudhary,left-arm medium,high,right,high,,,web-verified,web: wisden.com 2026-10-24
+P Suyal,left-arm medium,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+RV Gomez,right-arm medium,high,right,high,,,web-verified,web: wisden.com 2026-10-24
+Shashank Singh,right-arm off spin,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
+Raghu Sharma,right-arm leg spin,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24

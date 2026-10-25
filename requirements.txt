@@ -1,20 +1,9 @@
-# Cricket Analytics Platform — Core Dependencies
-# Pinned for reproducible deployment
-
-# Core data
+# Cricket Analytics Platform - direct dependencies, pinned to the versions tested in .venv (2026-10-25)
 pandas==2.3.3
 duckdb==1.5.0
-pyyaml>=6.0
-
-# Ingestion (only needed for local data refresh)
-requests>=2.31
-beautifulsoup4>=4.12
-
-# Visualization
+PyYAML==6.0.3
+requests==2.34.2
 plotly==6.6.0
-
-# Dashboard
 streamlit==1.55.0
-
-# CLI
-click>=8.1
+click==8.5.0
+kaleido==1.5.0      # PNG export of reel charts (uses installed Edge/Chrome)

@@ -1,67 +1,45 @@
 [project]
 name = "cricket-analytics"
 version = "0.1.0"
-description = "Modular cricket analytics platform — IPL, ICC, BCCI"
+description = "Cricket analytics over Cricsheet ball-by-ball data: DuckDB, a module registry, a CLI and a Streamlit dashboard"
 requires-python = ">=3.10"
 dependencies = [
-    # Core
     "pandas>=2.0",
     "duckdb>=1.0",
     "pyyaml>=6.0",
-
-    # Ingestion
     "requests>=2.31",
-    "beautifulsoup4>=4.12",
-
-    # Visualization
     "plotly>=5.18",
-    "matplotlib>=3.8",
-    "seaborn>=0.13",
-
-    # Dashboard
     "streamlit>=1.30",
-
-    # CLI
     "click>=8.1",
 ]
 
 [project.optional-dependencies]
-ml = [
-    "scikit-learn>=1.4",
-    "xgboost>=2.0",
-    "lightgbm>=4.0",
-    "statsmodels>=0.14",
-]
-nlp = [
-    "spacy>=3.7",
-    "nltk>=3.8",
-]
-scraping = [
-    "scrapy>=2.11",
-    "playwright>=1.40",
-]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=4.1",
     "ruff>=0.2",
 ]
-all = ["cricket-analytics[ml,nlp,scraping,dev]"]
 
 [project.scripts]
-cricket = "src.cricket_analytics.cli:cli"
+cricket = "cricket_analytics.cli:cli"
 
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["src*", "ingestion*", "modules*", "dashboard*"]
+where = ["src"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]   # ruff defaults, spelled out; widen later (I, B, UP) once clean
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["src", "dashboard"]   # dashboard: so AppTest can `import ui`, as `streamlit run` does
+
+[tool.setuptools.package-data]
+cricket_analytics = ["reference/*.csv", "reference/*.json"]
