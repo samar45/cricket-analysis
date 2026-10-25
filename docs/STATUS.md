@@ -100,3 +100,8 @@
 - Samar saw "claude" listed as a contributor on GitHub (from Co-Authored-By trailers). From now on: commit locally without any Claude trailer; Claude never runs `git push`. Rule added to CLAUDE.md (Git safety) and to memory.
 - 58 commits on `overhaul` (already pushed to origin) carry the trailer. Removing it means rewriting those commits and a force-push of `overhaul` — Samar's decision (see options in the chat / JOURNEY).
 - Next for Samar: open the GitHub "Compare & pull request" for overhaul → main, check CI, merge.
+
+## 2026-10-25 Option B done locally: Claude trailers stripped from overhaul
+- `git filter-branch --msg-filter` removed "Co-Authored-By: Claude" and "Generated with Claude Code" lines from all 59 commits on `overhaul` (origin/main..overhaul). Files identical to before (empty diff). Backup branch: `backup/overhaul-before-trailer-strip`.
+- Samar must force-push once: `git push --force-with-lease origin overhaul`.
+- Note: 12 older commits already on `main` (from ~7 months ago) also carry the trailer, so GitHub may still list "claude" until those are rewritten too (needs a force-push of main — Samar's call).
