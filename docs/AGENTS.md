@@ -31,3 +31,9 @@ Score out of 10: correct 4, complete 2, honest 2, constraints 1, efficient 1. Sc
 | 2026-10-25 | phase 5 | facts + chart + update CLI | 10 | Lead re-ran Bumrah facts: correct |
 | 2026-10-25 | 6B eval | 50-question set + scorer | 9 | Found the text-tool-call parse bug that lifted accuracy; -1 thin on multi-venue questions |
 | 2026-10-25 | 6A ask | Ollama agent + Ask page | 9 | Lead asked one question: correct. 50% → 80% after fixes; -1 venue not resolved |
+| 2026-10-25 | health A | checks + run log | 10 | Lead re-ran cricket health: 8/8 golden; forced-failure proof |
+| 2026-10-25 | health B | Data health page + RUNBOOK | 9 | Lead opened page in browser: works |
+| 2026-10-25 | CI C | CI hardening | 9 | Found a test leaking to the live DB; CI unrun at the time |
+| 2026-10-25 | logs D | logs, feedback, Ask bug | 9 | Lead re-ran debut question: 1 correct row. -1 stray control chars (self-caught) |
+| 2026-10-25 | innings E | innings_list | 10 | Golden numbers checked |
+| 2026-10-25 | lint F | lint/format/pillow | 10 | Lead re-ran ruff + DB-free tests: clean; didn't force a breaking pillow upgrade |

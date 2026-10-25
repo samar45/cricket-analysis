@@ -88,3 +88,10 @@
 - Eval (50 questions, `evals/`): module 80%, params 85% per param / 64% all-correct, clarification recall 100% but 7 false clarifications, 7 s per question warm (37 s cold load).
 - Lead checked: "Buttler IPL 2022 runs" → 863 in 8 s. Branch pushed to GitHub (origin/overhaul); CI result not checked (gh not logged in).
 - Next options: drop invented competitions, venue resolver, try a smaller tools model (needs OK to pull), finish 172 hand checks.
+
+## 2026-10-25 Data health, logs, CI hardening done (839c3ab, 6808702, 5e5fa3d, 2c29683, 0fb907b, b3642e7)
+- Safe update: lock check, old_data_unchanged, 8 golden numbers, look-alike skipped events, ball-count sanity; every run logged in data/runs/; `cricket health`, `cricket runs`; Data health dashboard page; docs/RUNBOOK.md.
+- Logs: logs/errors.log with error ids shown in the UI; logs/ask.jsonl with 👍/👎 feedback; `cricket ask-log`.
+- innings_list module (debut / last N / best); ask maps "debut" and "last N matches" in Python.
+- CI: ci.yml with ruff lint + format (blocking), DB-free tests (277 pass / 111 skip), pip-audit (pillow 12.3 advisories ignored with TODO: streamlit 1.55 pins pillow<13), gitleaks; SHA-pinned actions; dependabot; pre-commit config. Lint 74 → 0.
+- Pushed. First green CI run pending at time of writing.

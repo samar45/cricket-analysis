@@ -34,7 +34,8 @@ The full plan and goals are in `docs/ROADMAP.md`. Mode: Heavy, Opus leads, 2-4 S
 - Check the raw file before trusting a "the format doesn't have it" fact. Our CLAUDE.md was wrong about fielders.
 
 ## 6. Next (resume here)
-0. **Phase 6 NLQ v1 done (2026-10-25)**: `cricket ask`, eval 80% module accuracy. Next: improve NLQ (see STATUS), Edit Pipeline side, 172 hand checks.
+0. **Data health + logs + CI done (2026-10-25)**: see STATUS; RUNBOOK for other laptops. Next: NLQ improvements via ask-log feedback, 172 hand checks, Edit Pipeline side.
+   Earlier: **Phase 6 NLQ v1 done (2026-10-25)**: `cricket ask`, eval 80% module accuracy. Next: improve NLQ (see STATUS), Edit Pipeline side, 172 hand checks.
    Earlier: **Phases 4 + 5 done (2026-10-25)**: `cricket update`, `cricket facts`, `cricket chart`. Next: Phase 6 NLQ.
    Earlier: **Phase 3.5 + feature engineering done (2026-10-25)**: 18 modules incl. dismissal_profile, chase_vs_set, pressure, home_away; reviewed list 940+ players, partly web-verified. Next: Phase 5 facts/chart CLI, Phase 4 update+CI, Phase 6 NLQ. Unchecked hands: docs/VERIFY_player_list.md.
    Older: **Phase 3.5a-d done.** Next 3.5e (ROADMAP bottom): dynamic tags as filter-aware percentages; keeper + bowling type only from the reviewed list; grow it to ~1,000 bowlers.
