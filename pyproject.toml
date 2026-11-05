@@ -42,4 +42,4 @@ testpaths = ["tests"]
 pythonpath = ["src", "dashboard"]   # dashboard: so AppTest can `import ui`, as `streamlit run` does
 
 [tool.setuptools.package-data]
-cricket_analytics = ["reference/*.csv", "reference/*.json"]
+cricket_analytics = ["reference/*.csv", "reference/*.json", "models/data/*.csv", "models/data/*.json"]

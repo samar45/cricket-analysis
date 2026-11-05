@@ -1,0 +1,762 @@
+grp,era_from,venue,matches,factor
+ipl_male,0,Arun Jaitley Stadium,74,1.0166
+ipl_male,0,Barabati Stadium,7,1.0108
+ipl_male,0,Brabourne Stadium,27,1.0674
+ipl_male,0,Buffalo Park,3,0.9773
+ipl_male,0,De Beers Diamond Oval,3,0.9923
+ipl_male,0,"Dr. D.Y. Patil Sports Academy, Mumbai",36,0.9882
+ipl_male,0,"Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",11,0.9861
+ipl_male,0,Dubai International Cricket Stadium,46,1.0017
+ipl_male,0,Eden Gardens,73,1.0012
+ipl_male,0,Green Park,4,0.9962
+ipl_male,0,"HPCA Stadium, Dharamsala",9,1.0355
+ipl_male,0,"Holkar Cricket Stadium, Indore",9,0.991
+ipl_male,0,JSCA International Stadium Complex,6,0.9673
+ipl_male,0,Kingsmead,14,0.9577
+ipl_male,0,M Chinnaswamy Stadium,73,1.057
+ipl_male,0,"MA Chidambaram Stadium, Chepauk",67,0.9938
+ipl_male,0,"Maharashtra Cricket Association Stadium, Pune",35,1.0231
+ipl_male,0,"Narendra Modi Stadium, Ahmedabad",19,0.9858
+ipl_male,0,Nehru Stadium,4,0.9778
+ipl_male,0,New Wanderers Stadium,8,0.9472
+ipl_male,0,Newlands,6,0.9585
+ipl_male,0,OUTsurance Oval,2,0.971
+ipl_male,0,"Punjab Cricket Association IS Bindra Stadium, Mohali",55,1.0171
+ipl_male,0,"Rajiv Gandhi International Stadium, Uppal",62,0.9749
+ipl_male,0,Saurashtra Cricket Association Stadium,10,1.0167
+ipl_male,0,Sawai Mansingh Stadium,45,0.9708
+ipl_male,0,Shaheed Veer Narayan Singh International Stadium,6,0.9608
+ipl_male,0,Sharjah Cricket Stadium,28,0.9802
+ipl_male,0,Sheikh Zayed Stadium,29,0.9792
+ipl_male,0,St George's Park,7,0.9888
+ipl_male,0,Subrata Roy Sahara Stadium,16,0.9473
+ipl_male,0,SuperSport Park,11,0.9637
+ipl_male,0,"VCA Stadium, Nagpur",3,0.9801
+ipl_male,0,Wankhede Stadium,104,1.021
+ipl_male,0,"Zayed Cricket Stadium, Abu Dhabi",8,0.988
+ipl_male,2023,Arun Jaitley Stadium,26,1.0126
+ipl_male,2023,"Barsapara Cricket Stadium, Guwahati",7,0.9599
+ipl_male,2023,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",27,0.9435
+ipl_male,2023,"Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",4,1.028
+ipl_male,2023,Eden Gardens,26,1.0278
+ipl_male,2023,"HPCA Stadium, Dharamsala",9,1.0607
+ipl_male,2023,M Chinnaswamy Stadium,23,1.0162
+ipl_male,2023,"MA Chidambaram Stadium, Chepauk",31,0.9307
+ipl_male,2023,Maharaja Yadavindra Singh International Cricket Stadium,10,0.9287
+ipl_male,2023,"Maharaja Yadavindra Singh International Cricket Stadium, New Chandigarh",7,1.0654
+ipl_male,2023,"Narendra Modi Stadium, Ahmedabad",33,1.0062
+ipl_male,2023,"Punjab Cricket Association IS Bindra Stadium, Mohali, Chandigarh",4,1.0141
+ipl_male,2023,"Rajiv Gandhi International Stadium, Uppal",26,1.0173
+ipl_male,2023,Sawai Mansingh Stadium,21,1.0158
+ipl_male,2023,Shaheed Veer Narayan Singh International Stadium,2,0.9903
+ipl_male,2023,Wankhede Stadium,27,1.0252
+t20i_male,0,"7he Sevens Stadium, Dubai",3,1.0056
+t20i_male,0,AMI Stadium,3,1.0552
+t20i_male,0,"Achimota Senior Secondary School A Field, Accra",12,0.95
+t20i_male,0,"Achimota Senior Secondary School B Field, Accra",12,0.9808
+t20i_male,0,Adelaide Oval,11,1.0795
+t20i_male,0,Al Amerat Cricket Ground Oman Cricket (Ministry Turf 1),107,0.9945
+t20i_male,0,Al Amerat Cricket Ground Oman Cricket (Ministry Turf 2),25,1.006
+t20i_male,0,Amini Park,4,1.0473
+t20i_male,0,"Amini Park, Port Moresby",11,0.917
+t20i_male,0,"Arnos Vale Ground, Kingstown",2,0.9924
+t20i_male,0,"Arnos Vale Ground, Kingstown, St Vincent",6,0.9762
+t20i_male,0,Arun Jaitley Stadium,12,1.064
+t20i_male,0,"Ballpark Ground, Graz",2,1.019
+t20i_male,0,Barabati Stadium,4,0.9969
+t20i_male,0,Barsapara Cricket Stadium,1,0.9804
+t20i_male,0,"Barsapara Cricket Stadium, Guwahati",3,1.0823
+t20i_male,0,Bay Oval,7,1.1343
+t20i_male,0,"Bay Oval, Mount Maunganui",7,1.0565
+t20i_male,0,Bayer Uerdingen Cricket Ground,32,1.0125
+t20i_male,0,"Bayuemas Oval, Kuala Lumpur",79,0.8545
+t20i_male,0,"Beausejour Stadium, Gros Islet",11,1.025
+t20i_male,0,"Belgrano Athletic Club Ground, Buenos Aires",10,1.0034
+t20i_male,0,Bellerive Oval,3,1.0491
+t20i_male,0,"Bellerive Oval, Hobart",11,1.0237
+t20i_male,0,Bermuda National Stadium,1,0.9943
+t20i_male,0,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",4,1.0297
+t20i_male,0,"Bir Sreshtho Flight Lieutenant Matiur Rahman Stadium, Chattogram",10,1.0157
+t20i_male,0,Boland Park,1,0.9974
+t20i_male,0,"Boland Park, Paarl",1,1.0137
+t20i_male,0,"Botkyrka Cricket Center, Stockholm",16,0.9673
+t20i_male,0,"Botswana Cricket Association Oval 1, Gaborone",16,0.8993
+t20i_male,0,"Botswana Cricket Association Oval 2, Gaborone",9,0.8966
+t20i_male,0,Brabourne Stadium,1,1.0095
+t20i_male,0,Bready,1,1.0125
+t20i_male,0,"Bready Cricket Club, Magheramason",2,1.019
+t20i_male,0,"Bready Cricket Club, Magheramason, Bready",4,1.062
+t20i_male,0,"Brian Lara Stadium, Tarouba, Trinidad",9,1.0016
+t20i_male,0,"Brisbane Cricket Ground, Woolloongabba, Brisbane",4,1.0402
+t20i_male,0,Buffalo Park,2,1.0201
+t20i_male,0,Bulawayo Athletic Club,9,0.9841
+t20i_male,0,Carrara Oval,2,1.0062
+t20i_male,0,"Castle Avenue, Dublin",5,1.0311
+t20i_male,0,"Cazaly's Stadium, Cairns",1,1.0131
+t20i_male,0,Central Broward Regional Park Stadium Turf Ground,8,1.0141
+t20i_male,0,"Central Broward Regional Park Stadium Turf Ground, Lauderhill",10,1.054
+t20i_male,0,"Civil Service Cricket Club, Stormont",7,0.8809
+t20i_male,0,"Civil Service Cricket Club, Stormont, Belfast",7,1.0616
+t20i_male,0,"Clayton Panama, Panama City",6,0.9139
+t20i_male,0,College Field,5,0.934
+t20i_male,0,"College Field, St Peter Port",1,1.0167
+t20i_male,0,"Coolidge Cricket Ground, Antigua",11,1.0203
+t20i_male,0,County Ground,4,1.024
+t20i_male,0,"County Ground, Bristol",5,1.1016
+t20i_male,0,"Daren Sammy National Cricket Stadium, Gros Islet, St Lucia",12,1.1081
+t20i_male,0,"Darren Sammy National Cricket Stadium, St Lucia",1,1.0058
+t20i_male,0,De Beers Diamond Oval,1,1.0264
+t20i_male,0,Desert Springs Cricket Ground,2,1.0101
+t20i_male,0,"Desert Springs Cricket Ground, Almeria",27,0.858
+t20i_male,0,"Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",5,1.0258
+t20i_male,0,Dreux Sport Cricket Club,6,0.9845
+t20i_male,0,Dubai International Cricket Stadium,95,0.9761
+t20i_male,0,Eden Gardens,17,1.0711
+t20i_male,0,Eden Park,19,1.0961
+t20i_male,0,"Eden Park, Auckland",8,1.0957
+t20i_male,0,Edgbaston,7,1.0909
+t20i_male,0,Entebbe Cricket Oval,16,0.9271
+t20i_male,0,Estonian National Cricket and Rugby Field,5,1.0125
+t20i_male,0,Europa Sports Complex,15,0.9802
+t20i_male,0,"Faleata Oval No 2, Apia",12,0.9911
+t20i_male,0,"GB Oval, Szodliget",15,1.093
+t20i_male,0,"GMHBA Stadium, South Geelong, Victoria",6,0.9812
+t20i_male,0,"Gabba, Brisbane",4,1.0345
+t20i_male,0,"Gaddafi Stadium, Lahore",31,1.108
+t20i_male,0,"Gahanga B Ground, Rwanda",11,1.0617
+t20i_male,0,"Gahanga International Cricket Stadium, Rwanda",104,0.9318
+t20i_male,0,Gelephu International Cricket Ground,17,0.9623
+t20i_male,0,"Goldenacre, Edinburgh",7,0.9755
+t20i_male,0,"Grainville, St Saviour",1,0.9877
+t20i_male,0,"Grand Prairie Stadium, Dallas",7,1.008
+t20i_male,0,"Grange Cricket Club Ground, Raeburn Place",3,0.9836
+t20i_male,0,"Grange Cricket Club Ground, Raeburn Place, Edinburgh",18,1.0925
+t20i_male,0,"Grange Cricket Club, Raeburn Place",2,1.0384
+t20i_male,0,Green Park,1,0.998
+t20i_male,0,Greenfield International Stadium,4,1.0858
+t20i_male,0,Gucherre Cricket Ground,3,1.0572
+t20i_male,0,"Guernsey Rovers Athletic Club Ground, Port Soif",13,0.9159
+t20i_male,0,Gymkhana Club Ground,3,0.9846
+t20i_male,0,"Gymkhana Club Ground, Dar-es-Salaam",7,0.8112
+t20i_male,0,"Gymkhana Club Ground, Nairobi",28,0.8862
+t20i_male,0,"HPCA Stadium, Dharamsala",7,1.0162
+t20i_male,0,Hagley Oval,2,1.0201
+t20i_male,0,"Hagley Oval, Christchurch",13,1.0374
+t20i_male,0,Happy Valley Ground,30,0.9648
+t20i_male,0,Happy Valley Ground 2,21,1.0189
+t20i_male,0,Harare Sports Club,66,1.0587
+t20i_male,0,Hazelaarweg,5,1.0222
+t20i_male,0,Headingley,1,1.03
+t20i_male,0,"Holkar Cricket Stadium, Indore",4,1.119
+t20i_male,0,"Hurlingham Club Ground, Buenos Aires",15,0.8881
+t20i_male,0,ICC Academy,18,0.9806
+t20i_male,0,ICC Academy Ground No 2,5,1.012
+t20i_male,0,"ICC Academy, Dubai",21,0.9752
+t20i_male,0,ICC Global Cricket Academy,2,0.9802
+t20i_male,0,"Independence Park, Port Vila",8,0.9782
+t20i_male,0,Indian Association Ground,12,1.0123
+t20i_male,0,"Indian Association Ground, Singapore",3,1.0337
+t20i_male,0,Integrated Polytechnic Regional Centre,26,0.8916
+t20i_male,0,"Ishoj Cricket Club, Vejledalen",5,1.0107
+t20i_male,0,JSCA International Stadium Complex,4,1.082
+t20i_male,0,Jade Stadium,1,1.0258
+t20i_male,0,"Jimmy Powell Oval, Cayman Islands",29,0.9018
+t20i_male,0,Jinja Cricket Ground,1,0.9629
+t20i_male,0,"John Davies Oval, Queenstown",1,1.0191
+t20i_male,0,Kennington Oval,13,1.0602
+t20i_male,0,"Kennington Oval, London",1,1.004
+t20i_male,0,"Kensington Oval, Bridgetown",30,1.0495
+t20i_male,0,Kerava National Cricket Ground,38,0.9357
+t20i_male,0,Khan Shaheb Osman Ali Stadium,2,1.014
+t20i_male,0,King George V Sports Ground,7,0.9536
+t20i_male,0,"King George V Sports Ground, Castel",17,1.0302
+t20i_male,0,Kingsmead,18,1.0742
+t20i_male,0,Kinrara Academy Oval,14,1.0088
+t20i_male,0,Koge Cricket Club,12,0.9826
+t20i_male,0,"Korogi Sports Park, Nisshin",11,0.9705
+t20i_male,0,Kyambogo Cricket Oval,6,0.913
+t20i_male,0,La Manga Club Bottom Ground,9,0.8273
+t20i_male,0,La Manga Club Top Ground,7,1.0072
+t20i_male,0,Lisicji Jarak Cricket Ground,5,1.0821
+t20i_male,0,Lord's,9,1.017
+t20i_male,0,"Los Pinos Polo Club 1, Cundinamarca",5,0.9486
+t20i_male,0,"Los Pinos Polo Club 2, Cundinamarca",1,0.9665
+t20i_male,0,Los Reyes Polo Club,4,0.9152
+t20i_male,0,Lugogo Cricket Oval,3,0.9769
+t20i_male,0,M Chinnaswamy Stadium,8,1.0148
+t20i_male,0,"MA Chidambaram Stadium, Chepauk",8,1.1134
+t20i_male,0,"Maharaja Yadavindra Singh International Cricket Stadium, New Chandigarh",1,1.0379
+t20i_male,0,"Maharashtra Cricket Association Stadium, Pune",4,1.0416
+t20i_male,0,"Mahinda Rajapaksa International Cricket Stadium, Sooriyawewa",6,0.9729
+t20i_male,0,"Malahide, Dublin",1,1.0209
+t20i_male,0,Malkerns Country Club oval,12,1.1132
+t20i_male,0,Mangaung Oval,1,1.027
+t20i_male,0,Manuka Oval,2,1.0057
+t20i_male,0,"Manuka Oval, Canberra",2,0.999
+t20i_male,0,"Maple Leaf North-East Ground, King City",4,1.0896
+t20i_male,0,Maple Leaf North-West Ground,2,0.9824
+t20i_male,0,"Maple Leaf North-West Ground, King City",13,0.946
+t20i_male,0,"Marrara Stadium, Darwin",2,1.0528
+t20i_male,0,Marsa Sports Club,61,1.0707
+t20i_male,0,McLean Park,3,1.0532
+t20i_male,0,"McLean Park, Napier",1,0.9901
+t20i_male,0,"Meersen, Gent",5,0.9415
+t20i_male,0,Melbourne Cricket Ground,17,0.9672
+t20i_male,0,"Mission Road Ground, Mong Kok",1,1.0064
+t20i_male,0,"Mission Road Ground, Mong Kok, Hong Kong",29,1.0715
+t20i_male,0,"Mladost Cricket Ground, Zagreb",9,0.9925
+t20i_male,0,Moara Vlasiei Cricket Ground,2,0.9375
+t20i_male,0,"Moara Vlasiei Cricket Ground, Ilfov County",54,1.0739
+t20i_male,0,Mombasa Sports Club Ground,3,0.9457
+t20i_male,0,Moses Mabhida Stadium,1,1.0107
+t20i_male,0,Mulpani Cricket Ground,13,1.0058
+t20i_male,0,"Namibia Cricket Ground, Windhoek",18,1.0759
+t20i_male,0,Narendra Modi Stadium,5,1.0449
+t20i_male,0,"Narendra Modi Stadium, Ahmedabad",9,1.176
+t20i_male,0,"Nassau County International Cricket Stadium, New York",8,0.8737
+t20i_male,0,"National Cricket Stadium, Grenada",1,1.0348
+t20i_male,0,"National Cricket Stadium, St George's, Grenada",7,1.0678
+t20i_male,0,"National Sports Academy, Sofia",15,1.01
+t20i_male,0,National Stadium,4,1.0772
+t20i_male,0,"National Stadium, Hamilton",3,1.0209
+t20i_male,0,"National Stadium, Karachi",7,1.1058
+t20i_male,0,New Wanderers Stadium,20,1.0853
+t20i_male,0,Newlands,21,1.0295
+t20i_male,0,"Nigeria Cricket Federation Oval 1, Abuja",24,0.8972
+t20i_male,0,"Nigeria Cricket Federation Oval 2, Abuja",5,0.9101
+t20i_male,0,OUTsurance Oval,1,1.0107
+t20i_male,0,Old Trafford,13,1.092
+t20i_male,0,P Sara Oval,1,0.9526
+t20i_male,0,Pallekele International Cricket Stadium,32,1.1026
+t20i_male,0,Perth Stadium,7,0.997
+t20i_male,0,Pierre Werner Cricket Ground,5,1.0267
+t20i_male,0,Prairie View Cricket Complex,7,1.0146
+t20i_male,0,Providence Stadium,12,0.9766
+t20i_male,0,"Punjab Cricket Association IS Bindra Stadium, Mohali",5,1.0604
+t20i_male,0,"Punjab Cricket Association IS Bindra Stadium, Mohali, Chandigarh",1,1.0348
+t20i_male,0,"Queen's Park Oval, Port of Spain",6,0.9484
+t20i_male,0,Queens Sports Club,1,1.0107
+t20i_male,0,"Queens Sports Club, Bulawayo",24,1.0178
+t20i_male,0,R Premadasa Stadium,41,0.9913
+t20i_male,0,"R.Premadasa Stadium, Khettarama",9,1.0454
+t20i_male,0,"Rajiv Gandhi International Stadium, Uppal",3,1.1222
+t20i_male,0,Rangiri Dambulla International Stadium,7,0.9994
+t20i_male,0,Rawalpindi Cricket Stadium,17,1.0391
+t20i_male,0,"Reforma Athletic Club, Naucalpan",5,0.946
+t20i_male,0,Riverside Ground,3,1.0194
+t20i_male,0,"Riverside Ground, Chester-le-Street",3,1.0332
+t20i_male,0,Roma Cricket Ground,12,0.9657
+t20i_male,0,"Royal Brussels Cricket Club Ground, Waterloo",10,1.0151
+t20i_male,0,"Ruaraka Sports Club Ground, Nairobi",5,1.0861
+t20i_male,0,"Sabina Park, Kingston",14,1.0715
+t20i_male,0,Sano International Cricket Ground,33,0.9101
+t20i_male,0,Sano International Cricket Ground 2,5,0.9415
+t20i_male,0,Santarem Cricket Ground,14,1.0166
+t20i_male,0,Sao Fernando Polo and Cricket Club,2,0.9625
+t20i_male,0,Saurashtra Cricket Association Stadium,3,1.0506
+t20i_male,0,"Saurashtra Cricket Association Stadium, Rajkot",3,1.0598
+t20i_male,0,Sawai Mansingh Stadium,1,1.0082
+t20i_male,0,Saxton Oval,2,1.0367
+t20i_male,0,"Saxton Oval, Nelson",2,1.0522
+t20i_male,0,"Scott Page Field, Vinor",20,1.0578
+t20i_male,0,Seddon Park,12,1.103
+t20i_male,0,"Seddon Park, Hamilton",2,1.0378
+t20i_male,0,"Selangor Turf Club, Kuala Lumpur",15,0.8631
+t20i_male,0,Senwes Park,2,1.0306
+t20i_male,0,Shaheed Veer Narayan Singh International Stadium,2,1.045
+t20i_male,0,Sharjah Cricket Stadium,21,1.0378
+t20i_male,0,Sheikh Abu Naser Stadium,4,1.0454
+t20i_male,0,Sheikh Zayed Stadium,37,0.9166
+t20i_male,0,Shere Bangla National Stadium,57,0.9644
+t20i_male,0,"Shrimant Madhavrao Scindia Cricket Stadium, Gwalior",1,0.9859
+t20i_male,0,"Sikh Union Club Ground, Nairobi",11,1.0108
+t20i_male,0,"Simar Cricket Ground, Rome",12,0.9969
+t20i_male,0,"Simonds Stadium, South Geelong",1,1.0137
+t20i_male,0,Singapore National Cricket Ground,32,1.0735
+t20i_male,0,Sinhalese Sports Club Ground,5,1.0542
+t20i_male,0,"Sir Vivian Richards Stadium, North Sound",4,0.9727
+t20i_male,0,"Sir Vivian Richards Stadium, North Sound, Antigua",11,0.9218
+t20i_male,0,Sky Stadium,1,0.9949
+t20i_male,0,"Sky Stadium, Wellington",3,1.0286
+t20i_male,0,"Solvangs Park, Glostrup",2,0.9431
+t20i_male,0,Sophia Gardens,10,1.0231
+t20i_male,0,Sportpark Het Schootsveld,2,1.0495
+t20i_male,0,"Sportpark Het Schootsveld, Deventer",5,0.9633
+t20i_male,0,Sportpark Maarschalkerweerd,1,0.9877
+t20i_male,0,"Sportpark Maarschalkerweerd, Utrecht",4,1.0326
+t20i_male,0,Sportpark Westvliet,3,0.9851
+t20i_male,0,"Sportpark Westvliet, The Hague",9,1.0121
+t20i_male,0,"Sportpark Westvliet, Voorburg",8,0.9974
+t20i_male,0,"St Albans Club, Buenos Aires",15,0.8881
+t20i_male,0,"St George's College Ground, Buenos Aires",8,0.863
+t20i_male,0,St George's Park,3,1.0051
+t20i_male,0,St Georges Quilmes,3,0.8961
+t20i_male,0,Stadium Australia,4,1.0221
+t20i_male,0,"Stars Arena Hofstade, Zemst",7,0.9704
+t20i_male,0,"Stubberudmyra Cricket Ground, Oslo",3,1.0312
+t20i_male,0,Subrata Roy Sahara Stadium,1,1.004
+t20i_male,0,SuperSport Park,15,1.173
+t20i_male,0,"Svanholm Park, Brondby",23,0.9743
+t20i_male,0,Sydney Cricket Ground,15,1.093
+t20i_male,0,Sylhet International Cricket Stadium,7,1.0276
+t20i_male,0,Sylhet Stadium,5,1.0032
+t20i_male,0,"TCA Oval, Blantyre",21,0.9466
+t20i_male,0,"Tafawa Balewa Square Cricket Oval, Lagos",25,0.844
+t20i_male,0,"Takashinga Sports Club, Highfield, Harare",10,0.9659
+t20i_male,0,Terdthai Cricket Ground,8,0.9472
+t20i_male,0,"Terdthai Cricket Ground, Bangkok",43,0.9101
+t20i_male,0,The Rose Bowl,15,1.1563
+t20i_male,0,"The Village, Malahide",10,1.044
+t20i_male,0,"The Village, Malahide, Dublin",4,1.0658
+t20i_male,0,The Wanderers Stadium,3,1.0695
+t20i_male,0,"The Wanderers Stadium, Johannesburg",5,1.1242
+t20i_male,0,Tikkurila Cricket Ground,29,0.9561
+t20i_male,0,"Titwood, Glasgow",6,1.0298
+t20i_male,0,Tolerance Oval,9,0.9257
+t20i_male,0,Tony Ireland Stadium,1,0.9792
+t20i_male,0,Trent Bridge,14,1.0842
+t20i_male,0,Tribhuvan University International Cricket Ground,4,1.0041
+t20i_male,0,"Tribhuvan University International Cricket Ground, Kirtipur",29,1.1167
+t20i_male,0,"UKM-YSD Cricket Oval, Bangi",17,0.9467
+t20i_male,0,Udayana Cricket Ground,71,0.9175
+t20i_male,0,United Cricket Club Ground,4,1.043
+t20i_male,0,"United Cricket Club Ground, Windhoek",15,0.9472
+t20i_male,0,University Oval,1,1.0415
+t20i_male,0,"University Oval, Dunedin",3,1.0276
+t20i_male,0,University of Dar-es-Salaam Ground,7,0.7713
+t20i_male,0,University of Doha for Science and Technology,13,1.0264
+t20i_male,0,University of Lagos Cricket Oval,8,0.9265
+t20i_male,0,"VCA Stadium, Nagpur",7,1.0131
+t20i_male,0,VRA Ground,4,1.0416
+t20i_male,0,"Vassil Levski National Sports Academy, Sofia",7,1.1469
+t20i_male,0,"Velden Cricket Ground, Latschach",8,1.0469
+t20i_male,0,"Vidarbha Cricket Association Stadium, Jamtha, Nagpur",1,1.053
+t20i_male,0,"WACA Ground, Perth",2,1.0101
+t20i_male,0,Wanderers,1,0.9901
+t20i_male,0,Wanderers Cricket Ground,2,0.9913
+t20i_male,0,"Wanderers Cricket Ground, Windhoek",19,1.0055
+t20i_male,0,Wankhede Stadium,16,1.1617
+t20i_male,0,"Warner Park, Basseterre",6,1.0444
+t20i_male,0,"Warner Park, St Kitts",3,0.9693
+t20i_male,0,"West End Park International Cricket Stadium, Doha",47,0.9841
+t20i_male,0,Westpac Stadium,13,1.0515
+t20i_male,0,"White Hill Field, Sandys Parish",19,0.9264
+t20i_male,0,"Willowmoore Park, Benoni",11,0.9753
+t20i_male,0,"Windsor Park, Roseau",1,1.0088
+t20i_male,0,"Windsor Park, Roseau, Dominica",1,1.0258
+t20i_male,0,"YSD-UKM Cricket Oval, Bangi",21,0.8248
+t20i_male,0,"Yeonhui Cricket Ground, Incheon",16,0.9
+t20i_male,0,Zahur Ahmed Chowdhury Stadium,15,0.9727
+t20i_male,0,"Zahur Ahmed Chowdhury Stadium, Chattogram",5,0.9801
+t20i_male,0,"Zayed Cricket Stadium, Abu Dhabi",19,0.9901
+t20i_male,0,Zhejiang University of Technology Cricket Field,5,1.0604
+t20i_female,0,"7he Sevens Stadium, Dubai",1,0.9691
+t20i_female,0,"Achimota Senior Secondary School A Field, Accra",7,0.8955
+t20i_female,0,"Achimota Senior Secondary School B Field, Accra",2,0.9845
+t20i_female,0,Adelaide Oval,4,1.0844
+t20i_female,0,Al Amerat Cricket Ground Oman Cricket (Ministry Turf 1),26,1.0845
+t20i_female,0,Al Amerat Cricket Ground Oman Cricket (Ministry Turf 2),18,1.1201
+t20i_female,0,"Albert Park 1, Suva",12,1.0969
+t20i_female,0,"Albert Park 2, Suva",9,0.9776
+t20i_female,0,Albertslund Cricket Club,6,1.0006
+t20i_female,0,Allan Border Field,4,1.0331
+t20i_female,0,"Allan Border Field, Brisbane",2,1.0673
+t20i_female,0,"Amini Park, Port Moresby",8,0.9326
+t20i_female,0,"Arnos Vale Ground, Kingstown, St Vincent",2,1.0618
+t20i_female,0,Arun Jaitley Stadium,5,0.9837
+t20i_female,0,Arundel Castle Cricket Club Ground,1,1.0147
+t20i_female,0,Asian Institute of Technology Ground,12,0.8903
+t20i_female,0,"Asian Institute of Technology Ground, Bangkok",14,0.8767
+t20i_female,0,"Banks Field, Vinor",6,1.0126
+t20i_female,0,Barsapara Cricket Stadium,3,1.02
+t20i_female,0,Basin Reserve,2,1.059
+t20i_female,0,"Basin Reserve, Wellington",2,1.0513
+t20i_female,0,Bay Oval,3,1.0701
+t20i_female,0,"Bay Oval, Mount Maunganui",2,1.1077
+t20i_female,0,Bayer Uerdingen Cricket Ground,9,0.9292
+t20i_female,0,"Bayuemas Oval, Kuala Lumpur",53,0.8808
+t20i_female,0,"Beausejour Stadium, Gros Islet",4,1.0163
+t20i_female,0,"Bellerive Oval, Hobart",2,1.013
+t20i_female,0,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",3,1.0264
+t20i_female,0,Boland Bank Park,1,0.9828
+t20i_female,0,Boland Park,1,1.0208
+t20i_female,0,"Boland Park, Paarl",7,1.0916
+t20i_female,0,Botswana Cricket Association Oval 1,8,0.9372
+t20i_female,0,"Botswana Cricket Association Oval 1, Gaborone",60,0.8864
+t20i_female,0,Botswana Cricket Association Oval 2,4,0.9429
+t20i_female,0,"Botswana Cricket Association Oval 2, Gaborone",42,1.0062
+t20i_female,0,Brabourne Stadium,10,1.1907
+t20i_female,0,"Bready Cricket Club, Magheramason, Bready",3,1.0103
+t20i_female,0,"Brian Lara Stadium, Tarouba",3,1.0206
+t20i_female,0,Buffalo Park,1,1.017
+t20i_female,0,"Buffalo Park, East London",9,1.0379
+t20i_female,0,Carrara Oval,2,1.0193
+t20i_female,0,"Castle Avenue, Dublin",5,1.1252
+t20i_female,0,Central Broward Regional Park Stadium Turf Ground,2,0.9928
+t20i_female,0,"Centre for Cricket Development Ground, Windhoek",10,0.9016
+t20i_female,0,Chilaw Marians Cricket Club Ground,1,1.0276
+t20i_female,0,City Oval,2,1.0186
+t20i_female,0,"Civil Service Cricket Club, Stormont, Belfast",4,0.9871
+t20i_female,0,"Clontarf Cricket Club Ground, Dublin",3,1.0682
+t20i_female,0,Colombo Cricket Club Ground,1,1.0086
+t20i_female,0,Colts Cricket Club Ground,1,0.9668
+t20i_female,0,Coolidge Cricket Ground,1,1.0261
+t20i_female,0,County Ground,22,1.1511
+t20i_female,0,"County Ground, Bristol",9,1.0946
+t20i_female,0,"County Ground, Chelmsford",6,1.0867
+t20i_female,0,"County Ground, Derby",4,1.0546
+t20i_female,0,"County Ground, Hove",5,0.977
+t20i_female,0,"County Ground, New Road",1,1.0215
+t20i_female,0,"County Ground, Northampton",1,1.0185
+t20i_female,0,"Daren Sammy National Cricket Stadium, Gros Islet",7,0.981
+t20i_female,0,"Daren Sammy National Cricket Stadium, Gros Islet, St Lucia",3,0.9885
+t20i_female,0,"Darren Sammy National Cricket Stadium, St Lucia",2,1.0339
+t20i_female,0,"Desert Springs Cricket Ground, Almeria",14,0.994
+t20i_female,0,"Diamond Oval, Kimberley",1,0.9805
+t20i_female,0,"Dr DY Patil Sports Academy, Navi Mumbai",3,1.1363
+t20i_female,0,"Dr. D.Y. Patil Sports Academy, Mumbai",5,1.0996
+t20i_female,0,"Dr. Y.S. Rajasekhara Reddy ACA-VDCA Cricket Stadium, Visakhapatnam",2,1.0068
+t20i_female,0,Dubai International Cricket Stadium,32,1.008
+t20i_female,0,Eden Gardens,1,1.0215
+t20i_female,0,Eden Park,1,1.0117
+t20i_female,0,"Eden Park, Auckland",2,1.0325
+t20i_female,0,Edgbaston,24,1.1124
+t20i_female,0,"Ekeberg Cricket Ground 1, Oslo",2,1.0123
+t20i_female,0,"Ekeberg Cricket Ground 2, Oslo",1,0.9577
+t20i_female,0,Entebbe Cricket Oval,22,0.8706
+t20i_female,0,Estonian National Cricket and Rugby Field,7,0.8925
+t20i_female,0,Europa Sports Complex,5,0.9859
+t20i_female,0,"FB Fields, St Clement",5,1.0054
+t20i_female,0,Forthill,6,0.9311
+t20i_female,0,"Gaddafi Stadium, Lahore",3,1.0444
+t20i_female,0,"Gahanga B Ground, Rwanda",44,0.888
+t20i_female,0,"Gahanga International Cricket Stadium, Rwanda",64,0.9026
+t20i_female,0,Galle International Stadium,10,0.9601
+t20i_female,0,Gelephu International Cricket Ground,12,0.9906
+t20i_female,0,"GelsenTrabPark, Gelsenkirchen",3,1.011
+t20i_female,0,"Grainville, St Saviour",4,1.0969
+t20i_female,0,"Grainville, St Saviour, Jersey",8,0.9618
+t20i_female,0,"Grand Prairie Stadium, Dallas",3,1.0071
+t20i_female,0,"Grange Cricket Club Ground, Raeburn Place, Edinburgh",5,1.0684
+t20i_female,0,"Great Barrier Reef Arena, Mackay",2,1.0318
+t20i_female,0,Greenfield International Stadium,3,1.0958
+t20i_female,0,"Ground 1, Independence Park",6,0.8648
+t20i_female,0,"Ground 2, Independence Park",4,0.9149
+t20i_female,0,Guanggong International Cricket Stadium,4,0.9041
+t20i_female,0,Guttsta Wicked Cricket Club,1,0.9486
+t20i_female,0,"Gymkhana Club Ground, Dar-es-Salaam",2,0.9754
+t20i_female,0,"Gymkhana Club Ground, Nairobi",6,0.9838
+t20i_female,0,"HPCA Stadium, Dharamsala",2,0.9712
+t20i_female,0,"Hagley Oval, Christchurch",4,1.0557
+t20i_female,0,Happy Valley Ground,7,0.9073
+t20i_female,0,Happy Valley Ground 2,4,0.9358
+t20i_female,0,Harare Sports Club,8,1.089
+t20i_female,0,Haslegrave Ground,4,1.0187
+t20i_female,0,"Hazelaarweg, Rotterdam",12,1.1258
+t20i_female,0,Headingley,6,1.1547
+t20i_female,0,"High Performance Oval, Windhoek",23,1.0233
+t20i_female,0,Hong Kong Cricket Club,8,0.9298
+t20i_female,0,"ICC Academy Ground No 2, Dubai",5,0.953
+t20i_female,0,"ICC Academy, Dubai",11,0.9796
+t20i_female,0,Indian Association Ground,3,0.9987
+t20i_female,0,"Indian Association Ground, Singapore",5,0.9558
+t20i_female,0,Integrated Polytechnic Regional Centre,6,1.0366
+t20i_female,0,"Ishoj Cricket Club, Vejledalen",5,1.0143
+t20i_female,0,"John Davies Oval, Queenstown",2,1.0471
+t20i_female,0,Johor Cricket Academy Oval,2,0.9768
+t20i_female,0,Junction Oval,9,1.0392
+t20i_female,0,Kaizuka Cricket Ground,4,0.9674
+t20i_female,0,Kennington Oval,1,1.0329
+t20i_female,0,"Kennington Oval, London",6,1.104
+t20i_female,0,"Kensington Oval, Bridgetown",8,0.9558
+t20i_female,0,Kerava National Cricket Ground,6,0.9374
+t20i_female,0,Kerrydale Oval,4,0.9913
+t20i_female,0,Kingsmead,5,1.0489
+t20i_female,0,Kinrara Academy Oval,15,1.0298
+t20i_female,0,"Kinrara Academy Oval, Kuala Lumpur",20,0.9777
+t20i_female,0,Koge Cricket Club,3,0.9627
+t20i_female,0,Koge Cricket Club 2,2,1.0388
+t20i_female,0,"Kolej Tuanku Jaafar Cricket Oval, Mantin",6,0.9875
+t20i_female,0,"Korogi Sports Park, Nisshin",6,1.1212
+t20i_female,0,LC de Villiers Oval,1,0.9995
+t20i_female,0,La Manga Club Bottom Ground,5,0.8672
+t20i_female,0,La Manga Club Top Ground,9,0.9442
+t20i_female,0,Lalabhai Contractor Stadium,3,1.0283
+t20i_female,0,Las Caballerizas,1,0.9927
+t20i_female,0,Lisicji Jarak Cricket Ground,10,0.9588
+t20i_female,0,Lochlands,6,0.9154
+t20i_female,0,"Lord's, London",5,1.1001
+t20i_female,0,Los Reyes Polo Club,2,0.9218
+t20i_female,0,"Lugogo Cricket Oval, Kampala",5,0.9246
+t20i_female,0,M Chinnaswamy Stadium,4,1.0301
+t20i_female,0,"MA Chidambaram Stadium, Chepauk",7,1.0823
+t20i_female,0,"Mahinda Rajapaksa International Cricket Stadium, Sooriyawewa, Hambantota",2,1.0249
+t20i_female,0,"Malek Cricket Ground, Ajman",4,0.9722
+t20i_female,0,Mangaung Oval,1,1.0375
+t20i_female,0,Manuka Oval,11,1.1452
+t20i_female,0,"Manuka Oval, Canberra",3,1.0598
+t20i_female,0,"Marina Ground, Corfu",12,0.9556
+t20i_female,0,Marsa Sports Club,6,0.9603
+t20i_female,0,McLean Park,1,1.0071
+t20i_female,0,Melbourne Cricket Ground,4,1.0617
+t20i_female,0,Mercantile Cricket Association Ground,1,1.0094
+t20i_female,0,"Mission Road Ground, Mong Kok, Hong Kong",15,0.9526
+t20i_female,0,"Moara Vlasiei Cricket Ground, Ilfov County",27,0.9418
+t20i_female,0,Morodok Techo National Stadium,4,0.8361
+t20i_female,0,Mulpani Cricket Ground,14,1.0605
+t20i_female,0,Multan Cricket Stadium,3,1.0688
+t20i_female,0,"N'Du Stadium, Noumea, New Caledonia",6,0.9149
+t20i_female,0,"Namibia Cricket Ground, Windhoek",16,0.9966
+t20i_female,0,"National Cricket Stadium, St George's",1,0.9653
+t20i_female,0,"National Cricket Stadium, St George's, Grenada",3,0.9422
+t20i_female,0,"National Stadium, Karachi",11,1.142
+t20i_female,0,"New Farnley CC, Leeds",3,0.9602
+t20i_female,0,New Wanderers Stadium,1,1.0086
+t20i_female,0,Newlands,16,1.1644
+t20i_female,0,Nondescripts Cricket Club Ground,2,0.9531
+t20i_female,0,North Sydney Oval,6,1.1129
+t20i_female,0,"North Sydney Oval, Sydney",3,1.0759
+t20i_female,0,Old Hararians,7,1.0174
+t20i_female,0,Old Trafford,7,1.1064
+t20i_female,0,P Sara Oval,6,1.0272
+t20i_female,0,"Pembroke Cricket Club, Sandymount",1,1.0238
+t20i_female,0,"Pembroke Cricket Club, Sandymount, Dublin",8,1.0867
+t20i_female,0,Pierre Werner Cricket Ground,6,1.093
+t20i_female,0,"Pocos Oval, Pocos de Caldas",2,0.9434
+t20i_female,0,Pokhara Rangasala,4,0.9107
+t20i_female,0,Providence Stadium,13,1.0565
+t20i_female,0,Pukekura Park,1,1.0109
+t20i_female,0,"Punjab Cricket Association IS Bindra Stadium, Mohali",3,1.0392
+t20i_female,0,"Queens Sports Club, Bulawayo",7,1.1737
+t20i_female,0,R Premadasa Stadium,8,0.9679
+t20i_female,0,Rangiri Dambulla International Stadium,21,1.0966
+t20i_female,0,"Reforma Athletic Club, Naucalpan",5,0.85
+t20i_female,0,Riverside Ground,2,0.9462
+t20i_female,0,"Riverside Ground, Chester-le-Street",1,1.0094
+t20i_female,0,Roma Cricket Ground,8,1.018
+t20i_female,0,Royal Chiangmai Golf Club,3,0.9801
+t20i_female,0,Royal Selangor Club,6,0.9865
+t20i_female,0,"Royal Selangor Club, Kuala Lumpur",6,0.9797
+t20i_female,0,SSC Karlsruhe,5,0.9831
+t20i_female,0,San Albano,2,1.2742
+t20i_female,0,Sano International Cricket Ground,15,0.8493
+t20i_female,0,Sano International Cricket Ground 2,1,0.9775
+t20i_female,0,Santarem Cricket Ground,3,1.0065
+t20i_female,0,Saxton Oval,2,1.0005
+t20i_female,0,"Saxton Oval, Nelson",2,1.0451
+t20i_female,0,"Scott Page Field, Vinor",22,0.9908
+t20i_female,0,Seddon Park,5,1.065
+t20i_female,0,"Seddon Park, Hamilton",4,1.0957
+t20i_female,0,Seebarn Cricket Centre,4,1.0557
+t20i_female,0,"Seebarn Cricket Centre, Lower Austria",1,1.0345
+t20i_female,0,"Selangor Turf Club, Kuala Lumpur",20,0.7852
+t20i_female,0,Senwes Park,7,0.9977
+t20i_female,0,"Senwes Park, Potchefstroom",2,1.0541
+t20i_female,0,Sharjah Cricket Stadium,19,0.9826
+t20i_female,0,Sheikh Zayed Stadium,9,0.9855
+t20i_female,0,Shere Bangla National Stadium,9,1.0097
+t20i_female,0,"Sikh Union Club Ground, Nairobi",5,0.9753
+t20i_female,0,"Simar Cricket Ground, Rome",7,1.0002
+t20i_female,0,Singapore National Cricket Ground,19,0.9509
+t20i_female,0,Sinhalese Sports Club Ground,5,0.9932
+t20i_female,0,"Sir Vivian Richards Stadium, North Sound",3,1.0
+t20i_female,0,"Sir Vivian Richards Stadium, North Sound, Antigua",11,0.9737
+t20i_female,0,Sky Stadium,1,1.0063
+t20i_female,0,"Sky Stadium, Wellington",2,1.0694
+t20i_female,0,Sophia Gardens,1,0.9934
+t20i_female,0,Southend Club Cricket Stadium,5,1.0455
+t20i_female,0,"Southend Club Cricket Stadium, Karachi",3,0.9717
+t20i_female,0,"Sportpark Harga, Schiedam",3,0.9936
+t20i_female,0,Sportpark Het Schootsveld,6,1.0789
+t20i_female,0,Sportpark Maarschalkerweerd,8,0.8834
+t20i_female,0,"Sportpark Maarschalkerweerd, Utrecht",15,1.0251
+t20i_female,0,"Sportpark Westvliet, Voorburg",2,0.9587
+t20i_female,0,"St Albans Club, Buenos Aires",10,0.8961
+t20i_female,0,"St George's College Ground, Buenos Aires",4,0.9083
+t20i_female,0,St George's Park,4,1.0092
+t20i_female,0,St Lawrence Ground,1,1.0132
+t20i_female,0,"St Lawrence Ground, Canterbury",3,1.063
+t20i_female,0,Stadium Australia,1,0.9858
+t20i_female,0,"Stars Arena Hofstade, Zemst",4,0.9853
+t20i_female,0,SuperSport Park,2,1.0332
+t20i_female,0,Sydney Cricket Ground,2,1.0659
+t20i_female,0,Sydney Parade,2,1.0736
+t20i_female,0,Sydney Showground Stadium,4,1.0492
+t20i_female,0,Sylhet International Cricket Stadium,17,1.0161
+t20i_female,0,"Sylhet International Cricket Stadium, Academy Ground",7,0.9722
+t20i_female,0,Sylhet Stadium,23,1.0534
+t20i_female,0,Tafawa Balewa Square (TBS) Cricket Oval,1,1.0291
+t20i_female,0,"Tafawa Balewa Square Cricket Oval, Lagos",4,1.036
+t20i_female,0,Takashinga Sports Club,3,0.982
+t20i_female,0,"Takashinga Sports Club, Highfield, Harare",6,1.01
+t20i_female,0,Terdthai Cricket Ground,9,0.8923
+t20i_female,0,"Terdthai Cricket Ground, Bangkok",45,0.9729
+t20i_female,0,The Cooper Associates County Ground,4,1.1907
+t20i_female,0,"The Cooper Associates County Ground, Taunton",2,1.059
+t20i_female,0,The Rose Bowl,9,1.1307
+t20i_female,0,"The Village, Malahide, Dublin",3,1.0219
+t20i_female,0,The Wanderers Stadium,1,1.0101
+t20i_female,0,"The Wanderers Stadium, Johannesburg",2,1.0959
+t20i_female,0,"Three Ws Oval, Cave Hill, Barbados",3,1.054
+t20i_female,0,Tikkurila Cricket Ground,1,0.9357
+t20i_female,0,"Tolerance Oval, Abu Dhabi",20,1.0206
+t20i_female,0,Trent Bridge,2,1.0806
+t20i_female,0,"Tribhuvan University International Cricket Ground, Kirtipur",28,1.0474
+t20i_female,0,Turf City B Cricket Ground,1,0.9478
+t20i_female,0,"UKM-YSD Cricket Oval, Bangi",15,0.8239
+t20i_female,0,Udayana Cricket Ground,15,0.9416
+t20i_female,0,United Cricket Club Ground,5,0.9976
+t20i_female,0,"United Cricket Club Ground, Windhoek",9,0.9583
+t20i_female,0,"University Oval, Dunedin",4,1.0557
+t20i_female,0,University of Dar-es-Salaam Ground,1,0.9661
+t20i_female,0,"VCA Stadium, Nagpur",2,0.9761
+t20i_female,0,VRA Ground,10,0.9229
+t20i_female,0,"VRA Ground, Amstelveen",5,1.011
+t20i_female,0,Vanuatu Cricket Ground,9,0.938
+t20i_female,0,Vanuatu Cricket Ground (Oval 2),8,0.8592
+t20i_female,0,"Vassil Levski National Sports Academy, Sofia",11,1.1205
+t20i_female,0,W.A.C.A. Ground,5,0.9965
+t20i_female,0,"Wanderers Cricket Ground, Windhoek",9,1.0084
+t20i_female,0,Wankhede Stadium,4,1.0402
+t20i_female,0,"Warner Park, Basseterre",3,1.0579
+t20i_female,0,West End Park International Cricket Stadium,4,0.922
+t20i_female,0,"West End Park International Cricket Stadium, Doha",12,1.0654
+t20i_female,0,Westpac Stadium,4,0.9877
+t20i_female,0,Willowmoore Park,2,1.0402
+t20i_female,0,"Willowmoore Park, Benoni",7,1.1669
+t20i_female,0,"Woodley Cricket Field, Los Angeles",12,0.9495
+t20i_female,0,YMCA Cricket Club,9,1.0502
+t20i_female,0,"YSD-UKM Cricket Oval, Bangi",25,0.9732
+t20i_female,0,Yeonhui Cricket Ground,5,0.9497
+t20i_female,0,"Yeonhui Cricket Ground, Incheon",4,0.9704
+t20i_female,0,"Zahur Ahmed Chowdhury Stadium, Chattogram",3,0.984
+t20i_female,0,"Zayed Cricket Stadium, Abu Dhabi",13,1.0016
+t20i_female,0,Zhejiang University of Technology Cricket Field,12,0.7873
+bbl_male,0,Adelaide Oval,80,1.0267
+bbl_male,0,Aurora Stadium,5,0.9838
+bbl_male,0,"Aurora Stadium, Launceston",1,0.9896
+bbl_male,0,Bellerive Oval,42,1.0349
+bbl_male,0,"Bellerive Oval, Hobart",25,1.0203
+bbl_male,0,"Brisbane Cricket Ground, Woolloongabba, Brisbane",23,1.0807
+bbl_male,0,Carrara Oval,14,1.0003
+bbl_male,0,"Cazaly's Stadium, Cairns",1,1.0018
+bbl_male,0,Docklands Stadium,72,0.9913
+bbl_male,0,"GMHBA Stadium, South Geelong, Victoria",8,0.9537
+bbl_male,0,"Gabba, Brisbane",41,1.0072
+bbl_male,0,Geelong Cricket Ground,1,1.0164
+bbl_male,0,International Sports Stadium,1,1.0074
+bbl_male,0,"International Sports Stadium, Coffs Harbour",3,0.9905
+bbl_male,0,"Junction Oval, Melbourne",2,1.0428
+bbl_male,0,"Lavington Sports Oval, Albury",2,1.0382
+bbl_male,0,Manuka Oval,14,1.0219
+bbl_male,0,"Manuka Oval, Canberra",10,0.9856
+bbl_male,0,Melbourne Cricket Ground,73,0.9717
+bbl_male,0,Perth Stadium,47,0.9967
+bbl_male,0,"Simonds Stadium, South Geelong, Victoria",4,0.9834
+bbl_male,0,Stadium Australia,12,0.9672
+bbl_male,0,Sydney Cricket Ground,60,0.9835
+bbl_male,0,Sydney Showground Stadium,33,0.98
+bbl_male,0,Ted Summerton Reserve,2,1.0024
+bbl_male,0,Traeger Park,2,0.9568
+bbl_male,0,"University of Tasmania Stadium, Launceston",3,0.9711
+bbl_male,0,W.A.C.A. Ground,5,0.9937
+bbl_male,0,"WACA Ground, Perth",28,0.9747
+psl_male,0,Dubai International Cricket Stadium,58,0.8913
+psl_male,0,"Gaddafi Stadium, Lahore",81,1.0411
+psl_male,0,Multan Cricket Stadium,16,1.0052
+psl_male,0,National Stadium,35,0.9871
+psl_male,0,"National Stadium, Karachi",62,1.0338
+psl_male,0,Rawalpindi Cricket Stadium,31,1.1406
+psl_male,0,Sharjah Cricket Stadium,36,0.9199
+psl_male,0,Sheikh Zayed Stadium,24,0.9877
+cpl_male,0,"Arnos Vale Ground, Kingstown, St Vincent",2,1.0181
+cpl_male,0,"Brian Lara Stadium, Tarouba",28,0.9173
+cpl_male,0,"Brian Lara Stadium, Tarouba, Trinidad",15,1.0174
+cpl_male,0,Central Broward Regional Park Stadium Turf Ground,13,1.0108
+cpl_male,0,"Daren Sammy National Cricket Stadium, Gros Islet",23,1.0063
+cpl_male,0,"Daren Sammy National Cricket Stadium, Gros Islet, St Lucia",20,1.0362
+cpl_male,0,"Kensington Oval, Bridgetown",48,0.9754
+cpl_male,0,"National Cricket Stadium, St George's",2,0.9691
+cpl_male,0,Providence Stadium,71,0.9766
+cpl_male,0,"Queen's Park Oval, Port of Spain",51,0.9798
+cpl_male,0,"Sabina Park, Kingston",27,1.0293
+cpl_male,0,"Sir Vivian Richards Stadium, North Sound",5,0.9515
+cpl_male,0,"Sir Vivian Richards Stadium, North Sound, Antigua",13,1.001
+cpl_male,0,"Warner Park, Basseterre",85,1.0577
+sa20_male,0,"Boland Park, Paarl",20,0.9642
+sa20_male,0,Kingsmead,16,1.0012
+sa20_male,0,Newlands,21,0.9903
+sa20_male,0,St George's Park,20,0.9742
+sa20_male,0,SuperSport Park,21,1.0684
+sa20_male,0,"The Wanderers Stadium, Johannesburg",22,0.9999
+hundred_male,0,Edgbaston,22,1.0221
+hundred_male,0,Headingley,21,1.109
+hundred_male,0,"Kennington Oval, London",27,1.0141
+hundred_male,0,"Lord's, London",28,0.9819
+hundred_male,0,Old Trafford,21,0.9883
+hundred_male,0,Sophia Gardens,22,0.9482
+hundred_male,0,The Rose Bowl,25,0.9697
+hundred_male,0,Trent Bridge,24,0.9753
+blast_male,0,Aigburth,2,0.9674
+blast_male,0,Arundel Castle Cricket Club Ground,3,1.0181
+blast_male,0,Castle Park Cricket Ground,1,1.0219
+blast_male,0,College Ground,10,0.9954
+blast_male,0,"College Ground, Cheltenham",2,1.0055
+blast_male,0,County Ground,177,1.004
+blast_male,0,"County Ground, Bristol",4,1.0115
+blast_male,0,"County Ground, Chelmsford",4,0.95
+blast_male,0,"County Ground, Derby",5,0.9864
+blast_male,0,"County Ground, Hove",12,0.9702
+blast_male,0,"County Ground, New Road",43,1.0147
+blast_male,0,"County Ground, Northampton",6,1.0227
+blast_male,0,Edgbaston,64,0.996
+blast_male,0,Grace Road,37,0.9654
+blast_male,0,"Grace Road, Leicester",7,1.0261
+blast_male,0,Headingley,45,1.0584
+blast_male,0,Kennington Oval,45,0.9985
+blast_male,0,"Kennington Oval, London",5,0.9563
+blast_male,0,Kent County Cricket Ground,1,0.9868
+blast_male,0,Lord's,27,1.0075
+blast_male,0,"Lord's, London",4,1.0234
+blast_male,0,Merchant Taylors' School Ground,2,1.0099
+blast_male,0,Nevill Ground,2,1.0109
+blast_male,0,Old Deer Park,7,0.9968
+blast_male,0,Old Trafford,42,0.9798
+blast_male,0,Queen's Park,6,0.9838
+blast_male,0,"Radlett Cricket Club, Radlett",2,1.0238
+blast_male,0,Riverside Ground,42,0.959
+blast_male,0,"Riverside Ground, Chester-le-Street",7,1.0149
+blast_male,0,Sophia Gardens,41,0.9503
+blast_male,0,St Lawrence Ground,35,1.0256
+blast_male,0,"St Lawrence Ground, Canterbury",7,1.0268
+blast_male,0,The Cooper Associates County Ground,30,1.0514
+blast_male,0,"The Cooper Associates County Ground, Taunton",6,1.0387
+blast_male,0,The Kent County Cricket Ground,6,1.0142
+blast_male,0,The Rose Bowl,46,0.9678
+blast_male,0,Trent Bridge,52,1.0036
+blast_male,0,Uxbridge Cricket Club Ground,6,1.0201
+blast_male,2022,"College Ground, Cheltenham",3,1.0178
+blast_male,2022,"County Ground, Bristol",26,0.9541
+blast_male,2022,"County Ground, Chelmsford",35,1.0388
+blast_male,2022,"County Ground, Derby",23,1.0568
+blast_male,2022,"County Ground, Hove",32,1.0115
+blast_male,2022,"County Ground, New Road",30,0.976
+blast_male,2022,"County Ground, Northampton",34,1.0202
+blast_male,2022,Edgbaston,49,0.9937
+blast_male,2022,"Grace Road, Leicester",34,0.968
+blast_male,2022,Headingley,33,1.0641
+blast_male,2022,"Kennington Oval, London",32,1.0025
+blast_male,2022,"Lord's, London",16,0.9906
+blast_male,2022,"Merchant Taylors' School Ground, Northwood",8,1.0056
+blast_male,2022,"Old Deer Park, Richmond",1,1.0211
+blast_male,2022,Old Trafford,29,0.9722
+blast_male,2022,"Queen's Park, Chesterfield",4,1.0198
+blast_male,2022,"Radlett Cricket Club, Radlett",4,0.998
+blast_male,2022,"Riverside Ground, Chester-le-Street",30,0.9624
+blast_male,2022,Sophia Gardens,31,0.9881
+blast_male,2022,"St Lawrence Ground, Canterbury",31,0.9746
+blast_male,2022,"Stanley Park, Blackpool",3,1.0113
+blast_male,2022,"The Cooper Associates County Ground, Taunton",35,1.0497
+blast_male,2022,The Rose Bowl,33,0.9672
+blast_male,2022,Trent Bridge,32,0.9854
+blast_male,2022,York Cricket Club,1,0.9748

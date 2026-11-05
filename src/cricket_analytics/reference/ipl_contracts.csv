@@ -1,0 +1,279 @@
+team,player,price_cr,how_acquired,year_acquired,overseas,capped,role_listed,status_2027,source_url,source_date,cricsheet_name,match_basis,withdrawn_2026,notes
+CSK,Matthew Short,1.5,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,MW Short,initials,false,
+CSK,MS Dhoni,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,MS Dhoni,exact,false,
+CSK,Gurjapneet Singh,2.2,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,Gurjapneet Singh,exact,false,
+CSK,Kuldip Yadav,0.30,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,,ambiguous,false,replaced Khaleel Ahmed
+CSK,Sanju Samson,18,trade,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,SV Samson,initials,false,from RR (Nov 2025) in swap for Jadeja and Curran
+CSK,Dewald Brevis,2.2,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,D Brevis,initials,false,
+CSK,Prashant Veer,14.2,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,PR Veer,initials,false,
+CSK,Dian Forrester,0.75,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,D Forrester,initials_nonIPL,false,replaced Jamie Overton
+CSK,Noor Ahmad,10,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,Noor Ahmad,exact,false,
+CSK,Akash Madhwal,0.30,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,Akash Madhwal,exact,false,replaced Ayush Mhatre
+CSK,Rahul Chahar,5.2,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,RD Chahar,initials,false,
+CSK,Shreyas Gopal,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,S Gopal,initials,false,
+CSK,Akeal Hosein,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,AJ Hosein,initials,false,
+CSK,Aman Hakim Khan,0.40,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,Aman Hakim Khan,exact,false,
+CSK,Matt Henry,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,MJ Henry,initials,false,
+CSK,Shivam Dube,12,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,S Dube,initials,false,
+CSK,Kartik Sharma,14.2,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,Kartik Sharma,exact,false,
+CSK,Macneil Noronha,0.30,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,,none,false,replaced Ramakrishna Ghosh
+CSK,Ruturaj Gaikwad,18,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,RD Gaikwad,initials,false,captain
+CSK,Zak Foulkes,0.75,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,ZGF Foulkes,initials_nonIPL,false,
+CSK,Urvil Patel,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,Urvil Patel,exact,false,
+CSK,Spencer Johnson,1.5,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,SH Johnson,initials,false,replaced Nathan Ellis
+CSK,Anshul Kamboj,3.4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,A Kamboj,initials,false,
+CSK,Mukesh Choudhary,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,Mukesh Choudhary,exact,false,
+CSK,Sarfaraz Khan,0.75,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,SN Khan,initials,false,
+CSK,Ramakrishna Ghosh,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,RS Ghosh,initials,true,withdrawn foot fracture
+CSK,Ayush Mhatre,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,A Mhatre,initials,true,withdrawn hamstring
+CSK,Khaleel Ahmed,4.8,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,KK Ahmed,initials,true,withdrawn quad injury
+CSK,Nathan Ellis,2,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,NT Ellis,initials,true,withdrawn hamstring
+CSK,Jamie Overton,1.5,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Chennai_Super_Kings_season,2026-11-05,J Overton,initials,true,withdrawn thigh injury
+DC,KL Rahul,14,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,KL Rahul,exact,false,
+DC,Sameer Rizvi,0.95,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,Sameer Rizvi,exact,false,
+DC,David Miller,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,DA Miller,initials,false,
+DC,Axar Patel,16.5,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,AR Patel,initials,false,captain
+DC,Lungi Ngidi,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,L Ngidi,initials,false,
+DC,Kuldeep Yadav,13.25,retained,2025,false,,,traded_out:LSG,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season | https://www.delhicapitals.in/news/rishabh-pant-returns-to-delhi-capitals-as-kuldeep-yadav-moves-to-lucknow-super-giants,2026-06-23,Kuldeep Yadav,exact,false,news reports say 13.5 cr in the 2027 trade
+DC,Abhishek Porel,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,Abishek Porel,initials,false,
+DC,Vipraj Nigam,0.50,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,V Nigam,initials,false,
+DC,Tristan Stubbs,10,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,T Stubbs,initials,false,
+DC,Nitish Rana,4.2,trade,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,N Rana,initials,false,from RR (Nov 2025) for Donovan Ferreira
+DC,Mukesh Kumar,8,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,Mukesh Kumar,exact,false,
+DC,Tripurana Vijay,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,T Vijay,initials,false,
+DC,Mitchell Starc,11.75,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,MA Starc,initials,false,
+DC,Ashutosh Sharma,3.8,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,Ashutosh Sharma,exact,false,
+DC,Rehan Ahmed,0.75,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,Rehan Ahmed,exact,false,replaced Ben Duckett
+DC,Dushmantha Chameera,0.75,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,PVD Chameera,judgement,false,
+DC,Kyle Jamieson,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,KA Jamieson,initials,false,
+DC,Ajay Mandal,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,AK Mandal,initials_nonIPL,false,
+DC,Pathum Nissanka,4,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,P Nissanka,initials,false,
+DC,Auqib Nabi,8.4,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,Auqib Nabi,exact,false,
+DC,Karun Nair,0.50,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,KK Nair,initials,false,
+DC,T Natarajan,10.75,retained,2025,false,,,traded_out:SRH,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season | https://www.crictracker.com/cricket-news/t-natarajan-reunites-with-srh-as-zeeshan-ansari-moves-to-dc-in-player-trade/,2026-10-14,T Natarajan,exact,false,
+DC,Sahil Parakh,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,SU Parakh,initials,false,
+DC,Prithvi Shaw,0.75,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,PP Shaw,initials,false,
+DC,Madhav Tiwari,0.40,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,M Tiwari,initials,false,
+DC,Ben Duckett,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Delhi_Capitals_season,2026-11-05,BM Duckett,initials_nonIPL,true,withdrawn national duty
+GT,Manav Suthar,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,MJ Suthar,initials,false,
+GT,Kulwant Khejroliya,0.30,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,K Khejroliya,initials,false,replaced Prithvi Raj
+GT,Washington Sundar,3.2,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,Washington Sundar,exact,false,
+GT,Shubman Gill,16.5,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,Shubman Gill,exact,false,captain
+GT,Jayant Yadav,0.75,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,J Yadav,initials,false,
+GT,Jason Holder,7,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,JO Holder,initials,false,
+GT,Rashid Khan,18,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,Rashid Khan,exact,false,
+GT,Arshad Khan,1.3,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,Arshad Khan,exact,false,
+GT,Sai Sudharsan,8.5,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,B Sai Sudharsan,judgement,false,
+GT,Kagiso Rabada,10.75,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,K Rabada,initials,false,
+GT,Ishant Sharma,0.75,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,I Sharma,initials,false,
+GT,Shahrukh Khan,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,M Shahrukh Khan,judgement,false,
+GT,Prasidh Krishna,9.5,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,M Prasidh Krishna,judgement,false,
+GT,Rahul Tewatia,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,R Tewatia,initials,false,
+GT,Sai Kishore,2,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,R Sai Kishore,judgement,false,
+GT,Jos Buttler,15.75,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,JC Buttler,initials,false,
+GT,Mohammed Siraj,12.25,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,Mohammed Siraj,exact,false,
+GT,Gurnoor Brar,1.3,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,Gurnoor Brar,exact,false,
+GT,Connor Esterhuizen,0.75,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,C Esterhuizen,initials_nonIPL,false,replaced Tom Banton
+GT,Kumar Kushagra,0.65,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,Kumar Kushagra,exact,false,
+GT,Glenn Phillips,2,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,GD Phillips,initials,false,
+GT,Anuj Rawat,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,Anuj Rawat,exact,false,
+GT,Ashok Sharma,0.90,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,Ashok Sharma,exact,false,
+GT,Nishant Sindhu,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,N Sindhu,initials,false,
+GT,Luke Wood,0.75,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,L Wood,initials,false,
+GT,Tom Banton,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,T Banton,initials,true,withdrawn finger injury
+GT,Prithvi Raj,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Gujarat_Titans_season,2026-11-05,,none,true,withdrawn injury
+KKR,Ajinkya Rahane,1.5,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,AM Rahane,initials,false,captain
+KKR,Sarthak Ranjan,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,,none,false,
+KKR,Rachin Ravindra,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,R Ravindra,initials,false,
+KKR,Manish Pandey,0.75,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,MK Pandey,initials,false,
+KKR,Vaibhav Arora,1.8,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,VG Arora,initials,false,
+KKR,Finn Allen,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,FH Allen,judgement,false,
+KKR,Angkrish Raghuvanshi,3,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,A Raghuvanshi,initials,false,
+KKR,Ramandeep Singh,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,Ramandeep Singh,exact,false,
+KKR,Tejasvi Singh,3,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,,none,false,
+KKR,Navdeep Saini,0.75,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,Navdeep Saini,exact,false,replaced Harshit Rana
+KKR,Umran Malik,0.75,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,Umran Malik,exact,false,
+KKR,Kartik Tyagi,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,Kartik Tyagi,exact,false,
+KKR,Rahul Tripathi,0.75,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,RA Tripathi,initials,false,
+KKR,Varun Chakravarthy,12,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,CV Varun,judgement,false,
+KKR,Saurabh Dubey,0.30,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,,ambiguous,false,replaced Akash Deep
+KKR,Rinku Singh,13,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,RK Singh,judgement,false,
+KKR,Blessing Muzarabani,0.75,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,B Muzarabani,initials,false,replaced Mustafizur Rahman
+KKR,Cameron Green,25.2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,C Green,judgement,false,one wiki page says 25.25
+KKR,Tim Seifert,1.5,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,TL Seifert,initials,false,
+KKR,Anukul Roy,0.40,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,AS Roy,initials,false,
+KKR,Rovman Powell,1.5,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,R Powell,initials,false,
+KKR,Daksh Kamra,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,,none,false,
+KKR,Sunil Narine,12,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,SP Narine,initials,false,
+KKR,Luvnith Sisodia,0.30,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,,none,false,replaced Matheesha Pathirana
+KKR,Prashant Solanki,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,PH Solanki,initials,false,
+KKR,Harshit Rana,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,Harshit Rana,exact,true,withdrawn knee injury
+KKR,Matheesha Pathirana,18,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,M Pathirana,initials,true,withdrawn hamstring
+KKR,Akash Deep,1,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,Akash Deep,exact,true,withdrawn back injury
+KKR,Mustafizur Rahman,9.2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Kolkata_Knight_Riders_season,2026-11-05,Mustafizur Rahman,exact,true,released at BCCI request
+LSG,Abdul Samad,4.2,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Abdul Samad,exact,false,
+LSG,Ayush Badoni,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,A Badoni,initials,false,
+LSG,Avesh Khan,9.75,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Avesh Khan,exact,false,
+LSG,Mohammed Shami,10,trade,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Mohammed Shami,exact,false,from SRH (Nov 2025)
+LSG,Rishabh Pant,27,retained,2025,false,,,traded_out:DC,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season | https://www.businesstoday.in/sports/story/ipls-costliest-player-rishabh-pant-takes-44-pay-cut-returns-to-delhi-capitals-538707-2026-06-23 | https://www.delhicapitals.in/news/rishabh-pant-returns-to-delhi-capitals-as-kuldeep-yadav-moves-to-lucknow-super-giants,2026-06-23,RR Pant,initials,false,captain
+LSG,Matthew Breetzke,0.75,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,MP Breetzke,initials,false,
+LSG,Anrich Nortje,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,A Nortje,initials,false,
+LSG,Shahbaz Ahmed,2.4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Shahbaz Ahmed,exact,false,
+LSG,Arjun Tendulkar,0.30,trade,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Arjun Tendulkar,exact,false,from MI (Nov 2025)
+LSG,Prince Yadav,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Prince Yadav,exact,false,
+LSG,Nicholas Pooran,21,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,N Pooran,initials,false,
+LSG,Manimaran Siddharth,0.75,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,M Siddharth,initials,false,
+LSG,Arshin Kulkarni,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,AA Kulkarni,initials,false,
+LSG,Naman Tiwari,1,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,NK Tiwari,initials_nonIPL,false,
+LSG,Mayank Yadav,11,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,MP Yadav,initials,false,
+LSG,Akshat Raghuwanshi,2.2,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Akshat Raghuwanshi,exact,false,
+LSG,Mohsin Khan,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Mohsin Khan,exact,false,
+LSG,Himmat Singh,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Himmat Singh,exact,false,
+LSG,Akash Singh,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,Akash Singh,exact,false,
+LSG,Digvesh Rathi,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,DS Rathi,initials,false,
+LSG,Aiden Markram,2,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,AK Markram,initials,false,
+LSG,Josh Inglis,8.6,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,JP Inglis,initials,false,
+LSG,Mukul Choudhary,2.6,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,MD Choudhary,initials,false,
+LSG,George Linde,1,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,GF Linde,initials,false,replaced Wanindu Hasaranga
+LSG,Mitchell Marsh,3.4,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,MR Marsh,initials,true,wiki squad table marks withdrawn but stats show he played; inconsistent
+LSG,Wanindu Hasaranga,2,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Lucknow_Super_Giants_season,2026-11-05,PWH de Silva,judgement,true,withdrawn NOC denied
+MI,Krish Bhagat,0.30,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,Krish Bhagat,exact,false,replaced Atharva Ankolekar
+MI,Tilak Varma,8,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,Tilak Varma,exact,false,
+MI,Robin Minz,0.65,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,R Minz,initials,false,
+MI,Trent Boult,12.5,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,TA Boult,initials,false,
+MI,Naman Dhir,5.25,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,Naman Dhir,exact,false,
+MI,Will Jacks,5.25,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,WG Jacks,initials,false,
+MI,Hardik Pandya,16.35,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,HH Pandya,initials,false,captain
+MI,Corbin Bosch,0.75,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,C Bosch,initials,false,
+MI,Ashwani Kumar,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,Ashwani Kumar,exact,false,
+MI,Ryan Rickelton,1,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,RD Rickelton,initials,false,
+MI,Rohit Sharma,16.3,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,RG Sharma,judgement,false,
+MI,Shardul Thakur,2,trade,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,SN Thakur,initials,false,from LSG (Nov 2025)
+MI,Deepak Chahar,9.25,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,DL Chahar,initials,false,
+MI,Suryakumar Yadav,16.35,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,SA Yadav,initials,false,
+MI,Sherfane Rutherford,2.6,trade,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,SE Rutherford,initials,false,from GT (Nov 2025)
+MI,Jasprit Bumrah,18,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,JJ Bumrah,initials,false,
+MI,Ruchit Ahir,0.30,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,RDB Ahir,initials_nonIPL,false,replaced Raj Angad Bawa
+MI,Allah Ghazanfar,4.8,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,AM Ghazanfar,initials,false,
+MI,Mohammad Izhar,0.30,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,,none,false,
+MI,Mahipal Lomror,0.50,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,MK Lomror,initials,false,replaced Quinton de Kock
+MI,Keshav Maharaj,0.75,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,KA Maharaj,initials,false,replaced Mitchell Santner
+MI,Danish Malewar,0.30,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,DV Malewar,initials,false,
+MI,Mayank Markande,0.30,trade,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,M Markande,initials,false,from KKR (Nov 2025)
+MI,Mayank Rawat,0.30,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,M Rawat,initials,false,
+MI,Raghu Sharma,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,Raghu Sharma,exact,false,
+MI,Raj Angad Bawa,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,RA Bawa,initials,true,withdrawn ligament tear
+MI,Mitchell Santner,2,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,MJ Santner,initials,true,withdrawn shoulder injury
+MI,Atharva Ankolekar,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,,none,true,withdrawn knee injury
+MI,Quinton de Kock,1,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Mumbai_Indians_season,2026-11-05,Q de Kock,initials,true,withdrawn wrist injury
+PBKS,Arshdeep Singh,18,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Arshdeep Singh,exact,false,
+PBKS,Yuzvendra Chahal,18,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,YS Chahal,initials,false,
+PBKS,Vishnu Vinod,0.95,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Vishnu Vinod,exact,false,
+PBKS,Suryansh Shedge,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Suryansh Shedge,exact,false,
+PBKS,Cooper Connolly,3,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,C Connolly,initials,false,
+PBKS,Azmatullah Omarzai,2.4,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Azmatullah Omarzai,exact,false,
+PBKS,Harpreet Brar,1.5,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Harpreet Brar,exact,false,
+PBKS,Xavier Bartlett,0.80,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,XC Bartlett,initials,false,
+PBKS,Mitchell Owen,3,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,MJ Owen,initials,false,
+PBKS,Marcus Stoinis,11,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,MP Stoinis,initials,false,
+PBKS,Priyansh Arya,3.8,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Priyansh Arya,exact,false,
+PBKS,Nehal Wadhera,4.2,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,N Wadhera,initials,false,
+PBKS,Praveen Dubey,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,P Dubey,initials,false,
+PBKS,Shashank Singh,5.5,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Shashank Singh,exact,false,
+PBKS,Yash Thakur,1.6,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Yash Thakur,exact,false,
+PBKS,Vishal Nishad,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,,none,false,
+PBKS,Vijaykumar Vyshak,1.8,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Vijaykumar Vyshak,exact,false,
+PBKS,Lockie Ferguson,2,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,LH Ferguson,initials,false,
+PBKS,Marco Jansen,7,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,M Jansen,initials,false,
+PBKS,Prabhsimran Singh,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,P Simran Singh,initials,false,
+PBKS,Shreyas Iyer,26.75,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,SS Iyer,initials,false,captain
+PBKS,Musheer Khan,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,Musheer Khan,exact,false,
+PBKS,Pyla Avinash,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,,none,false,
+PBKS,Ben Dwarshuis,4.4,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,BJ Dwarshuis,initials,false,
+PBKS,Harnoor Singh,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Punjab_Kings_season,2026-11-05,,ambiguous,false,
+RR,Donovan Ferreira,1,trade,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,D Ferreira,initials,false,from DC (Nov 2025) for Nitish Rana
+RR,Vignesh Puthur,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,V Puthur,initials,false,
+RR,Riyan Parag,14,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,R Parag,initials,false,captain
+RR,Lhuan-dre Pretorius,0.30,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,LG Pretorius,initials,false,
+RR,Dasun Shanaka,2,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,MD Shanaka,judgement,false,replaced Sam Curran
+RR,Ravindra Jadeja,14,trade,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,RA Jadeja,initials,false,from CSK (Nov 2025)
+RR,Kwena Maphaka,1.5,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,KT Maphaka,initials,false,
+RR,Vaibhav Sooryavanshi,1.1,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,V Suryavanshi,judgement,false,
+RR,Yash Raj Punja,0.90,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,Yash Raj Punja,exact,false,
+RR,Brijesh Sharma,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,Brijesh Sharma,exact,false,
+RR,Nandre Burger,3.5,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,N Burger,initials,false,
+RR,Kuldeep Sen,0.75,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,KR Sen,initials,false,
+RR,Sandeep Sharma,4,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,Sandeep Sharma,exact,false,
+RR,Dhruv Jurel,14,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,Dhruv Jurel,exact,false,
+RR,Jofra Archer,12.5,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,JC Archer,initials,false,
+RR,Adam Milne,2.4,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,AF Milne,initials,false,
+RR,Tushar Deshpande,6.5,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,TU Deshpande,initials,false,
+RR,Shubham Dubey,0.80,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,,ambiguous,false,
+RR,Yudhvir Singh,0.35,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,Yudhvir Singh,exact,false,
+RR,Sushant Mishra,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,SS Mishra,initials,false,
+RR,Ravi Bishnoi,7.2,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,Ravi Bishnoi,exact,false,
+RR,Yashasvi Jaiswal,18,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,YBK Jaiswal,initials,false,
+RR,Shimron Hetmyer,11,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,SO Hetmyer,initials,false,
+RR,Emanjot Chahal,0.30,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,,none,false,replaced Ravi Singh
+RR,Aman Rao,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,AA Rao,initials_nonIPL,false,
+RR,Sam Curran,2.4,trade,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,SM Curran,initials,true,withdrawn groin injury; from CSK
+RR,Ravi Singh,0.95,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Rajasthan_Royals_season,2026-11-05,Ravi Singh,exact,true,withdrawn hamstring
+RCB,Suyash Sharma,2.6,retained,2025,false,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,Suyash Sharma,exact,false,
+RCB,Krunal Pandya,5.75,retained,2025,false,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,KH Pandya,initials,false,
+RCB,Tim David,3,retained,2025,true,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,TH David,initials,false,
+RCB,Abhinandan Singh,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,Abhinandan Singh,exact,false,
+RCB,Bhuvneshwar Kumar,10.75,retained,2025,false,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,B Kumar,initials,false,
+RCB,Virat Kohli,21,retained,2025,false,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,V Kohli,initials,false,
+RCB,Jordan Cox,0.75,auction_2026,2025,true,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,JM Cox,initials_nonIPL,false,
+RCB,Swapnil Singh,0.50,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,Swapnil Singh,exact,false,
+RCB,Venkatesh Iyer,7,auction_2026,2025,false,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,VR Iyer,initials,false,
+RCB,Jacob Duffy,2,auction_2026,2025,true,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,JA Duffy,initials,false,
+RCB,Phil Salt,11.5,retained,2025,true,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,PD Salt,initials,false,
+RCB,Devdutt Padikkal,2,retained,2025,false,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,D Padikkal,initials,false,
+RCB,Josh Hazlewood,12.5,retained,2025,true,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,JR Hazlewood,initials,false,
+RCB,Rasikh Salam,6,retained,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,Rasikh Salam,exact,false,
+RCB,Romario Shepherd,1.5,retained,2025,true,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,R Shepherd,initials,false,
+RCB,Jitesh Sharma,11,retained,2025,false,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,JM Sharma,initials,false,
+RCB,Rajat Patidar,11,retained,2025,false,true,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,RM Patidar,initials,false,captain
+RCB,Kanishk Chouhan,0.30,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,,none,false,
+RCB,Satvik Deswal,0.30,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,,none,false,
+RCB,Vihaan Malhotra,0.30,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,,none,false,
+RCB,Richard Gleeson,1.6,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,RJ Gleeson,initials,false,replaced Nuwan Thushara
+RCB,Vicky Ostwal,0.30,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,,none,false,
+RCB,Mangesh Yadav,5.2,auction_2026,2025,false,false,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,,ambiguous,false,
+RCB,Jacob Bethell,2.6,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,JG Bethell,initials,true,withdrawn finger injury
+RCB,Yash Dayal,5,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,Yash Dayal,exact,true,withdrawn personal reasons
+RCB,Nuwan Thushara,1.6,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Royal_Challengers_Bengaluru_season,2026-11-05,N Thushara,initials,true,withdrawn NOC denied
+SRH,Abhishek Sharma,14,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,Abhishek Sharma,exact,false,
+SRH,Harsh Dubey,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,Harsh Dubey,exact,false,
+SRH,Smaran Ravichandran,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,S Ravichandran,initials_nonIPL,false,
+SRH,Salil Arora,1.5,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,Salil Arora,exact,false,
+SRH,Harshal Patel,8,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,HV Patel,initials,false,
+SRH,Praful Hinge,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,PP Hinge,initials,false,
+SRH,Kamindu Mendis,0.75,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,PHKD Mendis,judgement,false,
+SRH,Ishan Kishan,11.25,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,Ishan Kishan,exact,false,
+SRH,Zeeshan Ansari,0.40,retained,2025,false,,,traded_out:DC,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season | https://www.crictracker.com/cricket-news/t-natarajan-reunites-with-srh-as-zeeshan-ansari-moves-to-dc-in-player-trade/,2026-10-14,Zeeshan Ansari,exact,false,
+SRH,Pat Cummins,18,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,PJ Cummins,initials,false,captain
+SRH,Krains Fuletra,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,,none,false,
+SRH,Heinrich Klaasen,23,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,H Klaasen,initials,false,
+SRH,Sakib Hussain,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,Sakib Hussain,exact,false,
+SRH,Travis Head,14,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,TM Head,initials,false,
+SRH,Shivang Kumar,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,Shivang Kumar,exact,false,
+SRH,Amit Kumar,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,,none,false,
+SRH,Nitish Kumar Reddy,6,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,Nithish Kumar Reddy,initials,false,
+SRH,Jaydev Unadkat,1,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,JD Unadkat,initials,false,
+SRH,Onkar Tarmale,0.30,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,,none,false,
+SRH,Eshan Malinga,1.2,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,E Malinga,initials,false,
+SRH,Aniket Verma,0.30,retained,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,Aniket Verma,exact,false,
+SRH,RS Ambrish,0.45,replacement,2026,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,,none,false,replaced Shivam Mavi
+SRH,Gerald Coetzee,2,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,G Coetzee,initials,false,replaced David Payne
+SRH,Liam Livingstone,13,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,LS Livingstone,initials,false,
+SRH,Dilshan Madushanka,0.75,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,D Madushanka,initials,false,replaced Brydon Carse
+SRH,Shivam Mavi,0.75,auction_2026,2025,false,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,Shivam Mavi,exact,true,withdrawn groin injury
+SRH,Jack Edwards,3,auction_2026,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,J Edwards,initials_nonIPL,true,withdrawn foot injury
+SRH,Brydon Carse,1,retained,2025,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,BA Carse,initials_nonIPL,true,withdrawn injury
+SRH,David Payne,1.5,replacement,2026,true,,,in_squad,https://en.wikipedia.org/wiki/2026_Sunrisers_Hyderabad_season,2026-11-05,DA Payne,initials,true,replaced Jack Edwards then withdrawn ankle
+DC,Rishabh Pant,15,trade,2026,false,,,traded_in,https://www.businesstoday.in/sports/story/ipls-costliest-player-rishabh-pant-takes-44-pay-cut-returns-to-delhi-capitals-538707-2026-06-23 | https://www.delhicapitals.in/news/rishabh-pant-returns-to-delhi-capitals-as-kuldeep-yadav-moves-to-lucknow-super-giants,2026-06-23,RR Pant,initials,false,2027 trade for Kuldeep Yadav; revised fee 15 cr (down from 27) (2026 salary at LSG: 27)
+LSG,Kuldeep Yadav,13.25,trade,2026,false,,,traded_in,https://www.delhicapitals.in/news/rishabh-pant-returns-to-delhi-capitals-as-kuldeep-yadav-moves-to-lucknow-super-giants,2026-06-23,Kuldeep Yadav,exact,false,"2027 trade for Rishabh Pant; keeps existing contract (13.25 per wiki, 13.5 per Business Today/Outlook summary) (2026 salary at DC: 13.25)"
+SRH,T Natarajan,5,trade,2026,false,,,traded_in,https://www.crictracker.com/cricket-news/t-natarajan-reunites-with-srh-as-zeeshan-ansari-moves-to-dc-in-player-trade/,2026-10-14,T Natarajan,exact,false,2027 trade for Zeeshan Ansari; revised fee 5 cr (down from 10.75) (2026 salary at DC: 10.75)
+DC,Zeeshan Ansari,0.40,trade,2026,false,,,traded_in,https://www.crictracker.com/cricket-news/t-natarajan-reunites-with-srh-as-zeeshan-ansari-moves-to-dc-in-player-trade/,2026-10-14,Zeeshan Ansari,exact,false,2027 trade for T Natarajan; keeps 0.40 cr fee (2026 salary at SRH: 0.40)
