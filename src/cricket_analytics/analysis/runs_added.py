@@ -11,11 +11,11 @@ from ..models.run_expectancy import (
     batting_credit,
     bowling_credit,
     load,
+    ra_state,
 )
 from ..registry import ParamSpec, module, std
 from ..sql.filters import Filters
 from ..sql.fragments import BALL_FACED, DISMISSAL
-from ..sql.state import ball_state
 
 MIN_BALLS = 100
 
@@ -64,7 +64,7 @@ def runs_added(
 ) -> pd.DataFrame:
     if min_balls is None:
         min_balls = 1 if getattr(f, "player", None) else MIN_BALLS
-    st, sp = ball_state(f)
+    st, sp = ra_state(f)
 
     def sel(kind: str) -> str:
         return (

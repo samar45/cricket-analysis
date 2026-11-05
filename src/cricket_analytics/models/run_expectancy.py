@@ -30,6 +30,46 @@ from ..sql.filters import Filters
 from ..sql.fragments import BALL_FACED, BOWLER_WICKET, DISMISSAL, LEGAL_BALL, RUNS_CONCEDED
 from ..sql.state import ball_state
 
+
+def ra_state(f: Filters) -> tuple[str, list]:
+    """`ball_state(f)` with the trust rule widened so rain-shortened matches count (used by runs added and WAR; the
+    run-expectancy FIT keeps the strict rule). Overrides trusted / balls_remaining / target, adds inn_len.
+
+    Length of an innings = the balls the side had. Complete first innings (all overs or all out): the full length.
+    Otherwise the first innings stopped early: its length is the balls actually bowled, and in a match with no D/L
+    label the chase had the same length and the plain target (first total + 1), so both innings count. A D/L match with
+    an incomplete first innings: only that first innings counts (the chase target was reset and is not stored; the
+    innings length is known only after the fact, a small look-ahead). Second innings of D/L and awarded matches,
+    washed-out matches (no second innings) and chases longer than the first innings stay out."""
+    sql, p = ball_state(f)
+    lg = f"CASE WHEN {LEGAL_BALL} THEN 1 ELSE 0 END"
+    wk = f"CASE WHEN {DISMISSAL} THEN 1 ELSE 0 END"
+    out = f"""
+    SELECT x.* REPLACE (
+        CASE WHEN x.trusted_ra THEN x.inn_len - x.legal_before END AS balls_remaining,
+        x.trusted_ra AS trusted,
+        CASE WHEN x.innings = 2 AND x.trusted_ra THEN x.first_total + 1 END AS target)
+    FROM (
+        SELECT y.*, y.inn_len - y.legal_before >= 1 AND CASE
+              WHEN y.meth = 'Awarded' THEN FALSE
+              WHEN y.meth = 'D/L' THEN y.innings = 1
+              WHEN y.complete1 THEN TRUE
+              ELSE COALESCE(y.res, '') <> 'no result' AND y.len2 > 0 AND y.len2 <= y.first_legal_ END AS trusted_ra
+        FROM (
+            SELECT z.*, COALESCE(mm.outcome_method, '') AS meth, mm.result AS res,
+                   (z.first_legal_ >= z.max_balls OR z.first_wkts_ >= 10) AS complete1,
+                   CASE WHEN z.first_legal_ >= z.max_balls OR z.first_wkts_ >= 10 THEN z.max_balls ELSE z.first_legal_ END AS inn_len
+            FROM (
+                SELECT d.*,
+                       SUM(CASE WHEN d.innings = 1 THEN {lg} END) OVER (PARTITION BY d.match_id) AS first_legal_,
+                       SUM(CASE WHEN d.innings = 1 THEN {wk} END) OVER (PARTITION BY d.match_id) AS first_wkts_,
+                       COALESCE(SUM(CASE WHEN d.innings = 2 THEN {lg} END) OVER (PARTITION BY d.match_id), 0) AS len2
+                FROM ({sql}) d
+            ) z JOIN matches mm ON mm.match_id = z.match_id
+        ) y
+    ) x"""
+    return out, p
+
 DATA = Path(__file__).parent / "data"
 # first year of the later era; a group not listed here has one era. Chosen from measured average first-innings
 # totals per season (docs/VALUE_step1.md): IPL jumped from ~163 (2008-22) to 183+ (2023, impact player); Blast ~168 -> ~177.
@@ -181,8 +221,8 @@ def _bowl_raw(df):
     return -(df.conceded + df.vf * (df.ball_part + df.wkt_part * df.bowler_wk))
 
 
-def _query_balls(f: Filters, db_path, where: str, params: list) -> pd.DataFrame:
-    st, sp = ball_state(f)
+def _query_balls(f: Filters, db_path, where: str, params: list, wide: bool = False) -> pd.DataFrame:
+    st, sp = (ra_state if wide else ball_state)(f)
     sql = f"WITH d AS ({st}) SELECT {BALL_COLS} FROM d JOIN matches m ON d.match_id = m.match_id WHERE {USABLE} AND {where}"
     df = query(sql, sp + params, db_path=db_path)
     for c in (
