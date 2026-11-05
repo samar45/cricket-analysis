@@ -118,3 +118,8 @@
 - Ask v2: eval (64 questions incl. 8 out-of-scope) 76.5% → 98% module accuracy, 0 false clarifications, 8/8 out-of-scope.
 - **Lead's held-out check (5 NEW questions not in the eval): only 2/5 handled well** (Kohli Test average → out-of-scope ✅; Rashid "at the death" → batting instead of bowling; "Pant vs left-arm spin" and "KL Rahul at Chinnaswamy" → model asked a question instead of calling a module; "most catches IPL 2024" → player_profile instead of fielding). The 98% is tuned on the eval itself — real accuracy is lower. Next: a held-out question set written separately, a fallback when the model returns no tool, routing for fielding/role words.
 - Tests 423 pass; DB-free 293 pass / 130 skip; ruff clean. All commits local, no Claude lines; Samar to push dev.
+
+## 2026-11-06 Advanced value (paused: out of tokens)
+- Step 1 run expectancy + runs_added, step 2 win probability + wpa, IPL contracts file: verified by lead, committed (ecf635a + this commit).
+- Impact-era WP test: isolation did not help (chase Brier +0.003 worse); pooled kept. IPL chase win rate swings 45-63% by season (2026: 63%).
+- Steps 3 (WAR) and 4 (matchup predictor) stopped mid-way; partial files on branch wip/value-step3-4, untested. Resume from docs/JOURNEY.md section 6 item 0.

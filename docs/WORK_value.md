@@ -6,3 +6,4 @@ MILESTONE: A3 docs/VALUE_step1.md written. Honest result: IPL season-to-season s
 MILESTONE: B1 models/win_prob.py written and fitted (chase logistic 38 coefficients + late-cell table, first-innings logistic 22 coefficients), JSON saved in models/data/win_prob.json.
 MILESTONE: B2 out-of-sample (fit <=2023, test 2024-26): chase Brier 0.1137 vs 0.1465 (required-rate-only) vs 0.2478 (50/50); first innings 0.2027 vs 0.2483. IPL 2024-26 chase calibration is off (chasers do 10-20 points better than predicted).
 MILESTONE: B3 analysis/wpa.py (players + match views), viz/wpa.py, viz/video/wpa.py, tests/test_wpa.py, docs/VALUE_step2.md written.
+MILESTONE: F Impact-era test done (docs/VALUE_step2.md): isolated IPL (I) and impact-interaction (H) models do not beat the pooled model out of sample (chase Brier +0.003, real); pooled kept, no code change.

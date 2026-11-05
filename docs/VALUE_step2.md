@@ -209,3 +209,25 @@ Sai Sudharsan (754 runs) in 2025 because his runs came in tight chases. Not chec
 8. The leaderboards are in-sample (the model saw those 2025-26 matches). With about 1M balls in the fit, one season should matter little (guess, not measured).
 9. D/L, no-result and The Hundred are excluded, so some real matches (2023 IPL final) have no curve; those players' contributions are simply absent from the totals.
 10. `pyproject.toml` `package-data` does not list `models/data/*.json` (I was told not to edit it). It works in this editable install; a wheel build would miss the file. One-line fix for the lead: add `"models/data/*.json"`.
+
+## Impact-era test (isolated vs pooled IPL)
+Question: should IPL 2023+ (Impact Player) get its own model instead of the pooled one with group shifts? Rolling test: fit through 2024 and test IPL 2025; fit through 2025 and test IPL 2026.
+Options: **P** = current pooled model; **I** = IPL-2023+ only, reduced features (10 chase coefficients, 8 first-innings); **H** = pooled, plus IPL-2023+ specific coefficients on 7 key chase terms (4 first-innings terms).
+Same late-over correction in all. Test = ball level, 140 matches (69 + 71). Interval = 90% bootstrap over matches of (option - P) Brier; negative = better than P.
+
+| Innings | Test | P Brier | I Brier | H Brier | I - P (90%) | H - P (90%) |
+|---|---|---|---|---|---|---|
+| Chase | 2025 | 0.1244 | 0.1297 | 0.1296 | +0.0054 [+0.0003, +0.0098] | +0.0052 [+0.0011, +0.0095] |
+| Chase | 2026 | 0.1146 | 0.1152 | 0.1155 | +0.0006 [-0.0015, +0.0025] | +0.0009 [-0.0008, +0.0024] |
+| Chase | both | 0.1194 | 0.1223 | 0.1224 | +0.0029 [+0.0004, +0.0053] | +0.0030 [+0.0007, +0.0052] |
+| First | 2025 | 0.2098 | 0.2099 | 0.2095 | +0.0001 [-0.0059, +0.0059] | -0.0002 [-0.0037, +0.0035] |
+| First | 2026 | 0.2417 | 0.2433 | 0.2409 | +0.0017 [-0.0021, +0.0054] | -0.0008 [-0.0036, +0.0020] |
+| First | both | 0.2260 | 0.2269 | 0.2255 | +0.0009 [-0.0026, +0.0044] | -0.0005 [-0.0028, +0.0018] |
+
+Log loss (both seasons): chase P 0.3844, I 0.3939, H 0.3933; first P 0.6553, I 0.6561, H 0.6512.
+
+Calibration (chase, both seasons, middle bins predicted 0.3-0.7): actual win rate is 12-20 points above predicted for ALL three options (P 0.35 -> 0.47, 0.45 -> 0.61, 0.55 -> 0.72, 0.65 -> 0.85; I and H the same within 2 points). First innings: all three over-rate the side batting first by 10-25 points in the 0.2-0.9 range.
+
+**Result: isolating IPL does not help.** In chase, P is better than I and H and the gap is real (interval excludes zero over both seasons; it is within noise in 2026 alone). In first innings H is a hair better but inside noise. The miss is not about pooling: it is a level shift. IPL 2025-26 chasers won more than any model fitted on earlier years predicts, and a model that only sees 2023-24 has the same bias. Pooling is not the cause, so neither I nor H fixes it.
+**Decision: keep P. `win_prob.py` and `win_prob.json` unchanged; IPL 2025 WPA top 10 unchanged.** Caveat: ~70 test matches per season is small; "no better" is solid for chase, "not worse" for H first innings is not proven.
+Context for the level shift: share of IPL matches won by the chasing side was 0.45 (2023), 0.51 (2024), 0.51 (2025), 0.64 (2026). In 2026 the models predicted a mean chase win chance of 0.495 against 0.629 observed. That one season carries most of the bias (could be luck or a real change; one season cannot tell).
