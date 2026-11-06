@@ -60,6 +60,15 @@ COMPETITIONS: dict[str, Competition] = {
         "Hundred",
         "The Hundred",
     ),
+    "smat": Competition(
+        "smat",
+        "male",
+        "Syed Mushtaq Ali Trophy",
+        "smat",
+        _DL + "sma_csv2.zip",
+        "SMAT",
+        "Syed Mushtaq Ali Trophy",
+    ),
     "blast": Competition(
         "blast",
         "male",
