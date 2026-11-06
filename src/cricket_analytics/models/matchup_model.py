@@ -608,6 +608,10 @@ def predict(
                 float(100 * obs[6] / obs.sum()),
             )
             break
+    # balls at the level the question asks about (this type if the type is known, else this kind): what the confidence rests on
+    lvl = "bat_type" if ty >= 0 else "bat_kind"
+    g = fit.layer(lvl).gid(c)[0] if kind >= 0 or ty >= 0 else -1
+    ev["ask_balls"] = int(fit.layer(lvl).n[g]) if g >= 0 else 0
     ev["league_balls"] = int(sum(fit.cell[fit.era_now, p, s] for p, s in cells))
     out["evidence"] = ev
     out["type"] = ty
@@ -625,7 +629,7 @@ def confidence(ev: dict, bowler: str | None, has_type: bool) -> str:
             return "medium"
         return "thin"
     if has_type:
-        t = ev.get("bat_type", ev.get("bat_kind", 0))
+        t = ev.get("ask_balls", ev.get("bat_type", 0))
         return "strong" if t >= 150 else "medium" if t >= 50 else "thin"
     return "medium" if ev.get("bat", 0) >= 300 else "thin"
 

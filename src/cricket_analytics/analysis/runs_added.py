@@ -48,7 +48,7 @@ MIN_BALLS = 100
     ],
     caveats=[
         "Run expectancy is fitted on first innings only (average runs scored from each state: wickets lost, balls left), per league and era (IPL 2023+ is its own era because scoring jumped). Second innings use the same table, capped by the runs still needed.",
-        "Matches decided by D/L or awarded, and first innings cut short, are left out. Super overs are left out by default.",
+        "Rain-shortened matches count, with the balls each side actually had: a cut-short first innings, and the chase when it had the same length and no D/L label, are in. A D/L match counts for its first innings only (the reset target is not stored); awarded matches, washed-out ones and the second innings of D/L matches are left out. Super overs are left out by default.",
         "Batters are charged for balls used up (a dot ball costs about one run early on) and for their own wicket, including a non-striker run out. Extras are not the batter's: a small constant is added so an average batter scores 0.",
         "Bowlers are credited for runs they concede (bat runs + wides + no-balls, not byes) and for wickets that are theirs (not run outs). A small constant is added so an average bowler scores 0.",
         "Ground factor: venue scoring versus the era average, pulled toward 1 for grounds with few matches. It scales the expectancy change, not the runs.",

@@ -70,6 +70,7 @@ def ra_state(f: Filters) -> tuple[str, list]:
     ) x"""
     return out, p
 
+
 DATA = Path(__file__).parent / "data"
 # first year of the later era; a group not listed here has one era. Chosen from measured average first-innings
 # totals per season (docs/VALUE_step1.md): IPL jumped from ~163 (2008-22) to 183+ (2023, impact player); Blast ~168 -> ~177.

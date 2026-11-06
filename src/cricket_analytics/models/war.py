@@ -14,7 +14,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .. import competitions
 from ..db import query
 from ..sql.filters import Filters
 from .run_expectancy import BALL_COLS, USABLE, load, ra_state
@@ -22,12 +21,34 @@ from .run_expectancy import BALL_COLS, USABLE, load, ra_state
 DATA = Path(__file__).parent / "data"
 PARAMS = DATA / "war_params.json"
 # men's leagues + men's T20Is feed the projection (a league's own average is 0 by construction)
+ERA_IPL = 2023  # Impact Player era: IPL numbers for the current game use these seasons only
 LEAGUES = ["ipl", "bbl", "psl", "cpl", "sa20", "hundred", "blast", "t20i"]
-SEASON_COLS = ["comp", "sy", "season", "team", "player", "role", "balls", "runs", "wkts", "sc", "wk"]
+SEASON_COLS = [
+    "comp",
+    "sy",
+    "season",
+    "team",
+    "player",
+    "role",
+    "balls",
+    "runs",
+    "wkts",
+    "sc",
+    "wk",
+]
 
 
 def _int_cols(df):
-    for c in ("wickets_before", "b", "score_before", "legal", "wk", "striker_out", "bowler_wk", "faced"):
+    for c in (
+        "wickets_before",
+        "b",
+        "score_before",
+        "legal",
+        "wk",
+        "striker_out",
+        "bowler_wk",
+        "faced",
+    ):
         df[c] = df[c].astype("int64")
     return df
 
@@ -46,7 +67,9 @@ def season_table(comp: str, db_path=None) -> tuple[pd.DataFrame, pd.DataFrame]:
     )
     rows = _int_cols(query(sql, sp, db_path=db_path))
     if rows.empty:
-        return pd.DataFrame(columns=SEASON_COLS), pd.DataFrame(columns=["comp", "sy", "team", "player", "matches"])
+        return pd.DataFrame(columns=SEASON_COLS), pd.DataFrame(
+            columns=["comp", "sy", "team", "player", "matches"]
+        )
     a = load().annotate(rows)
     sy = a.groupby("season").date.max().dt.year
     a["sy"] = a.season.map(sy).astype(int)
@@ -56,34 +79,73 @@ def season_table(comp: str, db_path=None) -> tuple[pd.DataFrame, pd.DataFrame]:
     bs = a[s]
     bat_s = pd.DataFrame(
         dict(
-            comp=comp, sy=bs.sy, season=bs.season, team=bs.batting_team, player=bs.batter, role="bat",
-            balls=bs.faced, runs=bs.runs_batter * bs.faced, wkts=0,
-            sc=bs.runs_batter + bs.vf * bs.ball_part + bs.bat_k, wk=bs.vf * bs.wkt_part * bs.striker_out,
+            comp=comp,
+            sy=bs.sy,
+            season=bs.season,
+            team=bs.batting_team,
+            player=bs.batter,
+            role="bat",
+            balls=bs.faced,
+            runs=bs.runs_batter * bs.faced,
+            wkts=0,
+            sc=bs.runs_batter + bs.vf * bs.ball_part + bs.bat_k,
+            wk=bs.vf * bs.wkt_part * bs.striker_out,
         )
     )
     ns = a[(a.wk == 1) & (a.striker_out == 0)]
     bat_n = pd.DataFrame(
         dict(
-            comp=comp, sy=ns.sy, season=ns.season, team=ns.batting_team, player=ns.player_out, role="bat",
-            balls=0, runs=0, wkts=0, sc=0.0, wk=ns.vf * ns.wkt_part,
+            comp=comp,
+            sy=ns.sy,
+            season=ns.season,
+            team=ns.batting_team,
+            player=ns.player_out,
+            role="bat",
+            balls=0,
+            runs=0,
+            wkts=0,
+            sc=0.0,
+            wk=ns.vf * ns.wkt_part,
         )
     )
     bow = pd.DataFrame(
         dict(
-            comp=comp, sy=a.sy, season=a.season, team=a.bowling_team, player=a.bowler, role="bowl",
-            balls=a.legal, runs=a.conceded, wkts=a.bowler_wk,
-            sc=-a.conceded - a.vf * a.ball_part + a.bowl_k, wk=-a.vf * a.wkt_part * a.bowler_wk,
+            comp=comp,
+            sy=a.sy,
+            season=a.season,
+            team=a.bowling_team,
+            player=a.bowler,
+            role="bowl",
+            balls=a.legal,
+            runs=a.conceded,
+            wkts=a.bowler_wk,
+            sc=-a.conceded - a.vf * a.ball_part + a.bowl_k,
+            wk=-a.vf * a.wkt_part * a.bowler_wk,
         )
     )
-    out = pd.concat([bat_s, bat_n, bow]).groupby(key, as_index=False)[["balls", "runs", "wkts", "sc", "wk"]].sum()
+    out = (
+        pd.concat([bat_s, bat_n, bow])
+        .groupby(key, as_index=False)[["balls", "runs", "wkts", "sc", "wk"]]
+        .sum()
+    )
     pres = pd.concat(
         [
-            a[["match_id", "sy", "batting_team", "batter"]].set_axis(["match_id", "sy", "team", "player"], axis=1),
-            a[["match_id", "sy", "batting_team", "non_striker"]].set_axis(["match_id", "sy", "team", "player"], axis=1),
-            a[["match_id", "sy", "bowling_team", "bowler"]].set_axis(["match_id", "sy", "team", "player"], axis=1),
+            a[["match_id", "sy", "batting_team", "batter"]].set_axis(
+                ["match_id", "sy", "team", "player"], axis=1
+            ),
+            a[["match_id", "sy", "batting_team", "non_striker"]].set_axis(
+                ["match_id", "sy", "team", "player"], axis=1
+            ),
+            a[["match_id", "sy", "bowling_team", "bowler"]].set_axis(
+                ["match_id", "sy", "team", "player"], axis=1
+            ),
         ]
     ).drop_duplicates()
-    app = pres.groupby(["sy", "team", "player"], as_index=False).size().rename(columns={"size": "matches"})
+    app = (
+        pres.groupby(["sy", "team", "player"], as_index=False)
+        .size()
+        .rename(columns={"size": "matches"})
+    )
     app.insert(0, "comp", comp)
     return out[SEASON_COLS], app
 
@@ -111,7 +173,9 @@ def all_tables(leagues: tuple = tuple(LEAGUES)):
 
 
 def player_year(rows: pd.DataFrame) -> pd.DataFrame:
-    return rows.groupby(["role", "player", "sy"], as_index=False)[["balls", "runs", "wkts", "sc", "wk"]].sum()
+    return rows.groupby(["role", "player", "sy"], as_index=False)[
+        ["balls", "runs", "wkts", "sc", "wk"]
+    ].sum()
 
 
 class Panel:
@@ -121,88 +185,144 @@ class Panel:
         self.years = list(range(y0, y1 + 1))
         ip, op = player_year(ipl), player_year(other)
         self.players = sorted(set(ip.player) | set(op.player))
-        self.M = {}
+        self.M, self._ev = {}, {}
         for tag, df in (("I", ip), ("O", op)):
             for role in ("bat", "bowl"):
                 d = df[df.role == role]
                 for col in ("balls", "runs", "wkts", "sc", "wk"):
-                    x = d.pivot(index="player", columns="sy", values=col) if len(d) else pd.DataFrame()
-                    self.M[tag, role, col] = x.reindex(index=self.players, columns=self.years).fillna(0.0)
+                    x = (
+                        d.pivot(index="player", columns="sy", values=col)
+                        if len(d)
+                        else pd.DataFrame()
+                    )
+                    self.M[tag, role, col] = x.reindex(
+                        index=self.players, columns=self.years
+                    ).fillna(0.0)
 
     def g(self, tag, role, col, y):
         return self.M[tag, role, col][y].values
 
 
-def _evidence(P: Panel, role: str, col: str, t: int, a: float, s: float, ipl_from: int, pre_w: float, window=5):
-    num, den = 0.0, 0.0
-    for y in range(max(P.years[0], t - window), t):
-        wy = 1.0 if y >= ipl_from else pre_w
-        n_i, n_o = P.g("I", role, "balls", y), P.g("O", role, "balls", y)
-        num = num + wy * P.g("I", role, col, y) + a * s * P.g("O", role, col, y)
-        den = den + wy * n_i + a * n_o
-    return num, den
+LEARN_FROM = 2018  # first pseudo-target season for the shrinkage constants (they are noise-to-signal ratios, learned from all history up to t - 1)
+KGRID = (200, 400, 800, 1600, 3000, 6000, 12000)
+AGRID, SGRID = (0.0, 0.25, 0.5, 1.0), (0.5, 1.0)
+WINDOW = 5
 
 
-def project_rate(P: Panel, role: str, t: int, prm: dict) -> tuple[np.ndarray, np.ndarray]:
-    """Projected (scoring, wicket) runs added per ball for season t from earlier seasons only, and the evidence balls."""
-    k1, k2 = prm["k"][role]
-    nsc, den = _evidence(P, role, "sc", t, prm["a"], prm["s"], prm["ipl_from"], prm["pre_w"])
-    nwk, _ = _evidence(P, role, "wk", t, prm["a"], prm["s"], prm["ipl_from"], prm["pre_w"])
-    return nsc / (den + k1), nwk / (den + k2), den
+def ipl_from_for(P: Panel, t: int, ipl_from: int) -> int:
+    """First IPL year whose evidence counts at full weight for target t. For t after `ipl_from` (the Impact Player era) only
+    that era counts (owner's rule). For pseudo-targets up to ipl_from (used only to learn shrinkage constants) all IPL years count."""
+    return ipl_from if t > ipl_from else P.years[0]
 
 
-def _prior_balls(P: Panel, role: str, t: int, ipl_from: int) -> np.ndarray:
-    """IPL balls in the last three seasons (seasons before ipl_from count 0) as columns b1, b2, b3."""
+def evidence(P: Panel, role: str, col: str, t: int, a: float, s: float, ef: int, pre_w: float):
+    """(sum of col, balls) over the WINDOW seasons before t: IPL years >= ef at weight 1, earlier IPL years at pre_w, other leagues at
+    weight a (their rate multiplied by league-strength factor s)."""
+    key = (role, col, t, a, s, ef, pre_w)
+    if key not in P._ev:
+        num, den = 0.0, 0.0
+        for y in range(max(P.years[0], t - WINDOW), t):
+            wy = 1.0 if y >= ef else pre_w
+            num = num + wy * P.g("I", role, col, y) + a * s * P.g("O", role, col, y)
+            den = den + wy * P.g("I", role, "balls", y) + a * P.g("O", role, "balls", y)
+        P._ev[key] = (num, den)
+    return P._ev[key]
+
+
+def project_rate(
+    P: Panel, role: str, t: int, prm: dict
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Projected (scoring, wicket) runs added per ball for season t from earlier seasons only, and the evidence balls.
+    prm: {ipl_from, role: {a, s, pre_w, k: [k_scoring, k_wicket]}}."""
+    q = prm[role]
+    ef = ipl_from_for(P, t, prm["ipl_from"])
+    nsc, den = evidence(P, role, "sc", t, q["a"], q["s"], ef, q["pre_w"])
+    pw = q.get(
+        "pre_w_wk", q["pre_w"]
+    )  # the wicket part may lean on older IPL seasons more than the scoring part (tested, not used)
+    nwk, dwk = evidence(P, role, "wk", t, q["a"], q["s"], ef, pw)
+    return nsc / (den + q["k"][0]), nwk / (dwk + q["k"][1]), den
+
+
+def _loss_terms(P: Panel, role: str, targets, prm: dict, minb=60):
+    """Squared error of the projected rate (per ball) against the realised rate, one entry per player-season, with balls as weight."""
+    err, wt = [], []
+    for t in targets:
+        n = P.g("I", role, "balls", t)
+        sc, wk, den = project_rate(P, role, t, prm)
+        m = (n >= minb) & (
+            evidence(P, role, "sc", t, 1.0, 1.0, P.years[0], 1.0)[1] > 0
+        )  # anybody with any earlier T20 balls
+        y = (P.g("I", role, "sc", t) + P.g("I", role, "wk", t)) / np.where(n > 0, n, np.nan)
+        err.append((((y - sc - wk) ** 2) * n)[m])
+        wt.append(n[m])
+    return np.concatenate(err), np.concatenate(wt)
+
+
+def loss(P: Panel, role: str, targets, prm: dict, minb=60) -> float:
+    """Ball-weighted RMSE (runs added per ball) of the projection over player-seasons with at least minb balls."""
+    e, w = _loss_terms(P, role, targets, prm, minb)
+    return float((e.sum() / w.sum()) ** 0.5)
+
+
+def fit_proj_over(P: Panel, role: str, targets, a_grid, ipl_from: int = ERA_IPL, pre_w=0.0) -> dict:
+    """Grid search of a (weight of other leagues), s (their strength) and the two shrinkage constants k on `targets`."""
+    best = None
+    for a in a_grid:
+        for s in SGRID if a > 0 else (1.0,):
+            for k1 in KGRID:
+                for k2 in KGRID:
+                    q = dict(a=a, s=s, pre_w=pre_w, k=[k1, k2])
+                    v = loss(P, role, targets, {"ipl_from": ipl_from, role: q})
+                    if best is None or v < best[0]:
+                        best = (v, q)
+    return best[1]
+
+
+def fit_proj(P: Panel, role: str, targets, ipl_from: int = ERA_IPL, pre_w=0.0) -> dict:
+    return fit_proj_over(P, role, targets, AGRID, ipl_from, pre_w)
+
+
+# expected balls: OLS of balls in season t on [1, last season's balls, mean of the two seasons before], players with any IPL balls in those 3 seasons
+def _prior_balls(P: Panel, role: str, t: int, ef: int) -> np.ndarray:
     return np.column_stack(
-        [P.g("I", role, "balls", t - L) if (t - L >= ipl_from and t - L >= P.years[0]) else np.zeros(len(P.players)) for L in (1, 2, 3)]
+        [
+            P.g("I", role, "balls", t - L)
+            if (t - L >= ef and t - L >= P.years[0])
+            else np.zeros(len(P.players))
+            for L in (1, 2, 3)
+        ]
     )
 
 
-def fit_balls(P: Panel, role: str, targets, ipl_from: int) -> np.ndarray:
-    """OLS: balls in season t on [1, b1, mean(b2,b3)] for players with any IPL balls in the 3 prior seasons (zeros kept)."""
+def fit_balls(P: Panel, role: str, targets, ipl_from: int) -> list:
     X, y = [], []
     for t in targets:
-        b = _prior_balls(P, role, t, ipl_from)
+        b = _prior_balls(P, role, t, ipl_from_for(P, t, ipl_from))
         m = b.sum(1) > 0
         X.append(np.column_stack([np.ones(m.sum()), b[m, 0], b[m, 1:].mean(1)]))
         y.append(P.g("I", role, "balls", t)[m])
     coef, *_ = np.linalg.lstsq(np.vstack(X), np.concatenate(y), rcond=None)
-    return coef
+    return coef.tolist()
 
 
-def exp_balls(P: Panel, role: str, t: int, coef, ipl_from: int, any_hist: np.ndarray) -> np.ndarray:
-    b = _prior_balls(P, role, t, ipl_from)
+def exp_balls(P: Panel, role: str, t: int, coef, ipl_from: int) -> np.ndarray:
+    b = _prior_balls(P, role, t, ipl_from_for(P, t, ipl_from))
     e = coef[0] + coef[1] * b[:, 0] + coef[2] * b[:, 1:].mean(1)
-    return np.where(any_hist, np.clip(e, 0, None), 0.0)
+    return np.where(b.sum(1) > 0, np.clip(e, 0, None), 0.0)
 
 
-def loss(P: Panel, role: str, targets, prm: dict, minb=60) -> float:
-    err = wt = 0.0
-    for t in targets:
-        n = P.g("I", role, "balls", t)
-        sc, wk, den = project_rate(P, role, t, prm)
-        m = (n >= minb) & (den > 0)
-        y = (P.g("I", role, "sc", t) + P.g("I", role, "wk", t)) / np.where(n > 0, n, np.nan)
-        err += (((y - sc - wk) ** 2) * n)[m].sum()
-        wt += n[m].sum()
-    return float((err / wt) ** 0.5)
-
-
-KGRID = (400, 800, 1600, 3000, 6000)
-
-
-def fit_k(P: Panel, role: str, targets, base: dict) -> tuple[list, float]:
-    best = None
-    for k1 in KGRID:
-        for k2 in KGRID:
-            v = loss(P, role, targets, {**base, "k": {**base.get("k", {}), role: [k1, k2]}})
-            if best is None or v < best[0]:
-                best = (v, [k1, k2])
-    return best[1], best[0]
+def fit_for(P: Panel, t: int, ipl_from=ERA_IPL) -> dict:
+    """Projection settings for target season t using pseudo-targets LEARN_FROM .. t - 1 only."""
+    tg = range(LEARN_FROM, t)
+    prm = {"ipl_from": ipl_from, "balls": {}}
+    for role in ("bat", "bowl"):
+        prm[role] = fit_proj(P, role, tg, ipl_from)
+        prm["balls"][role] = fit_balls(P, role, tg, ipl_from)
+    return prm
 
 
 # --------------------------------------------------------------------------- runs per win, replacement, WAR
-ERA_IPL = 2023  # Impact Player era: IPL numbers for the current game use these seasons only
 IPL_PRE_LABEL, IPL_NOW_LABEL = "pre", "2023"
 
 
@@ -211,8 +331,8 @@ def era_key(sy) -> str:
 
 
 def team_seasons(db_path=None) -> pd.DataFrame:
-    """One row per IPL team-season: matches decided (no D/L, ties, no result), win share, mean run margin per match with
-    every innings scaled to 120 balls (a chase won with balls to spare would otherwise understate the winner's runs)."""
+    """One row per IPL team-season: matches decided (no D/L, ties, no result), win share w, and rd = mean run margin per match
+    with every innings scaled to 120 balls (cross-check only; the main runs-per-win uses team runs added instead)."""
     df = query(
         """SELECT m.match_id, year(m.date) yr, m.winner, d.innings, d.batting_team bt, SUM(d.runs_total) runs,
                   SUM(CASE WHEN d.wides = 0 AND d.noballs = 0 THEN 1 ELSE 0 END) lb
@@ -222,46 +342,112 @@ def team_seasons(db_path=None) -> pd.DataFrame:
         db_path=db_path,
     )
     df["runs"] = df.runs * 120 / df.lb.clip(lower=1)
-    p = df.pivot_table(index=["match_id", "yr", "winner"], columns="innings", values=["runs", "bt"], aggfunc="first").reset_index()
+    p = df.pivot_table(
+        index=["match_id", "yr", "winner"],
+        columns="innings",
+        values=["runs", "bt"],
+        aggfunc="first",
+    ).reset_index()
     p.columns = ["match_id", "yr", "winner", "bt1", "bt2", "r1", "r2"]
-    a = pd.DataFrame({"yr": p.yr, "team": p.bt1, "rd": p.r1 - p.r2, "win": (p.winner == p.bt1).astype(int)})
-    b = pd.DataFrame({"yr": p.yr, "team": p.bt2, "rd": p.r2 - p.r1, "win": (p.winner == p.bt2).astype(int)})
-    return pd.concat([a, b]).groupby(["yr", "team"], as_index=False).agg(n=("win", "size"), rd=("rd", "mean"), w=("win", "mean"))
+    a = pd.DataFrame(
+        {"yr": p.yr, "team": p.bt1, "rd": p.r1 - p.r2, "win": (p.winner == p.bt1).astype(int)}
+    )
+    b = pd.DataFrame(
+        {"yr": p.yr, "team": p.bt2, "rd": p.r2 - p.r1, "win": (p.winner == p.bt2).astype(int)}
+    )
+    return (
+        pd.concat([a, b])
+        .groupby(["yr", "team"], as_index=False)
+        .agg(n=("win", "size"), rd=("rd", "mean"), w=("win", "mean"))
+    )
 
 
-def runs_per_win(ts: pd.DataFrame, years) -> dict:
-    """1 / slope of (win share - 0.5) on mean run margin, through the origin, weighted by matches; bootstrap 95% range."""
-    s = ts[ts.yr.isin(list(years))]
-    x, y, w = s.rd.values, s.w.values - 0.5, s.n.values
-    slope = lambda i: (w[i] * x[i] * y[i]).sum() / (w[i] * x[i] ** 2).sum()
+def team_ra(ipl_rows: pd.DataFrame) -> pd.DataFrame:
+    """Total runs added by everybody on a team in a season (batting + bowling, all players), keyed (yr, team)."""
+    t = (
+        ipl_rows.assign(ra=ipl_rows.sc + ipl_rows.wk)
+        .groupby(["sy", "team"], as_index=False)
+        .ra.sum()
+    )
+    return t.rename(columns={"sy": "yr"})
+
+
+def runs_per_win(ts: pd.DataFrame, ra: pd.DataFrame, years) -> dict:
+    """Runs per win = how many runs added (summed over a team's players) go with one extra win.
+    Fit: wins above half = (win share - 0.5) x matches, regressed on the team's total runs added through the origin
+    (it is a league of equals, so zero runs added = 0.5), weighted equally per team-season; rpw = 1 / slope.
+    Bootstrap over team-seasons gives a 95% range. `cross` = the same with the mean run margin per match (x matches) instead of runs added."""
+    s = ts[ts.yr.isin(list(years))].merge(ra, on=["yr", "team"])
+    y = (s.w.values - 0.5) * s.n.values
     rng = np.random.default_rng(0)
-    bs = [slope(rng.integers(0, len(s), len(s))) for _ in range(1000)]
-    return dict(rpw=float(1 / slope(np.arange(len(s)))), lo=float(1 / np.percentile(bs, 97.5)), hi=float(1 / np.percentile(bs, 2.5)), team_seasons=int(len(s)), r2=float(np.corrcoef(x, y)[0, 1] ** 2))
+
+    def fit(x):
+        def sl(i):
+            return (x[i] * y[i]).sum() / (x[i] ** 2).sum()
+
+        bs = [sl(rng.integers(0, len(s), len(s))) for _ in range(1000)]
+        return dict(
+            rpw=float(1 / sl(np.arange(len(s)))),
+            lo=float(1 / np.percentile(bs, 97.5)),
+            hi=float(1 / np.percentile(bs, 2.5)),
+            r2=float(np.corrcoef(x, y)[0, 1] ** 2),
+        )
+
+    out = fit(s.ra.values)
+    out["team_seasons"] = int(len(s))
+    out["cross_margin"] = fit(s.rd.values * s.n.values)
+    return out
+
+
+def rpw_from_win_prob() -> float:
+    """Cross-check from the step-2 win-probability model: at the start of an IPL (2023+) chase, a side's win chance moves by
+    d per run of target; 1 / d runs per +1.0 win share (so per win once summed over matches), read where the chance is 50%."""
+    from . import win_prob as wp
+
+    r = np.arange(120, 260)
+    p = wp.chase_wp(r, 120, 0, "ipl_impact", 2025)
+    i = int(np.argmin(np.abs(p - 0.5)))
+    d = (p[i - 5] - p[i + 5]) / 10.0
+    return float(1 / d)
 
 
 def _usage_rank(r: pd.DataFrame, app: pd.DataFrame) -> pd.DataFrame:
-    u = r.groupby(["sy", "team", "player"], as_index=False).balls.sum().rename(columns={"balls": "b_all"})
+    u = (
+        r.groupby(["sy", "team", "player"], as_index=False)
+        .balls.sum()
+        .rename(columns={"balls": "b_all"})
+    )
     a = app.merge(u, on=["sy", "team", "player"], how="left").fillna({"b_all": 0})
     a = a.sort_values(["sy", "team", "matches", "b_all"], ascending=[True, True, False, False])
     a["rk"] = a.groupby(["sy", "team"]).cumcount() + 1
     return a
 
 
-def replacement(r: pd.DataFrame, app: pd.DataFrame, prior_years, cut=11) -> dict:
+def replacement(r: pd.DataFrame, app: pd.DataFrame, prior_years, cut=11, lag=1) -> dict:
     """Runs added per 100 balls (batting per ball faced, bowling per ball bowled) in the NEXT season of the players who were
-    outside their team's top `cut` (by matches, then balls) in a year of `prior_years`. Using the next season keeps the
-    group from being picked by the very results being measured. Returns rate, balls, and a bootstrap SE."""
+    outside their team's top `cut` (by matches, then balls) in a year of `prior_years`. Using the next season (lag=1) keeps the
+    group from being picked by the very results being measured, but only players who got another IPL season show up (flatters them);
+    lag=0 uses the same season (includes players dropped for playing badly: too low). The truth lies between.
+    Returns rate, balls, and a bootstrap SE."""
     a = _usage_rank(r, app)
     fr = a[a.rk > cut].groupby(["sy", "player"]).size().rename("f").reset_index()
     ps = player_year(r)
     out, rng = {}, np.random.default_rng(1)
     for role in ("bat", "bowl"):
         q = ps[ps.role == role].copy()
-        q["sy"] -= 1
+        q["sy"] -= lag
         z = q[q.sy.isin(list(prior_years))].merge(fr, on=["sy", "player"])
         ra, n = (z.sc + z.wk).values, z.balls.values
-        bs = [ra[i].sum() / n[i].sum() * 100 for i in (rng.integers(0, len(z), len(z)) for _ in range(300))]
-        out[role] = dict(per100=float(ra.sum() / n.sum() * 100), se=float(np.std(bs)), balls=int(n.sum()), players=int(len(z)))
+        bs = [
+            ra[i].sum() / n[i].sum() * 100
+            for i in (rng.integers(0, len(z), len(z)) for _ in range(300))
+        ]
+        out[role] = dict(
+            per100=float(ra.sum() / n.sum() * 100),
+            se=float(np.std(bs)),
+            balls=int(n.sum()),
+            players=int(len(z)),
+        )
     return out
 
 
@@ -270,8 +456,9 @@ def load_params() -> dict:
 
 
 def war_table(r: pd.DataFrame, prm: dict) -> pd.DataFrame:
-    """Per player-season (all teams together): batting and bowling runs added, WAR parts and total.
-    WAR = (runs added - replacement per ball x balls) / runs per win of that era."""
+    """Per player-season (all teams together): batting and bowling runs added and WAR, total WAR.
+    WAR = (runs added - replacement per ball x balls) / runs per win of that era.
+    Columns: player, sy, then bat_* / bowl_* for balls, ra, war, repl_runs, runs, wkts, sc, wk; and war (bat + bowl)."""
     ps = player_year(r)
     out = []
     for role in ("bat", "bowl"):
@@ -284,22 +471,27 @@ def war_table(r: pd.DataFrame, prm: dict) -> pd.DataFrame:
         d["repl_runs"] = repl * d.balls
         out.append(d.assign(role=role))
     b = pd.concat(out)
-    w = b.pivot_table(index=["player", "sy"], columns="role", values=["balls", "ra", "war", "repl_runs", "runs", "wkts"], fill_value=0.0)
-    w.columns = [f"{'bat' if c[1] == 'bat' else 'bowl'}_{c[0]}" for c in w.columns]
+    w = b.pivot_table(
+        index=["player", "sy"],
+        columns="role",
+        values=["balls", "ra", "war", "repl_runs", "runs", "wkts", "sc", "wk"],
+        fill_value=0.0,
+    )
+    w.columns = [f"{c[1]}_{c[0]}" for c in w.columns]
     w = w.reset_index()
     w["war"] = w.bat_war + w.bowl_war
     return w
 
 
-# --------------------------------------------------------------------------- projection and validation
-def project_table(P: Panel, t: int, prm: dict, coefs: dict, era_cfg: dict) -> pd.DataFrame:
-    """pWAR for season t for every player with history: per role projected rate, expected balls, pWAR."""
-    e = era_cfg[era_key(t)]
+# --------------------------------------------------------------------------- projection
+def project_table(P: Panel, t: int, prm: dict, era: dict) -> pd.DataFrame:
+    """pWAR for season t for every player with history: per role projected rate (runs added per 100 balls), expected balls, pWAR.
+    era = {era label: {rpw, repl}} (the shipped params' "era" block)."""
+    e = era[era_key(t)]
     out = pd.DataFrame({"player": P.players})
     for role in ("bat", "bowl"):
         sc, wk, den = project_rate(P, role, t, prm)
-        b = _prior_balls(P, role, t, prm["ipl_from"])
-        eb = exp_balls(P, role, t, coefs[role], prm["ipl_from"], b.sum(1) > 0)
+        eb = exp_balls(P, role, t, prm["balls"][role], prm["ipl_from"])
         rate = sc + wk
         out[f"{role}_rate"] = rate * 100
         out[f"{role}_balls"] = eb
@@ -309,46 +501,55 @@ def project_table(P: Panel, t: int, prm: dict, coefs: dict, era_cfg: dict) -> pd
     return out
 
 
+def _panel(rows: dict) -> Panel:
+    return Panel(rows["ipl"], pd.concat([rows[c] for c in rows if c != "ipl"]))
+
+
 def fit_all(db_path=None) -> dict:
-    """Fit runs per win, replacement level, projection constants. Seasons used (see docs/VALUE_step3.md):
-    2023 era numbers: IPL 2023-2026 only; 'pre' era numbers (for old-season WAR display only): IPL 2008-2022."""
+    """Fit runs per win, replacement level, projection constants (for season 2027). Seasons used (see docs/VALUE_step3.md):
+    'now' era numbers: IPL 2023-2026 only; 'pre' era numbers (display of old seasons only): IPL 2008-2022."""
     rows, apps = all_tables()
-    ts = team_seasons(db_path)
-    now, pre = list(range(ERA_IPL, 2027)), list(range(2008, ERA_IPL))
-    rp_now, rp_pre = runs_per_win(ts, now), runs_per_win(ts, pre)
+    ts, ra = team_seasons(db_path), team_ra(rows["ipl"])
+    rp_now = runs_per_win(ts, ra, range(ERA_IPL, 2027))
+    rp_pre = runs_per_win(ts, ra, range(2008, ERA_IPL))
     rep_now = replacement(rows["ipl"], apps["ipl"], range(ERA_IPL, 2026))
     rep_pre = replacement(rows["ipl"], apps["ipl"], range(2008, ERA_IPL - 1))
-    cap = lambda d: {k: min(v["per100"], 0.0) for k, v in d.items()}  # replacement is never better than the average player
-    oth = pd.concat([rows[c] for c in rows if c != "ipl"])
-    P = Panel(rows["ipl"], oth)
-    prm = dict(a=0.5, s=1.0, ipl_from=ERA_IPL, pre_w=0.0, k={})
-    for role in ("bat", "bowl"):
-        prm["k"][role], _ = fit_k(P, role, range(2024, 2027), prm)
-    coefs = {role: fit_balls(P, role, range(2024, 2027), ERA_IPL).tolist() for role in ("bat", "bowl")}
+
+    def cap(d):  # replacement is never better than the average player
+        return {k: min(v["per100"], 0.0) for k, v in d.items()}
+
+    prm = fit_for(_panel(rows), 2027)
     return dict(
         era={
             IPL_NOW_LABEL: dict(rpw=rp_now["rpw"], repl=cap(rep_now)),
             IPL_PRE_LABEL: dict(rpw=rp_pre["rpw"], repl=cap(rep_pre)),
         },
         proj=prm,
-        balls_coef=coefs,
-        detail=dict(rpw_now=rp_now, rpw_pre=rp_pre, repl_now=rep_now, repl_pre=rep_pre),
+        detail=dict(
+            rpw_now=rp_now,
+            rpw_pre=rp_pre,
+            rpw_win_prob=rpw_from_win_prob(),
+            repl_now=rep_now,
+            repl_pre=rep_pre,
+        ),
     )
 
 
-def projections(prm_all: dict, season: int = 2027, db_path=None) -> pd.DataFrame:
+def projections(prm_all: dict, season: int = 2027) -> pd.DataFrame:
     rows, _ = all_tables()
-    oth = pd.concat([rows[c] for c in rows if c != "ipl"])
-    P = Panel(rows["ipl"], oth)
-    return project_table(P, season, prm_all["proj"], {k: np.array(v) for k, v in prm_all["balls_coef"].items()}, prm_all["era"])
+    return project_table(_panel(rows), season, prm_all["proj"], prm_all["era"])
 
 
 def write_pwar_csv(prm_all: dict, season: int = 2027) -> pd.DataFrame:
-    """Players with any T20 balls in the last two years, ranked by pWAR. Columns: cricsheet_name, pwar, bat, bowl, balls basis."""
-    p = projections(prm_all, season)
+    """Players with T20 balls in the last two seasons (any league), ranked by pWAR.
+    cricsheet_name, pwar (bat + bowl), bat, bowl, exp_balls_bat / bowl (expected IPL balls), bat_rate / bowl_rate (projected runs
+    added per 100 balls), ipl_balls_2023_on (0 = no IPL history in the Impact era: expected balls are then 0 and pwar is 0)."""
     rows, _ = all_tables()
+    P = _panel(rows)
+    p = project_table(P, season, prm_all["proj"], prm_all["era"])
     recent = pd.concat(rows.values())
     recent = recent[recent.sy >= season - 2].groupby("player").balls.sum()
+    ib = sum(P.M["I", r, "balls"].loc[:, ERA_IPL : season - 1].sum(1) for r in ("bat", "bowl"))
     p = p[p.player.isin(recent.index)]
     out = pd.DataFrame(
         {
@@ -358,18 +559,304 @@ def write_pwar_csv(prm_all: dict, season: int = 2027) -> pd.DataFrame:
             "bowl": p.bowl_pwar.round(3),
             "exp_balls_bat": p.bat_balls.round(0).astype(int),
             "exp_balls_bowl": p.bowl_balls.round(0).astype(int),
-            "ipl_balls_since_2023": [int(P_) for P_ in 0 * np.arange(len(p))],
+            "bat_rate": p.bat_rate.round(2),
+            "bowl_rate": p.bowl_rate.round(2),
+            "ipl_balls_2023_on": ib.reindex(p.player).values.astype(int),
         }
-    ).drop(columns="ipl_balls_since_2023")
-    out = out.sort_values("pwar", ascending=False)
+    )
+    out = out.sort_values(["pwar", "cricsheet_name"], ascending=[False, True])
     out.to_csv(DATA / f"pwar_ipl_{season}.csv", index=False)
     return out
 
 
+# --------------------------------------------------------------------------- validation (all out of sample: year t uses data before t)
+def _metrics(a, pred, prev_war, prev_raw):
+    """a = actual WAR, pred = pWAR, prev_war = last season's WAR, prev_raw = last season's runs (batters) / wickets (bowlers)."""
+    k = (prev_war * a).sum() / (
+        prev_war**2
+    ).sum()  # best possible rescaling of last season's WAR (in sample, flatters the baseline)
+
+    def r(x):
+        return float(np.corrcoef(x, a)[0, 1])
+
+    def sp(x):
+        return float(pd.Series(x).rank().corr(pd.Series(a).rank()))
+
+    def mae(x):
+        return float(np.abs(a - x).mean())
+
+    return dict(
+        n=len(a),
+        r_pwar=r(pred),
+        r_last_war=r(prev_war),
+        r_last_raw=r(prev_raw),
+        rho_pwar=sp(pred),
+        rho_last_war=sp(prev_war),
+        rho_last_raw=sp(prev_raw),
+        mae_pwar=mae(pred),
+        mae_last_war=mae(prev_war),
+        mae_last_war_scaled=mae(k * prev_war),
+        mae_zero=mae(0 * a),
+        scale=float(k),
+    )
+
+
+def validate_players(rows, prm_all, targets=(2024, 2025, 2026), minb=100):
+    """For each target year t: fit the projection constants on pseudo-targets before t, project t from earlier data, compare with the
+    realised WAR of players with at least minb balls in t who also had IPL balls the season before.
+    Returns (per-role pooled metrics, per-year r, rate-level r)."""
+    P = _panel(rows)
+    W = war_table(rows["ipl"], prm_all)
+    ps = player_year(rows["ipl"])
+    res, per_year, rate = [], [], []
+    for role in ("bat", "bowl"):
+        A, PR, LW, LR = [], [], [], []
+        for t in targets:
+            prm = fit_for(P, t)
+            pt = project_table(P, t, prm, prm_all["era"]).set_index("player")
+            act = W[W.sy == t].set_index("player")
+            prev = W[W.sy == t - 1].set_index("player")
+            pr = ps[(ps.role == role) & (ps.sy == t - 1)].set_index("player")
+            m = [
+                x
+                for x in act.index[act[f"{role}_balls"] >= minb]
+                if x in prev.index and prev.loc[x, f"{role}_balls"] > 0
+            ]
+            a = act.loc[m, f"{role}_war"].values
+            pw = pt.loc[m, f"{role}_pwar"].values
+            lw = prev.loc[m, f"{role}_war"].values
+            lr = (pr.loc[m, "runs"] if role == "bat" else pr.loc[m, "wkts"]).values
+            A.append(a)
+            PR.append(pw)
+            LW.append(lw)
+            LR.append(lr)
+            d = _metrics(a, pw, lw, lr)
+            per_year.append(
+                dict(
+                    role=role,
+                    year=t,
+                    n=d["n"],
+                    r_pwar=d["r_pwar"],
+                    r_last_war=d["r_last_war"],
+                    r_last_raw=d["r_last_raw"],
+                )
+            )
+            ar = (act.loc[m, f"{role}_ra"] / act.loc[m, f"{role}_balls"] * 100).values
+            prate = pt.loc[m, f"{role}_rate"].values
+            raw = (
+                pr.loc[m, "runs"] / pr.loc[m, "balls"] * (100 if role == "bat" else -6)
+            ).values  # strike rate, or minus economy
+            rate.append(
+                dict(
+                    role=role,
+                    year=t,
+                    n=len(m),
+                    r_proj_rate=float(np.corrcoef(prate, ar)[0, 1]),
+                    r_last_sr_or_econ=float(np.corrcoef(raw, ar)[0, 1]),
+                    proj_sd=float(prate.std()),
+                    actual_sd=float(ar.std()),
+                )
+            )
+        res.append(dict(role=role, **_metrics(*(np.concatenate(x) for x in (A, PR, LW, LR)))))
+    return pd.DataFrame(res), pd.DataFrame(per_year), pd.DataFrame(rate)
+
+
+def validate_teams(rows, apps, prm_all, ts, targets):
+    """Team level: the sum of pWAR (projected from data before the season) of each team's most-used XI that season (by matches, then
+    balls) against that team's actual win share. Baselines: the same XI's summed raw WAR the season before, and the team's own win
+    share the season before (teams whose name is unchanged). Ceiling: the XI's summed realised WAR that season."""
+    P = _panel(rows)
+    W = war_table(rows["ipl"], prm_all)
+    u = _usage_rank(rows["ipl"], apps["ipl"])
+    out = []
+    for t in targets:
+        prm = fit_for(P, t)
+        pt = project_table(P, t, prm, prm_all["era"]).set_index("player").pwar
+        xi = u[(u.sy == t) & (u.rk <= 11)]
+        w_t = W[W.sy == t].set_index("player").war
+        w_p = W[W.sy == t - 1].set_index("player").war
+        g = xi.assign(
+            pwar=xi.player.map(pt).fillna(0.0),
+            last=xi.player.map(w_p).fillna(0.0),
+            real=xi.player.map(w_t).fillna(0.0),
+        )
+        g = g.groupby("team", as_index=False)[["pwar", "last", "real"]].sum()
+        g["yr"] = t
+        out.append(g)
+    g = pd.concat(out).merge(
+        ts.rename(columns={"w": "win"})[["yr", "team", "win"]], on=["yr", "team"]
+    )
+    prev = ts.assign(yr=ts.yr + 1).rename(columns={"w": "prev_win"})[["yr", "team", "prev_win"]]
+    g = g.merge(prev, on=["yr", "team"], how="left")
+    res = {}
+    for name, col in (
+        ("pwar (XI)", "pwar"),
+        ("last season WAR (XI)", "last"),
+        ("previous win share", "prev_win"),
+        ("realised WAR (XI), ceiling", "real"),
+    ):
+        d = g.dropna(subset=[col])
+        r = np.corrcoef(d[col], d.win)[0, 1]
+        sl = np.polyfit(
+            d[col], d.win, 1
+        )  # straight line fitted on the same points (in sample, flatters every row equally)
+        res[name] = dict(
+            n=len(d),
+            r=float(r),
+            r2=float(r**2),
+            rmse_win=float(np.sqrt(((np.polyval(sl, d[col]) - d.win) ** 2).mean())),
+            slope=float(sl[0]),
+        )
+    res["constant (mean)"] = dict(
+        n=len(g), r=0.0, r2=0.0, rmse_win=float(g.win.std(ddof=0)), slope=0.0
+    )
+    return pd.DataFrame(res).T, g
+
+
+def pre_w_test(rows, targets=(2024, 2025, 2026), grid=(0.0, 0.25, 0.5, 1.0)):
+    """Do IPL seasons before 2023 help as down-weighted evidence? Same grid search of the other constants for each pre_w; paired
+    bootstrap of the loss difference vs pre_w = 0 over player-seasons (95% range; negative = older seasons help)."""
+    P = _panel(rows)
+    rng = np.random.default_rng(3)
+    out = []
+    for role in ("bat", "bowl"):
+        base = None
+        for pw in grid:
+            q = fit_proj(P, role, targets, pre_w=pw)
+            e, w = _loss_terms(P, role, targets, {"ipl_from": ERA_IPL, role: q})
+            base = base or (e, w)
+            n = len(e)
+            ds = []
+            for _ in range(400):
+                i = rng.integers(0, n, n)
+                ds.append(
+                    (e[i].sum() / w[i].sum()) ** 0.5 - (base[0][i].sum() / base[1][i].sum()) ** 0.5
+                )
+            cur, ref = (e.sum() / w.sum()) ** 0.5, (base[0].sum() / base[1].sum()) ** 0.5
+            out.append(
+                dict(
+                    role=role,
+                    pre_w=pw,
+                    rmse=float(cur),
+                    diff_vs_0=float(cur - ref),
+                    lo=float(np.percentile(ds, 2.5)),
+                    hi=float(np.percentile(ds, 97.5)),
+                    a=q["a"],
+                    s=q["s"],
+                    k=q["k"],
+                )
+            )
+    return pd.DataFrame(out)
+
+
+def variants_test(rows, targets=(2024, 2025, 2026)):
+    """Loss of the projection (ball-weighted RMSE of runs added per ball, 2024-26) when parts are switched off; constants refitted each time."""
+    P = _panel(rows)
+    out = []
+    for role in ("bat", "bowl"):
+        zero = loss(
+            P, role, targets, {"ipl_from": ERA_IPL, role: dict(a=0, s=1, pre_w=0, k=[1e12, 1e12])}
+        )
+        for name, ag in (("IPL 2023+ only", (0.0,)), ("+ other leagues", AGRID)):
+            q = fit_proj_over(P, role, targets, ag)
+            out.append(
+                dict(
+                    role=role,
+                    variant=name,
+                    rmse=loss(P, role, targets, {"ipl_from": ERA_IPL, role: q}),
+                    a=q["a"],
+                    s=q["s"],
+                    k=q["k"],
+                    zero=zero,
+                )
+            )
+        for pw in (
+            0.5,
+            1.0,
+        ):  # wicket part leans on older IPL seasons (its own longer-run dismissal record)
+            best = min(
+                (
+                    loss(
+                        P,
+                        role,
+                        targets,
+                        {
+                            "ipl_from": ERA_IPL,
+                            role: dict(a=0.25, s=1.0, pre_w=0.0, pre_w_wk=pw, k=[k1, k2]),
+                        },
+                    ),
+                    k1,
+                    k2,
+                )
+                for k1 in KGRID
+                for k2 in KGRID
+            )
+            out.append(
+                dict(
+                    role=role,
+                    variant=f"wicket part also uses IPL before 2023 at weight {pw}",
+                    rmse=best[0],
+                    a=0.25,
+                    s=1.0,
+                    k=list(best[1:]),
+                    zero=zero,
+                )
+            )
+    return pd.DataFrame(out)
+
+
+def sensitivity(rows, apps, prm_all):
+    """Replacement-level variants: runs added per 100 balls (bat per ball faced, bowl per ball bowled) and what each would do to the WAR of
+    a typical regular (400 balls batting, 288 bowling) = rate x balls / runs per win of the 2023 era."""
+    rpw = prm_all["era"][IPL_NOW_LABEL]["rpw"]
+    out = []
+    for name, kw in (
+        ("next season, outside top 11 (used)", dict(cut=11, lag=1)),
+        ("next season, outside top 13", dict(cut=13, lag=1)),
+        ("same season, outside top 11", dict(cut=11, lag=0)),
+        ("same season, outside top 13", dict(cut=13, lag=0)),
+    ):
+        for era, yrs in (
+            ("2023+", range(ERA_IPL, 2026 if kw["lag"] else 2027)),
+            ("pre-2023", range(2008, ERA_IPL - (1 if kw["lag"] else 0))),
+        ):
+            d = replacement(rows["ipl"], apps["ipl"], yrs, **kw)
+            for role, nb in (("bat", 400), ("bowl", 288)):
+                out.append(
+                    dict(
+                        variant=name,
+                        era=era,
+                        role=role,
+                        per100=d[role]["per100"],
+                        se=d[role]["se"],
+                        balls=d[role]["balls"],
+                        war_per_regular=d[role]["per100"] / 100 * nb / rpw,
+                    )
+                )
+    return pd.DataFrame(out)
+
+
 def main() -> None:
+    import sys
+
+    if "--validate" in sys.argv:
+        rows, apps = all_tables()
+        prm = load_params()
+        pd.set_option("display.width", 250, "display.max_columns", 30)
+        ts = team_seasons()
+        print(sensitivity(rows, apps, prm).round(3).to_string())
+        print(variants_test(rows).round(5).to_string())
+        print(pre_w_test(rows).round(5).to_string())
+        for name, tg in (("2024-26", (2024, 2025, 2026)), ("2020-26", tuple(range(2020, 2027)))):
+            t, g = validate_teams(rows, apps, prm, ts, tg)
+            print("TEAM", name, len(g))
+            print(t.round(3).to_string())
+        for x in validate_players(rows, prm):
+            print(x.round(3).to_string())
+        return
     prm = fit_all()
     PARAMS.write_text(json.dumps(prm, indent=1))
-    print(json.dumps(prm["era"], indent=1), json.dumps(prm["proj"]), prm["balls_coef"])
+    print(json.dumps(prm["era"], indent=1), json.dumps(prm["proj"]))
     print(write_pwar_csv(prm).head(25).to_string())
 
 
