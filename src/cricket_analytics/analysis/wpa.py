@@ -6,7 +6,7 @@ import pandas as pd
 from ..db import query
 from ..models import win_prob as wp
 from ..registry import ParamSpec, module, std
-from ..sql.filters import Filters
+from ..sql.filters import Filters, explain_empty
 from ..sql.fragments import MATCH_OUTCOME
 from ..sql.state import ball_state
 
@@ -191,9 +191,23 @@ def wpa(
     if view == "match":
         if match_id is None:
             raise ValueError("view=match needs match_id")
-        return match_curve(d, str(match_id))
+        m = match_curve(d, str(match_id))
+        if m.empty:
+            known = not query("SELECT 1 FROM matches WHERE match_id = ?", [str(match_id)]).empty
+            raise ValueError(
+                f"match_id {match_id} is "
+                + (
+                    "excluded from WPA (Duckworth-Lewis, no result, shortened first innings, The Hundred, or a non-6-ball match)"
+                    if known
+                    else "not in the database (check the Cricsheet id)"
+                )
+            )
+        return m
     if d.empty:
-        return pd.DataFrame()
+        raise explain_empty(
+            f,
+            "win probability added (WPA covers 6-ball T20 matches with a result; not The Hundred or D/L)",
+        )
     bat = role == "batting"
     mine, other = ("batting_team", "bowling_team") if bat else ("bowling_team", "batting_team")
     who = d.bat_who if bat else d.bowler
@@ -208,7 +222,7 @@ def wpa(
         keep &= who == f.player
     d, who = d[keep], who[keep]
     if d.empty:
-        return pd.DataFrame()
+        raise explain_empty(f, "win probability added")
     val = d.bat_wpa if bat else d.bowl_wpa
     e = pd.DataFrame(
         {

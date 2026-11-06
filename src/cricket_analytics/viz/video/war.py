@@ -21,7 +21,7 @@ def video_figure(result, aspect="9:16", focus=None):
         "Projected wins, IPL 2027" if proj else "Most wins above replacement",
         aspect,
         ("a prediction from earlier seasons | " if proj else "about 100 runs added = 1 win | ")
-        + scope_text(result),
+        + scope_text(result, default="IPL"),
         note,
         fmt=lambda v: "+" + num(v, 2),
     )

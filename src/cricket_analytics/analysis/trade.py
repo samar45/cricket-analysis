@@ -175,6 +175,7 @@ def _trade_frame(r: dict) -> pd.DataFrame:
     caveats=[
         "Value is RECENT, not predicted: batters' projections showed no out-of-sample skill (r 0.06). Playoff and title odds come from a season simulation whose match-win slope is fitted on IPL 2024-26 (about 215 matches) and is weak and uncertain: the odds are a range, not a forecast, and a trade moves them by a few points at most.",
         "Recent value only weakly carries into the next season (IPL 2025-26 targets: r 0.13, slope 0.17 over 218 player-seasons): most of a season's value is luck, so a gap between two players is rarely skill.",
+        "With no player given on either side the result is the no-change baseline (verdict 'no change to the best XII'), on purpose: it is the starting view and also how must_play alone is tried.",
         "A trade only changes the XII when a player is good enough (by recent value) to be in it or to push someone out; the XII ignores reputation, so a poor-recent-form star can sit outside it and a swap then reads 'no change'.",
         "Ranges (10th-90th percentile) come from resampling each player's own matches; they do not include role changes, injuries, age, or fielding. A 'likely' verdict means most resamples agree, not that the future is known.",
         "Players with no IPL evidence since 2023 (new signings, uncapped) count as 0 (replacement) with the spread of past debutants; nothing is invented for them.",

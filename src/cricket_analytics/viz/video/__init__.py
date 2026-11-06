@@ -107,14 +107,12 @@ def num(x, dec: int | None = None) -> str:
     return f"{x:,.{dec}f}"
 
 
-def scope_text(result, skip=("player", "player2")) -> str:
+def scope_text(result, skip=("player", "player2"), default="All men's T20") -> str:
     """'IPL 2024' / 'IPL, Mumbai Indians': the data filters, minus what the title already says."""
     p = result.meta["params"]
     comp = p.get("competition")
     parts = [
-        competitions.COMPETITIONS[comp].label
-        if comp in competitions.COMPETITIONS
-        else "All men's T20"
+        competitions.COMPETITIONS[comp].label if comp in competitions.COMPETITIONS else default
     ]
     for k in ("season", "team", "opposition", "venue", "phase"):
         v = p.get(k)

@@ -12,6 +12,7 @@ Rebuild:  python -m cricket_analytics.models.trade           (about 40 s, reads 
 Full method and every judgement call: docs/VALUE_step5.md.
 """
 
+import difflib
 import itertools
 import re
 from dataclasses import dataclass, field
@@ -720,6 +721,15 @@ def resolve(pt: pd.DataFrame, names, team: str) -> list[str]:
     out = []
     for n in names:
         k = lut.get(str(n).strip().lower())
+        if k is None and team == "league":  # ~250 names: show the closest few, not all
+            near = difflib.get_close_matches(str(n).strip().lower(), list(lut), n=5, cutoff=0.5)
+            raise ValueError(
+                f"{n!r} is not in the league squad. Closest: "
+                + (
+                    ", ".join(dict.fromkeys(str(lut[x]) for x in near))
+                    or "none (check the spelling)"
+                )
+            )
         if k is None:
             raise ValueError(
                 f"{n!r} is not in the {team} squad. Valid names: "
@@ -784,6 +794,16 @@ def evaluate(
     a, b = team_abbr(team), team_abbr(team2)
     if a == b:
         raise ValueError("Pick two different teams")
+    gl, tl = (
+        ([give] if isinstance(give, str) else list(give or [])),
+        ([get] if isinstance(get, str) else list(get or [])),
+    )
+    # an empty give and get is valid on purpose: the dashboard default and must_play-only runs are a no-change baseline (F5)
+    both = {str(x).strip().lower() for x in gl} & {str(x).strip().lower() for x in tl}
+    if both:
+        raise ValueError(
+            f"{sorted(both)[0]!r} is on both sides of the trade: a player can only leave one team"
+        )
     tab = player_table(squads(c, baseline, only=list(give or []) + list(get or [])), v)
     A, B = tab[tab.team == a], tab[tab.team == b]
     gk, tk = resolve(A, give, a), resolve(B, get, b)

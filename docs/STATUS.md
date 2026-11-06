@@ -129,3 +129,7 @@
 - Matchup predictor: beats league average by ~1% log loss on 33,303 IPL 2025-26 balls; P(out) calibrated within 0.7 pts. Kohli v Bumrah middle overs 1.31 runs/ball, 3.5% out (WagonLens PDF: 1.35, 4.5%).
 - Trade tool (option A, recent value): Pant/Kuldeep -> LSG +0.45 (likely better), DC -0.54 (likely worse). Lead found + fixed a bug: `team` param was swallowed by Filters (always MI); regression test added. Verdict labels overlapped on the card: wrapped.
 - Tests: value tests pass (trade 23); worker full run 518.
+
+## 2026-11-07 Moneyball plan M0-M7 done (docs/PLAN_moneyball.md)
+- M0 E2E 45 tests; bugs F1-F4, F6 fixed (F5 kept as labelled no-change). M1 auctions 2022-26 (sold totals = official). M2 stability table; component projection / controllable WAR not better beyond noise (pWAR kept). M3 SMAT ingested (695 matches; DB swapped after lead check, backup data/cricket_analytics_prev_2026-11-07.duckdb); translation factors. M4 auction model = base-price baseline (2026 test MAE 1.88 vs 1.89); value features add nothing. M5 uncapped Indians not a bargain even vs cheapest alternative (-0.08 WAR/10cr, -0.34..+0.19). M6 scarcity did not move prices. M7 Auction room page (lead checked in browser), 60 wrong initials-name matches blanked.
+- Next: M8 after 17 Nov retentions / 16 Dec auction; ask agent doesn't know the new modules; keepers missing in reviewed list.

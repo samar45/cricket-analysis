@@ -96,8 +96,8 @@ def _player(name: str) -> pd.DataFrame:
             "view",
             "choice",
             default="predict",
-            choices=("predict", "market", "player"),
-            help="predict = one auction's pool; market = WAR per crore by buy type; player = one player (needs the player filter)",
+            choices=("predict", "market", "cheapest", "played", "player"),
+            help="predict = one auction's pool; market = WAR per crore by buy type; cheapest = the same against the cheapest alternative (base-price buys); played = share of buys with any IPL ball; player = one player (needs the player filter)",
         ),
         ParamSpec("auction_year", "int", default=2026, help="view=predict: auction year 2022-2026"),
         ParamSpec(
@@ -125,6 +125,7 @@ def _player(name: str) -> pd.DataFrame:
         "Only players who were put on the block are modelled; the unsold lists are partial (2025: 293 further rows of unknown status are left out), and a mini auction's real purse left is unknown. No age data. Prices are paid prices, not bids.",
         "Value inputs use our WAR (IPL 2023+ only), other T20 leagues and the domestic SMAT trophy; players without any such data (many uncapped) look like average players with no history.",
         "view=market: WAR is one season of mostly luck (talent explains about 5-10% of the spread); bench players count as 0 WAR for their full price; names that could not be matched to Cricsheet count as 0 WAR. Small groups are flagged.",
+        "view=cheapest: the replacement is the mean WAR of that cycle's base-price buys (base <= 0.3 cr, sold at base), taken as known; retained players are their own group. view=played counts a buy as 'played' with at least one IPL ball in the auction's season.",
         "The 2022 'retained' rows exclude the two new teams' draft picks; retained players have no role listed. Price bands use nominal crore, so a 2025 'over 8 cr' deal is a smaller share of the purse than a 2022 one.",
     ],
 )
@@ -142,6 +143,10 @@ def auction(
         yrs = (2022, 2023, 2024, 2025) + ((2026,) if include_2026 else ())
         t = A.market_table(A.load_market(), GROUPS[group_by], years=yrs)
         return t.rename(columns={"group": group_by})
+    if view == "cheapest":
+        return A.cheapest_table(A.load_market())
+    if view == "played":
+        return A.played_share(A.load_market())
     if view == "player":
         if not f.player:
             raise ValueError("view=player needs the player filter")

@@ -7,6 +7,7 @@ import pandas as pd
 from ..db import current_db_path
 from ..models import war as w
 from ..registry import ParamSpec, module, std
+from ..sql.filters import explain_empty
 
 MIN_BALLS = 100
 PROJ_SEASON = 2027
@@ -105,6 +106,7 @@ def _projected(f, role: str, components: bool, top: int) -> pd.DataFrame:
         "WAR is only as repeatable as runs added is: a season's runs added is mostly luck (talent explains roughly 5-10% of the spread between players). Do not read a 0.5 difference between two players as skill.",
         "pWAR is a prediction, not a rating. Out of sample (IPL 2024-2026) it ranks bowlers a bit better than last season's WAR and it does not beat the simple baselines for batters or for team win share. No age data is used.",
         "pWAR counts expected balls from the last three IPL seasons. A player with no IPL ball since 2023 has 0 expected balls and pWAR 0 (see the ipl_balls_2023_on column); his projected rate is still shown.",
+        "bat_runs_added / bowl_runs_added here are re-centred (each league-season is shifted so an average player is 0 before replacement is subtracted), so they differ from the runs_added module for the same player-season (e.g. Kohli 2016: 162.2 here vs 153.4 there). WAR is exact against its own columns.",
         "Fielding is not included. Team changes inside a season are added together; only IPL is supported.",
     ],
 )
@@ -122,11 +124,13 @@ def war(
         min_balls = 1 if f.player else MIN_BALLS
     r = _scoped(f)
     if r.empty:
-        return pd.DataFrame()
+        raise explain_empty(f, "WAR (IPL seasons 2008-2026)")
     prm = w.load_params()
     t = w.war_table(r, prm)
     if f.player:
         t = t[t.player == f.player]
+        if t.empty:
+            raise explain_empty(f, "WAR")
     bb, wb = t.bat_balls, t.bowl_balls
     t = t.assign(season=t.sy)
     if role == "batting":

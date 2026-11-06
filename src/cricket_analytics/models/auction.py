@@ -47,11 +47,6 @@ NAME_FIX = {
     (2025, "Rasikh Salam Dar"): "Rasikh Salam",
     (2025, "Shubham Dubey"): "SB Dubey",
 }
-# automatic initials matches that joined different people (several auction names on one Cricsheet name): blanked
-BAD_MAP = {
-    "A Singh", "MP Yadav", "P Simran Singh", "R Vinay Kumar", "S Sharma", "S Singh", "SA Yadav",
-}  # fmt: skip
-BAD_MAP_ROWS = {(2023, "Upendra Yadav"), (2025, "Upendra Yadav"), (2022, "Mohammed Arshad Khan")}
 # 2022 "retentions" that were the two new teams' draft picks, not retentions
 DRAFT_2022 = {
     "Hardik Pandya",
@@ -74,12 +69,8 @@ def total_purse(year: int) -> float:
 
 # --------------------------------------------------------------------------------------------- inputs
 def fix_names(a: pd.DataFrame) -> pd.DataFrame:
-    """Blank the known wrong Cricsheet matches, then fill the known missing ones."""
+    """Fill the known missing Cricsheet names (wrong initials matches are blanked in the CSV itself, 2026-11-07 review)."""
     a = a.copy()
-    bad = a.cricsheet_name.isin(BAD_MAP) | pd.Series(
-        [(y, p) in BAD_MAP_ROWS for y, p in zip(a.auction_year, a.player)], index=a.index
-    )
-    a.loc[bad, "cricsheet_name"] = np.nan
     for (y, p), c in NAME_FIX.items():
         a.loc[
             (a.auction_year == y) & (a.player == p) & a.cricsheet_name.isna(), "cricsheet_name"
@@ -592,10 +583,10 @@ def build_market(rows: dict | None = None) -> pd.DataFrame:
     t20i = rows["t20i"]
     a = fix_names(pd.read_csv(REF / "ipl_auctions.csv"))
     a = a[a.sold]
-    b = pd.DataFrame({"year": a.auction_year, "player": a.player, "cs": a.cricsheet_name, "price": a.price_cr, "overseas": a.overseas.astype(bool), "capped": a.capped, "role": a.role, "source": "auction", "team": a.team})  # fmt: skip
+    b = pd.DataFrame({"year": a.auction_year, "player": a.player, "cs": a.cricsheet_name, "price": a.price_cr, "overseas": a.overseas.astype(bool), "capped": a.capped, "role": a.role, "source": "auction", "team": a.team, "base": a.base_price_cr})  # fmt: skip
     r = pd.read_csv(REF / "ipl_retentions.csv")
     r = r[r.cycle_year.isin((2022, 2025)) & ~((r.cycle_year == 2022) & r.player.isin(DRAFT_2022))]
-    br = pd.DataFrame({"year": r.cycle_year, "player": r.player, "cs": r.cricsheet_name, "price": r.price_cr, "overseas": r.overseas.astype(bool), "capped": np.nan, "role": None, "source": "retained", "team": r.team})  # fmt: skip
+    br = pd.DataFrame({"year": r.cycle_year, "player": r.player, "cs": r.cricsheet_name, "price": r.price_cr, "overseas": r.overseas.astype(bool), "capped": np.nan, "role": None, "source": "retained", "team": r.team, "base": np.nan})  # fmt: skip
     b = pd.concat([b, br], ignore_index=True)
     key = list(zip(b.cs, b.year))
     b["war"] = [float(played.war.get(k, 0.0)) if isinstance(k[0], str) else 0.0 for k in key]
@@ -621,6 +612,23 @@ def build_market(rows: dict | None = None) -> pd.DataFrame:
         np.where(b.year.isin(MEGA), "mega auction", "mini auction"),
     )
     b["role"] = b.role.fillna("unknown")
+    return add_cheapest(b)
+
+
+CHEAP_BASE = (
+    0.3  # cr: base-price buys at or below this, sold at base, are "the cheapest alternative"
+)
+
+
+def add_cheapest(b: pd.DataFrame) -> pd.DataFrame:
+    """Adds `cheap_war` (mean WAR of that cycle's cheapest buys: base <= 0.3 cr and sold at base) and `war_vs_cheap`
+    (WAR minus that: what the buy gave over a cheap alternative filling the same roster slot), and `group4`."""
+    b = b.copy()
+    cheap = (b.source == "auction") & (b.base <= CHEAP_BASE) & (b.price <= b.base + 1e-9)
+    rate = b[cheap].groupby("year").war.mean()
+    b["cheap_war"] = b.year.map(rate)
+    b["war_vs_cheap"] = b.war - b.cheap_war
+    b["group4"] = np.where(b.kind == "retained", "retained", b.type)
     return b
 
 
@@ -666,6 +674,49 @@ def market_table(
     out = pd.DataFrame(rows)
     out.attrs["cr_per_win"] = cr_per_win
     return out
+
+
+def cheapest_table(b: pd.DataFrame, by="group4", years=(2022, 2023, 2024, 2025)) -> pd.DataFrame:
+    """Two views per group, side by side: WAR per 10 cr against the league average (replacement ~ 0, the M5 table) and
+    against the CHEAPEST ALTERNATIVE (WAR minus the mean WAR of that cycle's base-price buys), plus the share who got IPL balls.
+    The cheap rate of a cycle is treated as known (its own uncertainty is not in the ranges)."""
+    b = b[b.year.isin(years)]
+    rows = []
+    for k, g in b.groupby(by):
+        c = g.price.values
+        e0, l0, h0 = bootstrap_ratio(g.war.values, c)
+        e1, l1, h1 = bootstrap_ratio(g.war_vs_cheap.values, c)
+        rows.append(
+            {
+                "group": k, "players": len(g), "crore_spent": round(c.sum(), 1),
+                "war_per_10cr_vs_average": round(e0, 3), "lo_avg": round(l0, 3), "hi_avg": round(h0, 3),
+                "war_per_10cr_vs_cheapest": round(e1, 3), "lo_cheap": round(l1, 3), "hi_cheap": round(h1, 3),
+                "played_%": round(100 * (g.balls > 0).mean(), 0),
+            }
+        )  # fmt: skip
+    return pd.DataFrame(rows)
+
+
+def played_share(b: pd.DataFrame, years=(2022, 2023, 2024, 2025)) -> pd.DataFrame:
+    """Share of buys with any IPL ball in the season of the auction, by group and price band (players in brackets)."""
+    b = b[b.year.isin(years)].assign(played=lambda d: d.balls > 0)
+    t = b.pivot_table(index="group4", columns="band", values="played", aggfunc=["mean", "size"])
+    bands = ["to 0.5 cr", "0.5-2 cr", "2-8 cr", "over 8 cr"]
+    out = pd.DataFrame(index=t.index)
+    for bd in bands:
+        m, n = t["mean"].get(bd), t["size"].get(bd)
+        out[bd] = [
+            "-" if pd.isna(n.loc[i]) else f"{100 * m.loc[i]:.0f}% ({int(n.loc[i])})"
+            for i in t.index
+        ]
+    out["all"] = [f"{100 * g.played.mean():.0f}% ({len(g)})" for _, g in b.groupby("group4")]
+    return out.reset_index().rename(columns={"group4": "group"})
+
+
+def cheap_rates(b: pd.DataFrame) -> pd.DataFrame:
+    """Per cycle: how many cheapest buys and their mean WAR (the replacement used by cheapest_table)."""
+    c = b[(b.source == "auction") & (b.base <= CHEAP_BASE) & (b.price <= b.base + 1e-9)]
+    return c.groupby("year").agg(cheap_buys=("war", "size"), mean_war=("war", "mean"), played=("balls", lambda s: (s > 0).mean())).round(3).reset_index()  # fmt: skip
 
 
 def diff_unc_vs_rest(
@@ -738,6 +789,9 @@ def main() -> None:
     mk = build_market()
     mk.to_csv(MARKET, index=False)
     summary["market_unc_vs_rest"] = {"all": diff_unc_vs_rest(mk), **{bnd: diff_unc_vs_rest(mk, band=bnd) for bnd in ("to 0.5 cr", "0.5-2 cr", "2-8 cr")}}  # fmt: skip
+    summary["market_vs_cheapest"] = cheapest_table(mk).to_dict("records")
+    summary["market_played_share"] = played_share(mk).to_dict("records")
+    summary["market_cheap_rates"] = cheap_rates(mk).to_dict("records")
     MODEL.write_text(json.dumps(summary, indent=1, default=float))
     print(
         json.dumps({k: summary[k] for k in ("target", "group")}),

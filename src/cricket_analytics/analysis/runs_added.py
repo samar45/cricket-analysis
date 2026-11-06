@@ -14,7 +14,7 @@ from ..models.run_expectancy import (
     ra_state,
 )
 from ..registry import ParamSpec, module, std
-from ..sql.filters import Filters
+from ..sql.filters import Filters, explain_empty
 from ..sql.fragments import BALL_FACED, DISMISSAL
 
 MIN_BALLS = 100
@@ -52,6 +52,7 @@ MIN_BALLS = 100
         "Batters are charged for balls used up (a dot ball costs about one run early on) and for their own wicket, including a non-striker run out. Extras are not the batter's: a small constant is added so an average batter scores 0.",
         "Bowlers are credited for runs they concede (bat runs + wides + no-balls, not byes) and for wickets that are theirs (not run outs). A small constant is added so an average bowler scores 0.",
         "Ground factor: venue scoring versus the era average, pulled toward 1 for grounds with few matches. It scales the expectancy change, not the runs.",
+        "The war module's bat_runs_added / bowl_runs_added will not match this module for the same player-season: WAR re-centres each league-season so an average player is 0 before subtracting replacement.",
         "No batting-order or opposition adjustment: openers and finishers face different tasks, and strong sides face weaker attacks. Small samples swing a lot: 100 balls is roughly +/-8 runs per 100.",
     ],
 )
@@ -101,7 +102,7 @@ def runs_added(
         ]
     )
     if rows.empty:
-        return pd.DataFrame(columns=cols)
+        raise explain_empty(f, "runs added")
     for c in (
         "wickets_before",
         "b",

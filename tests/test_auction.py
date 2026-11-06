@@ -1,5 +1,7 @@
 """Auction price model and market check (models/auction.py, module `auction`). Most tests read the saved files only."""
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -108,3 +110,50 @@ def test_module_views_and_charts():
         api.run("auction", view="player")
     with pytest.raises(ValueError):
         api.run("auction", competition="bbl")
+
+
+@requires_real_db
+def test_auction_room_page_renders_every_section():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_file(
+        str(Path(__file__).parent.parent / "dashboard" / "app.py"), default_timeout=180
+    ).run()
+    at.sidebar.radio(key="page").set_value("Auction room").run()
+    assert not at.exception, [e.message for e in at.exception]
+    assert not at.error and not [w for w in at.warning if "Check your filters" in w.value]
+    heads = [s.value for s in at.subheader]
+    for h in ("2027 needs", "Scarce roles", "Price estimator", "Uncapped scouting", "Market check"):
+        assert h in heads
+    assert len(at.dataframe) >= 9  # needs, scarcity, estimator, 2 scouting lists, 3 market tables
+    assert any("PROVISIONAL" in w.value for w in at.warning)
+    assert any("did NOT raise prices" in i.value for i in at.info)
+    assert any("barely beats" in c.value for c in at.caption)
+    at.selectbox(key="ar_player").set_value("Prabhsimran Singh").run()
+    assert not at.exception
+
+
+def test_wrong_initials_matches_are_blank_and_right_ones_kept():
+    a = A.fix_names(pd.read_csv(A.REF / "ipl_auctions.csv"))
+    nm = a.groupby("player").cricsheet_name.first()
+    for wrong in (
+        "Sonu Yadav",
+        "Mangesh Yadav",
+        "Upendra Yadav",
+        "Gaurav Gambhir",
+        "Mohammed Kaif",
+    ):
+        assert pd.isna(nm[wrong]), wrong
+    assert nm["Mayank Yadav"] == "MP Yadav" and nm["Prabhsimran Singh"] == "P Simran Singh"
+    assert nm["Umesh Yadav"] == "UT Yadav"
+
+
+def test_cheapest_table_and_played_share():
+    mk = A.load_market()
+    c = A.cheapest_table(mk)
+    assert set(c.group) == {"capped Indian", "overseas", "retained", "uncapped Indian"}
+    # the cheapest-alternative rate is a cycle mean, so it shifts every group by a small amount only
+    assert (c.war_per_10cr_vs_cheapest - c.war_per_10cr_vs_average).abs().max() < 0.3
+    cheap = mk[(mk.source == "auction") & (mk.base <= A.CHEAP_BASE) & (mk.price <= mk.base + 1e-9)]
+    assert abs((cheap.war - cheap.cheap_war).groupby(cheap.year).sum()).max() < 1e-6
+    assert len(A.played_share(mk)) == 4

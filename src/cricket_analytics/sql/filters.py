@@ -185,3 +185,20 @@ class Filters:
             c.append(f"{phase_sql(d, m)} = ?")
             p.append(self.phase)
         return " AND ".join(c), p
+
+
+def explain_empty(f: Filters, what: str) -> ValueError:
+    """The error to raise when a module finds no rows: names the likely cause, with spelling hints for a player."""
+    from ..api import resolve_player  # lazy: api imports the modules
+
+    if f.player:
+        near = resolve_player(f.player, f.competition, limit=3)
+        if not near or near[0]["name"] != f.player:
+            hint = ", ".join(r["name"] for r in near) or "none found"
+            return ValueError(
+                f"No player named {f.player!r} for {what} (check the spelling with resolve). Closest: {hint}"
+            )
+        return ValueError(
+            f"{f.player} has no {what} under these filters (season, team, competition...): widen them"
+        )
+    return ValueError(f"No data for {what} under these filters: check season, team and competition")

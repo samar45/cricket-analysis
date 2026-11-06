@@ -38,9 +38,15 @@ def prm():
 
 # ── golden numbers through the new modules ────────────────────────────────────────────────────────────────
 def test_golden_raw_numbers_via_runs_added():
-    k = row(run("runs_added", competition="ipl", season=2016, min_balls=1, top=500), "batter", "V Kohli")
+    k = row(
+        run("runs_added", competition="ipl", season=2016, min_balls=1, top=500), "batter", "V Kohli"
+    )
     assert k.runs == 973
-    b = row(run("runs_added", competition="ipl", season=2022, min_balls=1, top=500), "batter", "JC Buttler")
+    b = row(
+        run("runs_added", competition="ipl", season=2022, min_balls=1, top=500),
+        "batter",
+        "JC Buttler",
+    )
     assert b.runs == 863
     bu = row(
         run("runs_added", competition="ipl", season=2024, role="bowling", min_balls=1, top=500),
@@ -52,7 +58,8 @@ def test_golden_raw_numbers_via_runs_added():
 
 # ── WAR = (runs added - replacement x balls) / runs per win ───────────────────────────────────────────────
 @pytest.mark.parametrize(
-    "player,year,era", [("V Kohli", 2016, "pre"), ("JC Buttler", 2022, "pre"), ("JJ Bumrah", 2024, "2023")]
+    "player,year,era",
+    [("V Kohli", 2016, "pre"), ("JC Buttler", 2022, "pre"), ("JJ Bumrah", 2024, "2023")],
 )
 def test_war_formula_and_link_to_runs_added(prm, player, year, era):
     w = run("war", competition="ipl", season=year, player=player, min_balls=1).iloc[0]
@@ -83,7 +90,9 @@ def test_trade_recent_value_is_the_weighted_war_seasons():
             assert r[f"war_{y}"] == pytest.approx(float(wars[y].get(key, 0.0)), abs=0.011)
         wt = {2026: 4, 2025: 3, 2024: 2, 2023: 1}
         seasons = [y for y in wt if y >= first]
-        exp = sum(wt[y] * float(wars[y].get(key, 0.0)) for y in seasons) / sum(wt[y] for y in seasons)
+        exp = sum(wt[y] * float(wars[y].get(key, 0.0)) for y in seasons) / sum(
+            wt[y] for y in seasons
+        )
         assert r.recent_value == pytest.approx(exp, abs=0.01)
 
 
@@ -97,13 +106,21 @@ def test_wpa_swings_sum_to_result_minus_start(mid):
     assert d.wp_bat_first.iloc[-1] == pytest.approx(res)
 
 
-def test_wpa_no_data_for_dl_final_is_empty_not_error():
-    assert len(run("wpa", view="match", match_id=1370353)) == 0  # 2023 final, rain-affected
+def test_wpa_dl_final_raises_explained():
+    with pytest.raises(ValueError, match="Duckworth"):  # 2023 final, rain-affected
+        run("wpa", view="match", match_id=1370353)
 
 
 # ── trade: rules and edge cases ───────────────────────────────────────────────────────────────────────────
 def test_trade_hardik_must_play_matches_docs():
-    d = run("trade", team=MI, team2=RR, give="Hardik Pandya", get="Yashasvi Jaiswal", must_play="Hardik Pandya")
+    d = run(
+        "trade",
+        team=MI,
+        team2=RR,
+        give="Hardik Pandya",
+        get="Yashasvi Jaiswal",
+        must_play="Hardik Pandya",
+    )
     mi = d.iloc[0]
     assert (mi.xii_before, mi.xii_after) == (2.3, 2.69)
     assert 40 < mi.playoff_pct_before < 44 and mi.playoff_pts_change > 0
@@ -131,7 +148,7 @@ def test_trade_same_team_and_wrong_side_errors():
     with pytest.raises(ValueError, match="different teams"):
         api.run("trade", team=MI, team2=MI, give="Hardik Pandya")
     with pytest.raises(ValueError, match="not in the RR squad"):
-        api.run("trade", team=MI, team2=RR, give="Hardik Pandya", get="Hardik Pandya")
+        api.run("trade", team=MI, team2=RR, give="Hardik Pandya", get="Jos Buttler")
 
 
 def test_war_ipl_only():
@@ -141,9 +158,11 @@ def test_war_ipl_only():
 
 # ── edge: empty results and the Hundred ───────────────────────────────────────────────────────────────────
 @pytest.mark.parametrize("mod", ["runs_added", "wpa", "war"])
-def test_unknown_player_and_empty_season_return_empty_frame(mod):
-    assert len(run(mod, player="Zzz Nobody", competition="ipl")) == 0
-    assert len(run(mod, season=1999, competition="ipl")) == 0
+def test_unknown_player_and_empty_season_raise_clear_error(mod):
+    with pytest.raises(ValueError, match="No player named 'Zzz Nobody'"):
+        run(mod, player="Zzz Nobody", competition="ipl")
+    with pytest.raises(ValueError, match="No data"):
+        run(mod, season=1999, competition="ipl")
 
 
 def test_matchup_unknown_player_errors_clearly():
@@ -154,16 +173,21 @@ def test_matchup_unknown_player_errors_clearly():
 def test_runs_added_hundred_works_and_wpa_hundred_is_empty():
     d = run("runs_added", competition="hundred")
     assert len(d) == 40 and d.balls.min() >= 1
-    assert len(run("wpa", competition="hundred")) == 0  # documented: no 100-ball model
+    with pytest.raises(ValueError, match="not The Hundred"):  # documented: no 100-ball model
+        run("wpa", competition="hundred")
 
 
 # ── matchup predictor ─────────────────────────────────────────────────────────────────────────────────────
 def test_matchup_card_and_grid_probabilities_sum_to_one():
     c = run("matchup_predict", player="V Kohli", player2="JJ Bumrah", competition="ipl").iloc[0]
     tot = sum(c[f"p_{k}"] for k in ("dot", "1", "2", "3", "4", "6")) + c.p_out
-    assert 0.98 < tot < 1.02 or abs(tot - 1) < 0.05  # p_out overlaps a run outcome (run outs): loose
+    assert (
+        0.98 < tot < 1.02 or abs(tot - 1) < 0.05
+    )  # p_out overlaps a run outcome (run outs): loose
     assert 5 < c.exp_runs_per_6 < 12 and 0.01 < c.p_out < 0.10
-    g = run("matchup_predict", player="V Kohli", player2="JJ Bumrah", competition="ipl", view="grid")
+    g = run(
+        "matchup_predict", player="V Kohli", player2="JJ Bumrah", competition="ipl", view="grid"
+    )
     assert len(g) > 5
 
 
@@ -180,8 +204,21 @@ def _cli(*a):
         ("run", "war", "--view", "projected", "--json"),
         ("run", "matchup_predict", "--player", "V Kohli", "--player2", "JJ Bumrah", "--json"),
         ("run", "trade", "--view", "squad", "--team", KKR, "--json"),
-        ("run", "trade", "--team", "Lucknow Super Giants", "--team2", "Delhi Capitals", "--give", "Rishabh Pant",
-         "--get", "Kuldeep Yadav", "--baseline", "before_trades", "--json"),
+        (
+            "run",
+            "trade",
+            "--team",
+            "Lucknow Super Giants",
+            "--team2",
+            "Delhi Capitals",
+            "--give",
+            "Rishabh Pant",
+            "--get",
+            "Kuldeep Yadav",
+            "--baseline",
+            "before_trades",
+            "--json",
+        ),
     ],
 )
 def test_cli_json(args):
@@ -203,7 +240,10 @@ def test_cli_trade_non_ipl_exits_nonzero():
         ("wpa", ["--view", "match", "--match_id", "981019"]),
         ("war", ["--view", "projected"]),
         ("matchup_predict", ["--player", "V Kohli", "--player2", "JJ Bumrah"]),
-        ("trade", ["--team", MI, "--team2", RR, "--give", "Hardik Pandya", "--get", "Yashasvi Jaiswal"]),
+        (
+            "trade",
+            ["--team", MI, "--team2", RR, "--give", "Hardik Pandya", "--get", "Yashasvi Jaiswal"],
+        ),
     ],
 )
 def test_cli_chart_png_is_1080x1920_with_content(mod, extra):
@@ -215,7 +255,9 @@ def test_cli_chart_png_is_1080x1920_with_content(mod, extra):
         assert r.exit_code == 0, r.output
         im = Image.open(p)
         assert im.size == (1080, 1920)
-        assert im.convert("RGBA").getchannel("A").getextrema()[1] > 0  # something was drawn (bg is transparent by design)
+        assert (
+            im.convert("RGBA").getchannel("A").getextrema()[1] > 0
+        )  # something was drawn (bg is transparent by design)
 
 
 # ── dashboard (AppTest) ───────────────────────────────────────────────────────────────────────────────────
@@ -232,7 +274,10 @@ def _clean(at):
 
 
 NONDEFAULT = {  # one non-default param set per module: (widget getter, key, value)
-    "runs_added": [("selectbox", "p_competition", "ipl"), ("selectbox", "runs_added_role", "bowling")],
+    "runs_added": [
+        ("selectbox", "p_competition", "ipl"),
+        ("selectbox", "runs_added_role", "bowling"),
+    ],
     "wpa": [("selectbox", "p_competition", "ipl"), ("selectbox", "wpa_view", "match")],
     "war": [("selectbox", "p_competition", "ipl"), ("selectbox", "war_view", "projected")],
     "matchup_predict": [
