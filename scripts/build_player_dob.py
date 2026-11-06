@@ -19,7 +19,7 @@ pl = c.sql("select player_id as cricsheet_identifier, name as cricsheet_name fro
 out = pl.merge(ppl[["identifier", "key_cricinfo"]], left_on="cricsheet_identifier", right_on="identifier", how="left")
 m = ci.merge(wd, on="id").drop_duplicates("identifier")
 out = out.merge(m[["identifier", "qid", "dob"]], on="identifier", how="left").rename(columns={"qid": "wikidata_qid"})
-out["source_url"] = SRC.rsplit("Special", 1)[0] + "wiki/" + out.wikidata_qid.fillna("")
+out["source_url"] = SRC.rsplit("Special", 1)[0] + out.wikidata_qid.fillna("")
 out.loc[out.wikidata_qid.isna(), "source_url"] = ""
 out["source_date"] = "2026-11-07"
 out[["cricsheet_name", "cricsheet_identifier", "key_cricinfo", "wikidata_qid", "dob", "source_url", "source_date"]] \
