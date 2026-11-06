@@ -34,7 +34,7 @@ def marcel_frame(tab, ks, X, other_w=OTHER_W, skill_only=False, weights=WEIGHTS)
         rate = sum(((lw * d[p]).groupby(d.player).sum()) / (den + k) for p, k in parts.items())
         rate = rate.where(den > 0)
         wi = (w * d.n).where(ipl, 0.0).groupby(d.player).sum() / sum(weights)  # missed season counts 0 balls
-        cols[f"{role}_rate"], cols[role] = rate, rate * wi
+        cols[f"{role}_rate"], cols[role], cols[f"{role}_balls"] = rate, rate * wi, wi
     return pd.DataFrame(cols)
 
 

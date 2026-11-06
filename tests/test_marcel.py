@@ -29,3 +29,12 @@ def test_weighted_share_regresses_to_mean():
     assert list(weighted_share(sh)) == [1.0, 0.0]
     s = weighted_share(sh, k=12.0, mean=0.5)  # k = one full set of weights of mean
     assert abs(s["a"] - 0.75) < 1e-9 and abs(s["b"] - 0.25) < 1e-9
+
+
+def test_strategy_pick_respects_budget_slots_and_overseas_cap():
+    from cricket_analytics.models.strategy import percentile, pick
+
+    df = pd.DataFrame({"cost": [5.0, 4.0, 3.0, 1.0], "overseas": [True, True, False, False]})
+    assert pick(df, [0, 1, 2, 3], budget=9.0, n_max=3, os_max=1) == [0, 2, 3]  # 4.0 skipped: overseas cap
+    assert pick(df, [0, 1, 2, 3], budget=100.0, n_max=2, os_max=2) == [0, 1]
+    assert percentile(2.0, [1, 2, 3]) == 100 / 3
