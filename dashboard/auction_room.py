@@ -97,7 +97,10 @@ def _estimator() -> None:
 def _scouting() -> None:
     st.subheader("Uncapped scouting")
     st.warning(
-        "Translated estimate, noisy: 150-500 domestic balls per player. A shortlist to look at, not a ranking."
+        "A SHORTLIST for human judgement, not a prediction. Translated estimates from 150-500 domestic balls per player. "
+        "Backtest (docs/VALUE_backtest.md): on the Dec 2025 auction, overseas buys' IPL 2026 value was ranked better by the "
+        "price paid than by our league-weighted score (rank correlation +0.24 vs -0.18, n=20); over 2024-26 no score "
+        "ranked buys with a range clear of zero, and next-season batting value is close to unpredictable (bowling a little less so)."
     )
     smat = pd.read_csv(SMAT_CSV)
     smat = smat.assign(

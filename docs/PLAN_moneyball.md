@@ -18,5 +18,7 @@ from the table below (`docs/JOURNEY.md` §6 points here).
 | M6 | Supply and demand | role taxonomy (opener, middle, finisher, PP pace, death pace, middle spin, keeper); team needs after retentions vs auction-pool supply → scarcity index per role; test: did scarcity raise prices in 2022-26? | M | done (docs/VALUE_m6.md) |
 | M7 | "Auction room" page | auction pool with predicted price range, value, scarcity, bargain flag; uncapped scouting list | M | done (dashboard/auction_room.py (page 'Auction room')) |
 | M8 | Re-run with real 2027 data | after retentions (17 Nov 2026) and auction (16 Dec 2026) | S | waits for dates (17 Nov, 16 Dec 2026) |
+| M9 | Backtest | generic "data up to X -> IPL X+1" tool (`cricket backtest`), baselines, pooled tables | M | done (docs/VALUE_backtest.md) |
+| M10 | Phase difficulty + Indian scarcity | fitted phase weights and Indian/overseas replacement, kept only if backtest no worse; Hardik before/after | M | done: both pass keep rule, no gain, optional views only (docs/VALUE_backtest.md section 4) |
 
 Out of scope unless Samar asks: paid data, scraping banned sites, line/length/shot data.

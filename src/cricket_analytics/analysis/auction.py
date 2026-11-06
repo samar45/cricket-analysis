@@ -121,6 +121,7 @@ def _player(name: str) -> pd.DataFrame:
         ),
     ],
     caveats=[
+        "Shortlist, not a prediction (backtest, docs/VALUE_backtest.md): on the Dec 2025 auction our value scores ranked overseas buys' IPL 2026 value worse than the price paid (rank correlation -0.18 for the league-weighted score and -0.06 for pWAR, against +0.24 for price, n=20), and over the 2024-26 auctions no score had a range clear of zero. Use the value, scarcity and scouting lists to pick whom to look at, then judge.",
         "Weak predictor. On the 2026 test the median price is no closer to the real price than 'price = base price' (mean error about 1.9 crore both), and the sold / unsold part has no skill (AUC about 0.5). Read the 10-90 range, not the median.",
         "Only players who were put on the block are modelled; the unsold lists are partial (2025: 293 further rows of unknown status are left out), and a mini auction's real purse left is unknown. No age data. Prices are paid prices, not bids.",
         "Value inputs use our WAR (IPL 2023+ only), other T20 leagues and the domestic SMAT trophy; players without any such data (many uncapped) look like average players with no history.",
