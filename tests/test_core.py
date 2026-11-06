@@ -223,8 +223,10 @@ def test_json_schema_shape():
     assert props["venue"]["type"] == "array" and props["venue"]["items"] == {"type": "string"}
     assert all(props[k]["type"] == "integer" for k in ("season_from", "season_to", "last_n_years"))
     assert s["required"] == []
-    tools = api.schema()
-    assert tools[0]["name"] == "batting" and tools[0]["parameters"] == s
+    tools = {
+        t["name"]: t for t in api.schema()
+    }  # sorted by id, so the first one is not always batting
+    assert tools["batting"]["parameters"] == s
 
 
 def test_paramspec_validates():
