@@ -8,17 +8,22 @@ Rebuild (about 1 minute, reads the DB, writes models/data/auction_*):  python -m
 """
 
 import json
+import re
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from ..db import query
+from ..db import query, use_db
+from ..sql.fragments import BOWLER_WICKET, LEGAL_BALL, RUNS_CONCEDED
 from . import war as W
 
 DATA = Path(__file__).parent / "data"
 REF = Path(__file__).parent.parent / "reference"
 FEATURES, PREDS = DATA / "auction_features.csv", DATA / "auction_predictions.csv"
+FORM = (
+    DATA / "auction_form_features.csv"
+)  # key + every recent-form column (kept apart so FEATURES stays small)
 MODEL, MARKET = DATA / "auction_model.json", DATA / "auction_market_players.csv"
 
 YEARS = (2022, 2023, 2024, 2025, 2026)
@@ -169,8 +174,148 @@ def smat_features(auction_date: str) -> pd.DataFrame:
     return pd.DataFrame(out).fillna(0.0)
 
 
-def build_features(rows: dict | None = None) -> pd.DataFrame:
-    """One row per player on the block, with every feature computed from data dated before that auction."""
+# --------------------------------------------------------------------------------------------- recent form (docs/VALUE_m4.md section 10)
+WINDOWS = (30, 60, 120)  # days before the auction date
+FORM_GROUPS = (
+    "all",
+    "smat",
+    "t20i",
+    "league",
+)  # league = every men's club competition except SMAT (IPL included)
+FORM_K = {"bat": 60, "bowl": 48}  # balls of shrinkage for the short-window rate difference
+SMAT_FRESH_DAYS = (
+    150  # the latest SMAT edition counts as "recent" only if it ended this close before the auction
+)
+
+
+def form_innings(db_path=None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Per player-innings batting and bowling lines of every men's match (innings 1-2) with its date and competition.
+    Takes a DB path so the same code re-runs on a bigger DB. Rows are never filtered by auction date here: the cut-off is
+    applied in `form_features`."""
+    with use_db(db_path):
+        bat = query("""SELECT d.batter AS player, d.match_id, d.innings, m.date, m.competition,
+            SUM(CASE WHEN d.wides = 0 THEN 1 ELSE 0 END) AS balls, SUM(d.runs_batter) AS runs,
+            SUM(CASE WHEN d.runs_batter = 4 THEN 1 ELSE 0 END) AS fours, SUM(CASE WHEN d.runs_batter = 6 THEN 1 ELSE 0 END) AS sixes
+            FROM deliveries d JOIN matches m USING (match_id)
+            WHERE m.gender = 'male' AND d.innings <= 2 GROUP BY 1, 2, 3, 4, 5""")  # fmt: skip
+        bowl = query(f"""SELECT d.bowler AS player, d.match_id, d.innings, m.date, m.competition,
+            SUM(CASE WHEN {LEGAL_BALL} THEN 1 ELSE 0 END) AS balls, SUM({RUNS_CONCEDED}) AS runs,
+            SUM(CASE WHEN {BOWLER_WICKET} THEN 1 ELSE 0 END) AS wkts,
+            SUM(CASE WHEN {LEGAL_BALL} AND d.runs_total = 0 THEN 1 ELSE 0 END) AS dots
+            FROM deliveries d JOIN matches m USING (match_id)
+            WHERE m.gender = 'male' AND d.innings <= 2 GROUP BY 1, 2, 3, 4, 5""")  # fmt: skip
+    for t in (bat, bowl):
+        t["date"] = pd.to_datetime(t["date"])
+    return bat, bowl
+
+
+def _grp(t: pd.DataFrame, g: str) -> pd.DataFrame:
+    return (
+        t
+        if g == "all"
+        else t[
+            (t.competition == g) if g in ("smat", "t20i") else ~t.competition.isin(("smat", "t20i"))
+        ]
+    )
+
+
+def form_features(auction_date, bat: pd.DataFrame, bowl: pd.DataFrame) -> pd.DataFrame:
+    """One row per player with any ball in the 120 days before `auction_date` (strictly earlier dates only), columns
+    `{group}{window}_{stat}`: bb br sr bd (balls, runs, strike rate, boundary %), n50 n100 hs (innings of 50+/100+, highest score),
+    wb wr wk econ dot n3w (balls, runs, wickets, economy, dot %, 3+ wicket hauls), xbat xbowl (shrunk runs per 100 balls above /
+    below the average of that group and window), cov (any ball). Plus `smat_top10_bat`, `smat_top10_bowl`, `smat_fresh`."""
+    D = pd.Timestamp(auction_date)
+    cols = {}
+    for g in FORM_GROUPS:
+        for w in WINDOWS:
+            lo = D - pd.Timedelta(days=w)
+            b = _grp(bat, g)
+            b = b[(b.date >= lo) & (b.date < D)]
+            o = _grp(bowl, g)
+            o = o[(o.date >= lo) & (o.date < D)]
+            k = f"{g}{w}_"
+            if len(b):
+                pb = b.groupby("player").agg(bb=("balls", "sum"), br=("runs", "sum"), bd=("fours", "sum"), s6=("sixes", "sum"), hs=("runs", "max"), n50=("runs", lambda r: int((r >= 50).sum())), n100=("runs", lambda r: int((r >= 100).sum())))  # fmt: skip
+                pb["bd"] = (pb.bd + pb.s6) / pb.bb.clip(lower=1)
+                pb["sr"] = 100 * pb.br / pb.bb.clip(lower=1)
+                lg = b.runs.sum() / max(b.balls.sum(), 1)
+                pb["xbat"] = (
+                    100 * (pb.br / pb.bb.clip(lower=1) - lg) * pb.bb / (pb.bb + FORM_K["bat"])
+                )
+                for c in ("bb", "br", "sr", "bd", "hs", "n50", "n100", "xbat"):
+                    cols[k + c] = pb[c]
+            if len(o):
+                po = o.groupby("player").agg(wb=("balls", "sum"), wr=("runs", "sum"), wk=("wkts", "sum"), dot=("dots", "sum"), n3w=("wkts", lambda r: int((r >= 3).sum())))  # fmt: skip
+                po["econ"] = 6 * po.wr / po.wb.clip(lower=1)
+                po["dot"] = po["dot"] / po.wb.clip(lower=1)
+                lg = o.runs.sum() / max(o.balls.sum(), 1)
+                po["xbowl"] = (
+                    -100 * (po.wr / po.wb.clip(lower=1) - lg) * po.wb / (po.wb + FORM_K["bowl"])
+                )
+                for c in ("wb", "wr", "wk", "econ", "dot", "n3w", "xbowl"):
+                    cols[k + c] = po[c]
+    out = pd.DataFrame(cols)
+    for g in FORM_GROUPS:
+        for w in WINDOWS:
+            k = f"{g}{w}_"
+            zero = pd.Series(0.0, index=out.index)
+            out[k + "cov"] = ((out.get(k + "bb", zero) > 0) | (out.get(k + "wb", zero) > 0)).astype(
+                int
+            )
+    # headline: top-10 run scorers / wicket takers of the latest SMAT edition played before the auction, if it was recent
+    sm_b, sm_o = (
+        bat[(bat.competition == "smat") & (bat.date < D)],
+        bowl[(bowl.competition == "smat") & (bowl.date < D)],
+    )
+    last = sm_b.date.max() if len(sm_b) else pd.NaT
+    fresh = bool(pd.notna(last) and (D - last).days <= SMAT_FRESH_DAYS)
+    out["smat_top10_bat"] = out["smat_top10_bowl"] = 0
+    if fresh:
+        ed = lambda t: t[t.date >= last - pd.Timedelta(45, "D")]  # noqa: E731 (one SMAT edition is about 3 weeks)
+        rb, wk = (
+            ed(sm_b).groupby("player").runs.sum().astype(float),
+            ed(sm_o).groupby("player").wkts.sum().astype(float),
+        )
+        out = out.reindex(out.index.union(rb.index).union(wk.index))
+        out["smat_top10_bat"] = out.index.isin(rb.nlargest(10).index).astype(int)
+        out["smat_top10_bowl"] = out.index.isin(wk.nlargest(10).index).astype(int)
+    out["smat_fresh"] = int(fresh)
+    num = [
+        c
+        for c in out.columns
+        if not c.endswith("_cov") and c not in ("smat_fresh",) and not c.startswith("smat_top10")
+    ]
+    out[num] = out[num].astype(float)
+    return out.fillna(
+        {c: 0 for c in out.columns if c.endswith("_cov") or c.startswith("smat_top10")}
+    )
+
+
+FORM_COLS = ["all120_cov", "all60_cov", "all120_xbat", "all120_xbowl", "all60_xbat", "all60_xbowl", "all120_n50", "all120_n3w", "all120_hs", "all120_bb", "all120_wb", "smat_top10_bat", "smat_top10_bowl"]  # fmt: skip
+
+
+def add_form(d: pd.DataFrame, ff: pd.DataFrame, aliases: dict | None = None) -> pd.DataFrame:
+    """Join one auction's form table onto its player rows by Cricsheet name. Players with no mapped name or no balls get the
+    no-balls row (zeros) and `form_known` = 0; `form_known` is a COVERAGE flag, not a performance reading."""
+    names = d.cricsheet_name
+    zero_ok = tuple(("_cov", "n50", "n100", "n3w", "hs", "bb", "wb", "wk", "wr", "xbat", "xbowl")) + ("smat_top10_bat", "smat_top10_bowl", "smat_fresh")  # fmt: skip
+    new = {c: names.map(ff[c]) for c in ff.columns}
+    new = pd.DataFrame(
+        {c: (v.fillna(0.0) if c.endswith(zero_ok) else v) for c, v in new.items()}, index=d.index
+    )
+    new["form_known"] = (new.filter(like="_cov").max(axis=1) > 0).astype(int)
+    new["smat_fresh"] = int(ff.smat_fresh.iloc[0]) if len(ff) else 0
+    d = pd.concat([d, new], axis=1)
+    return d
+
+
+def build_features(rows: dict | None = None, db_path=None) -> pd.DataFrame:
+    """One row per player on the block, with every feature computed from data dated before that auction.
+    `db_path` reads another DB (for example the bigger one with more leagues)."""
+    if db_path:
+        with use_db(db_path):
+            return build_features(rows)
+    fbat, fbowl = form_innings()
     rows = rows or W.all_tables()[0]
     P, prm_file = W._panel(rows), W.load_params()
     war_ps = W.war_table(W.centre(rows["ipl"]), prm_file)
@@ -204,6 +349,7 @@ def build_features(rows: dict | None = None) -> pd.DataFrame:
         d["t20_balls"] = names.map(ipl_b + oth_b).fillna(0.0)
         d["t20i_balls"] = names.map(t20i_b).fillna(0.0)
         bb, wb = names.map(bat_all).fillna(0.0), names.map(bowl_all).fillna(0.0)
+        d = add_form(d, form_features(d.auction_date.iloc[0], fbat, fbowl)).copy()
         d["role_data"] = np.select([bb + wb == 0, wb < 60, bb < 60], ["unk", "bat", "bowl"], "ar")
         pr = [prior_contract(p, y, ev) for p in d.pid]
         d["prior_price"] = [x[0] if x else np.nan for x in pr]
@@ -218,7 +364,17 @@ def build_features(rows: dict | None = None) -> pd.DataFrame:
         "base_price_cr", "sold", "price_cr", "team", "rtm", "mega", "total_purse", "has_data", "bat_val", "bowl_val",
         "war2", "smat_bat", "smat_bowl", "smat_lb", "ipl_balls", "t20_balls", "t20i_balls", "prior_price", "prior_year", "prior_ret", "prior_total",
     ]  # fmt: skip
-    return f[keep]
+    fc = [
+        c
+        for c in f.columns
+        if re.match(r"(all|smat|t20i|league)\d+_", c)
+        or c in ("smat_top10_bat", "smat_top10_bowl", "smat_fresh")
+    ]  # noqa: E501
+    return f[keep + ["form_known"] + sorted(fc)]
+
+
+def form_column_names(f: pd.DataFrame) -> list[str]:
+    return [c for c in f.columns if c == "form_known" or re.match(r"(all|smat|t20i|league)\d+_", c) or c in ("smat_top10_bat", "smat_top10_bowl", "smat_fresh")]  # fmt: skip
 
 
 # --------------------------------------------------------------------------------------------- design matrices
@@ -229,6 +385,20 @@ GROUPS = {  # cumulative feature sets for the ablation (S0 is the baseline every
     "S3": ["has_prior", "log_prior", "prior_ret", "has_data", "lb_ipl", "lb_t20", "bat_val", "bowl_val", "war2"],
     "S4": ["has_prior", "log_prior", "prior_ret", "has_data", "lb_ipl", "lb_t20", "bat_val", "bowl_val", "war2", "smat_bat", "smat_bowl", "smat_lb"],
 }  # fmt: skip
+_F1 = ["fm_cov", "fm_lb60"]
+_F2 = _F1 + ["fm_xbat", "fm_xbowl"]
+_F3 = _F2 + ["fm_n50", "fm_n3w", "fm_hs", "fm_t10b", "fm_t10w"]
+S1 = GROUPS["S1"]
+GROUPS.update(  # recent-form sets, each on top of S1 (the shipped model); see docs/VALUE_m4.md section 10
+    {
+        "F1": S1 + _F1,  # coverage only: any ball in 120 days, balls in 60 days
+        "F2": S1 + _F2,  # + shrunk runs-per-100-balls above average (batting, bowling), 120 days, all T20
+        "F3": S1 + _F3,  # + headline: 50s, 3-wicket hauls, highest score, top-10 SMAT scorer / wicket taker
+        "F4": S1 + _F3 + ["fu_cov", "fu_xbat", "fu_xbowl", "fu_head"],  # + the same signals for uncapped Indians only
+        "F5": S1 + _F1 + ["fg_smat_xbat", "fg_smat_xbowl", "fg_t20i_xbat", "fg_t20i_xbowl", "fg_lg_xbat", "fg_lg_xbowl"],  # by source of the form
+    }
+)  # fmt: skip
+FORM_SETS = ("F1", "F2", "F3", "F4", "F5")
 ABLATION = {
     "S0": "base, nationality, caps, role",
     "S1": "+ last price",
@@ -279,7 +449,37 @@ def design(f: pd.DataFrame, kind: str, target: str = "A") -> tuple[pd.DataFrame,
         if target == "A":
             x["log_purse"] = np.log(tot)
             s0 = s0 + ["log_purse"]
+    _form_cols(x, f)
     return x, s0
+
+
+def _form_cols(x: pd.DataFrame, f: pd.DataFrame) -> None:
+    """Recent-form design columns (zeros when the feature table has no form columns, e.g. an old saved file)."""
+    g = lambda c: f[c].fillna(0.0) if c in f else pd.Series(0.0, index=f.index)  # noqa: E731
+    x["fm_cov"], x["fm_lb60"] = g("all120_cov"), np.log1p(g("all60_bb") + g("all60_wb"))
+    x["fm_xbat"], x["fm_xbowl"] = g("all120_xbat"), g("all120_xbowl")
+    x["fm_n50"], x["fm_n3w"], x["fm_hs"] = (
+        g("all120_n50"),
+        g("all120_n3w"),
+        np.log1p(g("all120_hs")),
+    )
+    x["fm_t10b"], x["fm_t10w"] = g("smat_top10_bat"), g("smat_top10_bowl")
+    unc = (
+        x["unc_indian"]
+        if "unc_indian" in x
+        else ((x.overseas == 0) & (x.get("intl", 0) == 0)).astype(int)
+    )
+    head = ((g("all120_n50") > 0) | (g("all120_n3w") > 0) | (x.fm_t10b + x.fm_t10w > 0)).astype(
+        float
+    )
+    x["fu_cov"], x["fu_xbat"], x["fu_xbowl"], x["fu_head"] = (
+        unc * x.fm_cov,
+        unc * x.fm_xbat,
+        unc * x.fm_xbowl,
+        unc * head,
+    )
+    for k, n in (("smat", "smat"), ("t20i", "t20i"), ("league", "lg")):
+        x[f"fg_{n}_xbat"], x[f"fg_{n}_xbowl"] = g(f"{k}120_xbat"), g(f"{k}120_xbowl")
 
 
 def cols_for(s0: list[str], group: str) -> list[str]:
@@ -495,7 +695,7 @@ def evaluate(
         sub = ev[ev.prior_price.notna()]
         res["model_on_last_price_rows"] = price_metrics(sub, pr.p50[sub.index])
     abl = {}
-    for g in GROUPS:
+    for g in ABLATION:
         h = Hurdle(f, train_years, target, g)
         p = h.predict(ev)
         abl[g] = {**price_metrics(ev, p.p50, p.p10, p.p90), **{"sold_" + k: v for k, v in sold_metrics(ev, p.p_sold).items() if k in ("AUC", "Brier")}}  # fmt: skip
@@ -572,6 +772,118 @@ def top_misses(
     d["model_leans_on"] = [lean_text(c.loc[i]) for i in d.index]
     d = d.sort_values("paid_vs_model")
     return d.tail(n)[::-1].reset_index(drop=True), d.head(n).reset_index(drop=True)
+
+
+# --------------------------------------------------------------------------------------------- recent form: tests
+def form_coverage(f: pd.DataFrame) -> pd.DataFrame:
+    """Per auction: share of players on the block with any ball in the 60 / 120 days before it (all T20, and by source), the
+    same for the 30 highest prices, uncapped Indians, and how much of the 120-day coverage came ONLY from SMAT."""
+    f = f.assign(
+        mapped=f.cricsheet_name.notna(),
+        unc=(tf(f.overseas).fillna(0) == 0) & (tf(f.capped).fillna(0) == 0),
+    )
+    rows = []
+    for y, g in f.groupby("auction_year"):
+        t = g[g.sold].nlargest(30, "price_cr")
+        only = (g.smat120_cov == 1) & (g.t20i120_cov == 0) & (g.league120_cov == 0)
+        rows.append({
+            "year": int(y), "players": len(g), "name_mapped": g.mapped.mean(), "any60": g.all60_cov.mean(), "any120": g.all120_cov.mean(),
+            "smat120": g.smat120_cov.mean(), "t20i120": g.t20i120_cov.mean(), "league120": g.league120_cov.mean(),
+            "top30_any60": t.all60_cov.mean(), "top30_any120": t.all120_cov.mean(), "unc_indian_any120": g[g.unc].all120_cov.mean(),
+            "smat_only_share_of_cov120": only.sum() / max(g.all120_cov.sum(), 1), "smat_fresh": int(g.smat_fresh.iloc[0]),
+        })  # fmt: skip
+    return pd.DataFrame(rows)
+
+
+def _score(ev: pd.DataFrame, pr: pd.DataFrame, misses: list[str]) -> dict:
+    s = ev[ev.sold]
+    unc = s[(tf(s.overseas).fillna(0) == 0) & (tf(s.capped).fillna(0) == 0)]
+    m = s[s.player.isin(misses)]
+    return {**price_metrics(ev, pr.p50, pr.p10, pr.p90), "AUC": sold_metrics(ev, pr.p_sold)["AUC"],
+            "MAE_unc_indian": float((pr.p50[unc.index] - unc.price_cr).abs().mean()), "n_unc": len(unc),
+            "MAE_top15_misses": float((pr.p50[m.index] - m.price_cr).abs().mean()) if len(m) else float("nan")}  # fmt: skip
+
+
+def fresh_loao(f: pd.DataFrame, g: str, target: str = "B") -> dict:
+    """Leave-one-auction-out inside 2022-24 (fit on the other two): MAE (cr), mean squared log error, mean sold AUC."""
+    ae, sq, au = [], [], []
+    for y in TRAIN:
+        ev = f[f.auction_year == y]
+        ev = ev[ev.overseas.notna() | ev.sold]
+        pr = Hurdle(f, [t for t in TRAIN if t != y], target, g).predict(ev)
+        s = ev[ev.sold]
+        ae += list((pr.p50[s.index] - s.price_cr).abs())
+        sq += list((np.log(s.price_cr) - np.log(pr.p50[s.index])) ** 2)
+        au.append(sold_metrics(ev, pr.p_sold)["AUC"])
+    return {
+        "n": len(ae),
+        "MAE_cr": float(np.mean(ae)),
+        "mse_log": float(np.mean(sq)),
+        "AUC": float(np.mean(au)),
+    }
+
+
+def form_compare(
+    f: pd.DataFrame, misses: list[str], groups=("S0", "S1") + FORM_SETS, target="B"
+) -> dict:
+    """S1 (shipped) against each recent-form set: validation 2025 (fit 2022-24) and the 2026 test (fit 2022-25), plus a
+    leave-one-auction-out run inside 2022-24, the only years the SMAT data was fresh (fit on the other two of the three)."""
+    out = {"validation_2025": {}, "test_2026": {}, "fresh_smat_years_loao": {}}
+    for key, tr, yr in (("validation_2025", TRAIN, VAL), ("test_2026", TRAIN + (VAL,), TEST)):
+        ev = f[f.auction_year == yr]
+        ev = ev[ev.overseas.notna() | ev.sold]
+        for g in groups:
+            out[key][g] = _score(ev, Hurdle(f, tr, target, g).predict(ev), misses)
+    for g in groups:
+        out["fresh_smat_years_loao"][g] = fresh_loao(f, g, target)
+    return out  # fmt: skip
+
+
+def unc_headline_test(f: pd.DataFrame, draws: int = 1500) -> list[dict]:
+    """Among uncapped Indians who were sold: does a recent headline (50+ score or 3+ wickets in an innings in the last 120 days,
+    or a top-10 SMAT scorer / wicket taker of the latest recent edition) go with selling ABOVE base price? Logistic on the flag,
+    log base price and auction-year dummies; 95% range = bootstrap over players. Reported for the fresh-SMAT years 2022-24 and for all."""
+    f = f.assign(unc=(tf(f.overseas).fillna(0) == 0) & (tf(f.capped).fillna(0) == 0))
+    u = f[f.unc & f.sold].copy()
+    u["above"] = (u.price_cr > u.base_price_cr + 1e-9).astype(int)
+    u["top10_smat"] = ((u.smat_top10_bat + u.smat_top10_bowl) > 0).astype(int)
+    u["headline"] = ((u.all120_n50 > 0) | (u.all120_n3w > 0) | (u.top10_smat == 1)).astype(int)
+    u["any_recent_balls"], u["fifty"], u["three_w"] = (
+        u.all120_cov.astype(int),
+        (u.all120_n50 > 0).astype(int),
+        (u.all120_n3w > 0).astype(int),
+    )
+
+    def fit(d, flag):
+        yrs = [y for y in sorted(d.auction_year.unique())[1:]]
+        X = np.column_stack(
+            [d[flag].values, np.log(d.base_price_cr.values)]
+            + [(d.auction_year == y).astype(float).values for y in yrs]
+        )
+        M = logit_fit(X, d.above.values.astype(float), 0.5)
+        return M["beta"][0] / M["s"][0]
+
+    rows, rng = [], np.random.default_rng(7)
+    for label, d in (("2022-24 (SMAT fresh)", u[u.auction_year <= 2024]), ("2022-26", u)):
+        for flag in ("headline", "top10_smat", "fifty", "three_w", "any_recent_balls"):
+            n1 = int(d[flag].sum())
+            if n1 < 3:
+                continue
+            bs = [fit(x, flag) for x in (d.iloc[rng.integers(0, len(d), len(d))] for _ in range(draws)) if x[flag].nunique() > 1 and x.above.nunique() > 1]  # fmt: skip
+            b = fit(d, flag)
+            rows.append({"years": label, "flag": flag, "n": len(d), "n_flag": n1, "above_rate_flag": float(d[d[flag] == 1].above.mean()), "above_rate_rest": float(d[d[flag] == 0].above.mean()), "odds_ratio": float(np.exp(b)), "or_lo": float(np.exp(np.quantile(bs, 0.025))), "or_hi": float(np.exp(np.quantile(bs, 0.975)))})  # fmt: skip
+    return rows
+
+
+def form_without_smat(f: pd.DataFrame, bat: pd.DataFrame, bowl: pd.DataFrame) -> pd.DataFrame:
+    """Same feature table with every SMAT ball removed from the form columns (what 2025 and 2026 actually look like)."""
+    keep = f.drop(columns=[c for c in form_column_names(f) if c in f])
+    b, o = bat[bat.competition != "smat"], bowl[bowl.competition != "smat"]
+    parts = [
+        add_form(d, form_features(d.auction_date.iloc[0], b, o)).copy()
+        for _, d in keep.groupby("auction_year")
+    ]
+    return pd.concat(parts, ignore_index=True)
 
 
 # --------------------------------------------------------------------------------------------- M5: market check
@@ -762,7 +1074,9 @@ def pick(f: pd.DataFrame, target: str, group: str | None = None) -> tuple[str, d
 
 def main() -> None:
     f = build_features()
-    f.to_csv(FEATURES, index=False)
+    base_cols = [c for c in f.columns if c not in form_column_names(f)]
+    f[base_cols].to_csv(FEATURES, index=False)
+    f[["auction_year", "pid"] + form_column_names(f)].to_csv(FORM, index=False)
     print(f.groupby("auction_year").agg(n=("sold", "size"), sold=("sold", "sum"), has_data=("has_data", "sum"), has_prior=("prior_price", lambda s: s.notna().sum())))  # fmt: skip
     summary = {"validation": {}}
     chosen = {}
@@ -773,12 +1087,28 @@ def main() -> None:
     # target choice: lower validation MAE in crore (ties -> A)
     tgt = min(("A", "B"), key=lambda t: summary["validation"][t]["model"]["MAE_cr"])
     grp = chosen[tgt]
+    # recent form: a form set replaces the chosen set only if it beats it by 1% validation MAE (same rule as the ladder)
+    evv = f[(f.auction_year == VAL)]
+    evv = evv[evv.overseas.notna() | evv.sold]
+    vmae = {
+        g: price_metrics(evv, Hurdle(f, TRAIN, tgt, g).predict(evv).p50)["MAE_cr"]
+        for g in (grp,) + FORM_SETS
+    }
+    best_form = min(FORM_SETS, key=vmae.get)
+    # second condition, added 2026-11-07 after the first run: the winner must also beat the chosen set by 1% in the leave-one-out
+    # inside 2022-24 (the only years with fresh SMAT); one winner out of five candidates on 258 players is not enough alone
+    confirmed = (
+        vmae[best_form] < vmae[grp] * 0.99
+        and fresh_loao(f, best_form, tgt)["MAE_cr"] < fresh_loao(f, grp, tgt)["MAE_cr"] * 0.99
+    )
+    if confirmed:
+        grp = best_form
     summary.update(target=tgt, group=grp)
     test = evaluate(f, TRAIN + (VAL,), TEST, tgt, grp)
     test_other = {t: evaluate(f, TRAIN + (VAL,), TEST, t, chosen[t])["model"] for t in ("A", "B")}
     summary["test"], summary["test_both_targets"] = test, test_other
     pred, Hf = predictions(f, tgt, grp)
-    out = f.join(pred)
+    out = f[base_cols].join(pred)
     out.to_csv(PREDS, index=False)
     over, under = top_misses(f, pred, Hf, TEST)
     summary["test_over_paid"], summary["test_under_paid"] = (
@@ -786,6 +1116,15 @@ def main() -> None:
         under.round(3).to_dict("records"),
     )
     summary["final_model"] = Hf.to_json()
+    bat, bowl = form_innings()
+    summary["form"] = {
+        "validation_mae_rule": {g: round(v, 4) for g, v in vmae.items()}, "shipped_group": grp, "validation_winner": best_form, "winner_confirmed": bool(confirmed),
+        "coverage": form_coverage(f).round(4).to_dict("records"),
+        "coverage_without_smat": form_coverage(form_without_smat(f, bat, bowl)).round(4).to_dict("records"),
+        "compare": form_compare(f, [r["player"] for r in summary["test_over_paid"]], target=tgt),
+        "compare_without_smat": form_compare(form_without_smat(f, bat, bowl), [r["player"] for r in summary["test_over_paid"]], target=tgt),
+        "uncapped_indian_headline": unc_headline_test(f),
+    }  # fmt: skip
     mk = build_market()
     mk.to_csv(MARKET, index=False)
     summary["market_unc_vs_rest"] = {"all": diff_unc_vs_rest(mk), **{bnd: diff_unc_vs_rest(mk, band=bnd) for bnd in ("to 0.5 cr", "0.5-2 cr", "2-8 cr")}}  # fmt: skip

@@ -157,3 +157,115 @@ def test_cheapest_table_and_played_share():
     cheap = mk[(mk.source == "auction") & (mk.base <= A.CHEAP_BASE) & (mk.price <= mk.base + 1e-9)]
     assert abs((cheap.war - cheap.cheap_war).groupby(cheap.year).sum()).max() < 1e-6
     assert len(A.played_share(mk)) == 4
+
+
+def _line(player, date, comp, runs, balls=20):
+    return {"player": player, "match_id": f"{player}{date}", "innings": 1, "date": pd.Timestamp(date), "competition": comp, "balls": balls, "runs": runs, "fours": 2, "sixes": 1}  # fmt: skip
+
+
+def test_form_windows_use_only_balls_before_the_auction_date():
+    bat = pd.DataFrame(
+        [
+            _line("A", "2025-12-15", "t20i", 60),  # the day before: counts (all windows)
+            _line("A", "2025-12-16", "t20i", 99),  # auction day: must NOT count
+            _line("A", "2025-12-20", "t20i", 99),  # after: must NOT count
+            _line("A", "2025-10-17", "ipl", 10),  # 60 days before: in 60 and 120, not 30
+            _line("A", "2025-08-18", "smat", 5),  # 120 days before: inside the 120 window
+            _line("A", "2025-08-10", "smat", 7),  # 128 days before: outside every window
+            _line("B", "2025-12-16", "t20i", 80),  # only an auction-day ball: no coverage at all
+        ]
+    )
+    bowl = pd.DataFrame(
+        columns=[
+            "player",
+            "match_id",
+            "innings",
+            "date",
+            "competition",
+            "balls",
+            "runs",
+            "wkts",
+            "dots",
+        ]
+    )
+    ff = A.form_features("2025-12-16", bat, bowl)
+    assert "B" not in ff.index
+    assert (
+        ff.loc["A", "all30_bb"] == 20
+        and ff.loc["A", "all30_br"] == 60
+        and ff.loc["A", "all30_n50"] == 1
+    )
+    assert ff.loc["A", "all60_bb"] == 40 and ff.loc["A", "all60_hs"] == 60
+    assert ff.loc["A", "all120_bb"] == 60 and ff.loc["A", "all120_br"] == 75
+    assert (
+        ff.loc["A", "t20i120_bb"] == 20
+        and ff.loc["A", "league120_bb"] == 20
+        and ff.loc["A", "smat120_bb"] == 20
+    )
+    assert ff.loc["A", "all120_n100"] == 0  # the 99s on or after the auction date are not seen
+    # the last SMAT ball is 120 days old (inside the 150-day "recent" rule); a 128-day-old ball is outside every window
+    assert ff.smat_fresh.iloc[0] == 1 and ff.loc["A", "smat_top10_bat"] == 1
+
+
+def test_smat_headline_needs_a_recent_edition():
+    rows = [_line(f"P{i}", "2025-12-01", "smat", 10 * i) for i in range(1, 13)]
+    bat = pd.DataFrame(rows + [_line("Old", "2024-12-01", "smat", 500)])
+    bowl = pd.DataFrame(
+        columns=[
+            "player",
+            "match_id",
+            "innings",
+            "date",
+            "competition",
+            "balls",
+            "runs",
+            "wkts",
+            "dots",
+        ]
+    )
+    ff = A.form_features("2025-12-16", bat, bowl)
+    assert ff.smat_fresh.iloc[0] == 1
+    assert (
+        ff.smat_top10_bat.sum() == 10
+        and ff.loc["P12", "smat_top10_bat"] == 1
+        and ff.loc["P1", "smat_top10_bat"] == 0
+    )
+    assert (
+        "Old" not in ff.index or ff.loc["Old", "smat_top10_bat"] == 0
+    )  # an older edition is not this edition's table
+    assert (
+        A.form_features("2026-06-01", bat, bowl).smat_fresh.sum() == 0
+    )  # 6 months later the edition is stale
+
+
+def test_saved_form_features_are_consistent_and_show_the_smat_gap():
+    ff = pd.read_csv(A.FORM)
+    f = pd.read_csv(A.FEATURES)
+    assert len(ff) == len(f) and (ff.pid.values == f.pid.values).all()
+    assert (ff.all30_cov <= ff.all60_cov).all() and (ff.all60_cov <= ff.all120_cov).all()
+    assert (
+        ((ff.all120_bb.fillna(0) > 0) | (ff.all120_wb.fillna(0) > 0)).eq(ff.all120_cov == 1).all()
+    )
+    g = ff.groupby("auction_year")
+    assert g.smat_fresh.first().to_dict() == {2022: 1, 2023: 1, 2024: 1, 2025: 0, 2026: 0}
+    assert (
+        g.smat120_cov.sum().loc[[2025, 2026]].eq(0).all()
+    )  # Cricsheet has no SMAT in the 120 days before 2025 or 2026
+    d = A.load_model()["form"]
+    assert d["shipped_group"] in A.GROUPS and set(d["compare"]) == {
+        "validation_2025",
+        "test_2026",
+        "fresh_smat_years_loao",
+    }
+
+
+@requires_real_db
+def test_form_features_on_real_db_stop_before_the_auction_date():
+    bat, bowl = A.form_innings()
+    d = pd.Timestamp("2024-11-24")  # 2025 auction
+    ff = A.form_features(d, bat, bowl)
+    win = (
+        bat[(bat.date >= d - pd.Timedelta(days=120)) & (bat.date < d)].groupby("player").balls.sum()
+    )
+    assert (ff.all120_bb.dropna() == win.reindex(ff.all120_bb.dropna().index)).all()
+    assert bat[bat.date < d].date.max() < d

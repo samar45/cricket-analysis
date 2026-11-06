@@ -111,3 +111,49 @@ Share who got any IPL balls, by price band (players in brackets): uncapped India
 - Capped flag for retained players is a data proxy (any T20I before the season); it misses ODI/Test-only players (for example Sai Sudharsan 2025 counts as uncapped).
 - Single-season WAR is mostly luck; 2022-era WAR uses the older runs-per-win (91) and replacement.
 - Not done: Heckman correction, age, pool Spearman across sold and unsold, a 2027 pool.
+
+## 10. Recent form (added 2026-11-07, worker; hypothesis from Samar: form in the weeks before an auction drives price)
+Code: `models/auction.py` (`form_innings`, `form_features`, `add_form`, `form_coverage`, `form_compare`, `fresh_loao`, `unc_headline_test`, `form_without_smat`); tests in `tests/test_auction.py` (4 new, 16 total). Saved: `models/data/auction_form_features.csv` (every form column per player and auction), `auction_model.json["form"]` (all tables below). Rebuild is the same command; `build_features(db_path=...)` and `form_innings(db_path=...)` take a DB path, so the code can be re-run on the bigger leagues DB later.
+**Features** (only balls dated strictly before the auction date; men's matches, innings 1-2): for 30 / 60 / 120 days and for four sources (all T20, SMAT, T20I, franchise leagues = every club competition except SMAT): balls, runs, strike rate, boundary %, 50s, 100s, highest score, shrunk runs per 100 balls above average (batting); balls, runs, wickets, economy, dot %, 3+ wicket hauls, shrunk runs saved (bowling); a coverage flag (any ball). Headline: top-10 run scorer / wicket taker of the latest SMAT edition, counted only if that edition ended within 150 days of the auction (`smat_fresh`).
+**Model sets** (each on top of the shipped S1): F1 coverage only; F2 + shrunk batting / bowling form (120 d); F3 + 50s, 3-wicket hauls, highest score, top-10 SMAT; F4 + the same signals for uncapped Indians only (interaction); F5 coverage + form split by source (SMAT / T20I / leagues).
+
+### 10.1 Coverage: the data gap is large
+Share of players on the block with at least one ball in the window before the auction (all T20 sources). "Name mapped" = has a Cricsheet name; players without one can never have data.
+| auction | players | name mapped | any ball 60 d | any ball 120 d | top-30 prices, 120 d | uncapped Indians, 120 d | SMAT-only share of the 120 d coverage | latest SMAT edition recent? |
+|---|---|---|---|---|---|---|---|---|
+| 2022 | 300 | 83% | 19% | 66% | 90% | 48% | 47% | yes |
+| 2023 | 151 | 78% | 41% | 60% | 83% | 42% | 43% | yes |
+| 2024 | 134 | 81% | 40% | 51% | 53% | 39% | 45% | yes |
+| 2025 (val) | 283 | 84% | 23% | 30% | 40% | 1% | 0% | no |
+| 2026 (test) | 156 | 69% | 21% | 29% | 63% | 0% | 0% | no |
+Top-30 prices, 60 d: 27%, 57%, 43%, 30%, 50%. By source in 2026 (120 d): T20I 19%, leagues 18%, SMAT 0%.
+**Cause.** Cricsheet's SMAT has 44 matches in Oct-Nov 2022, 39 in Oct-Nov 2023 and **8 matches on 9-15 Dec 2024**. The 2024 edition's matches in our data fall after the 2025 auction (24 Nov 2024), and nothing exists for 2025. So SMAT is present only for the 2022-24 auctions. **The 2025 validation year has the same gap as the 2026 test**, not only 2026.
+**How much it costs the 2026 test.** (a) Coverage: with SMAT removed, 2022-24 coverage falls from 66 / 60 / 51% to 35 / 34 / 28%, which is what 2025-26 look like (30 / 29%). So the gap is about **25-30 points of coverage** and 43-47% of the covered players. (b) For uncapped Indians it is nearly total: 39-48% covered in 2022-24, 0% in 2026. All seven uncapped Indians who sold for 2 cr or more in 2026 (Kartik Sharma, Prashant Veer, Auqib Nabi, Tejasvi Singh, Mukul Choudhary, Akshat Raghuwanshi, and Mangesh Yadav who has no Cricsheet name anyway) have **zero** balls in our data in the 120 days before. Whether they were SMAT 2025 stars is not in our data (not checked; from memory only, unverified). (c) Effect on the model: **cannot be measured directly for 2026**, because the missing balls are missing. The nearest check is below: taking SMAT out of the form features in 2022-24 changes the leave-one-out MAE from 1.94 to 1.91 (F3), no loss, so there is no sign that the SMAT part of form carried the signal even where we have it.
+
+### 10.2 Out-of-sample results (target B, S1 vs form sets)
+MAE in crore, price metrics on sold players; "MAE unc. Indian" = sold uncapped Indians (n 83 in 2025, 39 in 2026); "top-15 misses" = MAE on the 15 players the market paid most above the S1 model in 2026 (list in section 6; only meaningful in the 2026 test).
+| set | **2025 validation** MAE | R2 log | Spearman | MAE unc. Indian | sold AUC | **2026 test** MAE | R2 log | Spearman | MAE unc. Indian | MAE top-15 misses | sold AUC |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| S1 (shipped) | 2.084 | 0.556 | 0.725 | 0.69 | 0.61 | 1.884 | 0.345 | 0.624 | 1.35 | 6.93 | 0.557 |
+| F1 coverage | 2.136 | 0.530 | 0.711 | 0.69 | 0.59 | 1.942 | 0.372 | 0.617 | 1.37 | 6.64 | 0.603 |
+| F2 + form | 2.124 | 0.539 | 0.720 | 0.69 | 0.60 | 1.930 | 0.364 | 0.591 | 1.37 | 6.65 | 0.603 |
+| F3 + headline | 2.093 | 0.554 | 0.720 | 0.69 | 0.60 | 1.929 | 0.358 | 0.591 | 1.37 | 6.72 | 0.602 |
+| F4 + unc. Indian interaction | **1.979** | 0.549 | 0.728 | 0.69 | 0.58 | 1.972 | 0.345 | 0.638 | 1.36 | 6.68 | 0.596 |
+| F5 by source | 2.145 | 0.524 | 0.710 | 0.69 | 0.59 | 1.955 | 0.364 | 0.586 | 1.37 | 6.68 | 0.625 |
+Label: the **2026 columns have been seen before (section 5) and are a second look, not a clean test**; the 2025 columns are the validation used for decisions. Nothing moves the uncapped-Indian error or the top-15 misses (6.9 to 6.6-6.7 crore: those players have no data, so a model cannot use form for them). F1-F3 and F5 are worse than S1 on validation MAE and on 2026 MAE; the sold AUC gain in 2026 (0.56 to 0.60-0.63) is not repeated in 2025 (0.61 to 0.58-0.60), i.e. noise.
+**Leave-one-auction-out inside 2022-24** (the only years with fresh SMAT; fit on the other two, 356 sold players; MAE cr / mean squared log error): S1 1.914 / 1.294; F1 1.940 / 1.368; F2 1.954 / 1.397; F3 1.944 / 1.380; F4 1.915 / 1.309; F5 1.944 / 1.349. Form does not help here either, with SMAT in. With SMAT removed from the form columns: F1 1.921, F2 1.924, F3 1.910, F4 1.908, F5 1.920 (all within 0.01 of S1).
+
+### 10.3 Descriptive check: uncapped Indians sold above base price
+Sold uncapped Indians (n 168 in 2022-24; 290 in 2022-26). Outcome: price above base. Logistic on the flag + log base price + auction-year dummies (ridge 0.5); odds ratio with a 95% bootstrap range over players (1,500 draws). SMAT flags can only be non-zero in 2022-24, so read the 2022-24 rows (the 2022-26 rows are in `auction_model.json["form"]` and look the same).
+| flag (2022-24) | players with flag | above base: flag vs rest | odds ratio | 95% range |
+|---|---|---|---|---|
+| headline (50+ score, 3+ wickets in an innings, or top-10 SMAT, in the last 120 d) | 37 | 54% vs 34% | 1.77 | 0.76 to 4.11 |
+| top-10 SMAT scorer or wicket taker | 12 | 50% vs 37% | 1.76 | 0.38 to 6.56 |
+| a 50+ score | 22 | 45% vs 37% | 1.04 | 0.32 to 2.87 |
+| a 3+ wicket haul | 15 | 60% vs 36% | 2.19 | 0.49 to 9.21 |
+| any ball in the 120 days (coverage only) | 92 | 47% vs 28% | 1.80 | 0.95 to 3.66 |
+Reading: the direction is the one Samar expects (about +20 points for a headline, odds ratio near 1.8) but **no range excludes 1** and the 50+ flag shows nothing. With 12-37 flagged players it can be neither confirmed nor ruled out. "Any ball" is also "plays somewhere with ball-by-ball coverage", a visibility proxy.
+
+### 10.4 Decision
+**Keep S1; form is not in the shipped model.** Process, stated plainly: the project rule (a bigger set must beat the chosen one by 1% validation MAE) fired for exactly one of the five sets, **F4 (2.084 to 1.979, -5%)**. I did not ship it because (1) it was the best of five tries on 182 sold players, (2) its 2025 gain cannot come from the headline signals it adds, since those are zero for every uncapped Indian in 2025 (no SMAT), (3) it did not improve the leave-one-out in the fresh-SMAT years (1.915 vs 1.914) and (4) on the 2026 second look it is worse (1.972 vs 1.884). To make this a rule rather than a judgment after the fact, `main()` now also requires the validation winner to beat the chosen set by 1% in the 2022-24 leave-one-out (this condition was added after seeing the result; recorded in `auction_model.json["form"]`: `validation_winner = F4`, `winner_confirmed = false`). The shipped S1 variant is unchanged: predictions and test MAE (1.884) are identical to before this section. Form sets stay selectable as `Hurdle(f, years, "B", "F1")` to `"F5"`.
+**What is not settled.** The hypothesis is not refuted. The part that matters most (uncapped Indians shining in SMAT 2025) is exactly the data we lack, and the 2022-24 estimate (odds ratio ~1.8, wide range) points the same way. The proper test needs SMAT 2025 ball-by-ball (not in this DB) and the 2027 auction; then re-run `python -m cricket_analytics.models.auction` and read `auction_model.json["form"]`. Also open: 31% of the 2026 rows have no Cricsheet name, so they get no data regardless; the bigger leagues DB (ILT20 / MLC / BPL / LPL) raises coverage for overseas players only.
