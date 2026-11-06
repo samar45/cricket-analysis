@@ -36,6 +36,11 @@ _CLUB_EVENTS = [
     ("sa20", "sa20"),
     ("the hundred", "hundred"),
     ("blast", "blast"),
+    ("syed mushtaq ali", "smat"),
+    ("international league t20", "ilt20"),
+    ("major league cricket", "mlc"),
+    ("bangladesh premier league", "bpl"),
+    ("lanka premier league", "lpl"),
 ]
 
 
