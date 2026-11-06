@@ -697,6 +697,86 @@ hundred_male,0,Old Trafford,21,0.9883
 hundred_male,0,Sophia Gardens,22,0.9482
 hundred_male,0,The Rose Bowl,25,0.9697
 hundred_male,0,Trent Bridge,24,0.9753
+smat_male,0,"ACA Stadium, Barsapara",10,0.9841
+smat_male,0,"ACA Stadium,Mangalagiri",7,1.0369
+smat_male,0,"Abhimanyu Cricket Academy, Dehradun",10,1.0046
+smat_male,0,"Airforce Complex ground, Palam",19,0.897
+smat_male,0,"Airforce Complex ground, Palam II",12,1.0116
+smat_male,0,Alembic 1 Cricket Ground,3,1.0499
+smat_male,0,Alembic 2 Cricket Ground,6,1.0046
+smat_male,0,Alur Cricket Stadium,4,0.9687
+smat_male,0,Alur Cricket Stadium II,4,0.9922
+smat_male,0,Alur Cricket Stadium III,5,1.0215
+smat_male,0,Arun Jaitley Stadium,28,0.9897
+smat_male,0,BKC Ground,12,0.9475
+smat_male,0,Barabati Stadium,23,1.0473
+smat_male,0,Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium B,5,1.0188
+smat_male,0,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",7,1.0131
+smat_male,0,C B Patel Ground,24,0.9374
+smat_male,0,Chaudhry Bansi Lal Cricket Stadium,4,1.0215
+smat_male,0,"Cricket Stadium, Sector-16",11,0.9885
+smat_male,0,DRIEMS Ground,16,1.0369
+smat_male,0,Dr P.V.G. Raju ACA Sports Complex,12,1.0914
+smat_male,0,"Dr. Gokaraju Laila Ganga Raju ACA Cricket Complex -CP Ground,Mulapadu",7,1.0317
+smat_male,0,"Dr. Gokaraju Laila Ganga Raju ACA Cricket Complex -DVR Ground,Mulapadu",14,1.0911
+smat_male,0,Dr. Y.S. Rajasekhara Reddy ACA VDCA Cricket Stadium,23,1.0234
+smat_male,0,Eden Gardens,24,1.086
+smat_male,0,Emerald Heights International School Ground,21,1.0106
+smat_male,0,F B Colony Ground,4,1.0171
+smat_male,0,"GSSS, Sector 26",11,1.056
+smat_male,0,Gokaraju Liala Gangaaraju ACA Cricket Ground,10,0.9156
+smat_male,0,Greenfield Stadium,12,0.9185
+smat_male,0,Gurugram Cricket Ground (SRNCC),8,1.0289
+smat_male,0,"Holkar Cricket Stadium, Indore",12,0.9851
+smat_male,0,Holkar Stadium,29,0.9868
+smat_male,0,IC-Gurunanak College Ground,3,1.0845
+smat_male,0,JSCA International Stadium Complex,20,1.0474
+smat_male,0,"JU Second Campus, Salt Lake",9,1.031
+smat_male,0,Jadavpur University Campus,4,1.0243
+smat_male,0,"Jadavpur University Campus 2nd Ground, Kolkata",2,0.9834
+smat_male,0,Jawaharlal Nehru Stadium,13,0.9493
+smat_male,0,"KSCA Cricket Ground, Alur",2,1.054
+smat_male,0,Lalbhai Contractor Stadium,32,0.9995
+smat_male,0,M Chinnaswamy Stadium,6,1.0458
+smat_male,0,Motibaug Cricket Ground,13,0.9051
+smat_male,0,"Narendra Modi Stadium Ground 'A', Motera",6,0.9627
+smat_male,0,Nehru Stadium,4,0.9586
+smat_male,0,"Punjab Cricket Association IS Bindra Stadium, Mohali, Chandigarh",7,1.0392
+smat_male,0,Reliance Cricket Stadium,18,0.9734
+smat_male,0,SSN College Ground,5,0.9005
+smat_male,0,Saurashtra Cricket Association Stadium,10,1.006
+smat_male,0,"Saurashtra Cricket Association Stadium, Rajkot",12,1.0242
+smat_male,0,Sawai Mansingh Stadium,21,0.9135
+smat_male,0,Shaheed Veer Narayan Singh International Stadium,14,0.9766
+smat_male,0,Sharad Pawar Cricket Academy BKC,10,0.9942
+smat_male,0,Sri Ramachandra Medical College,4,0.9835
+smat_male,0,St Pauls college ground Kalamassery,7,0.9736
+smat_male,0,St'Xavier's KCA Cricket Ground,5,0.9937
+smat_male,0,T I Murugappa Ground,5,0.9632
+smat_male,0,VCA Ground,6,0.9732
+smat_male,0,"VCA Stadium, Nagpur",9,0.9702
+smat_male,0,Wankhede Stadium,31,1.0627
+ilt20_male,0,Dubai International Cricket Stadium,61,0.9944
+ilt20_male,0,Sharjah Cricket Stadium,27,0.9893
+ilt20_male,0,Sheikh Zayed Stadium,1,0.9964
+ilt20_male,0,"Zayed Cricket Stadium, Abu Dhabi",43,1.0157
+mlc_male,0,"Central Broward Regional Park Stadium Turf Ground, Lauderhill",6,0.9435
+mlc_male,0,"Church Street Park, Morrisville",13,0.9383
+mlc_male,0,Grand Prairie Stadium,12,0.9822
+mlc_male,0,"Grand Prairie Stadium, Dallas",44,1.0439
+mlc_male,0,"Knight Riders Cricket Ground, Pomona",7,0.904
+mlc_male,0,"Oakland Coliseum,Oakland",21,1.0637
+bpl_male,0,"MA Aziz Stadium, Chittagong",7,0.9896
+bpl_male,0,"Sheikh Abu Naser Stadium, Khulna",7,1.0019
+bpl_male,0,Shere Bangla National Stadium,270,0.9692
+bpl_male,0,Sylhet International Cricket Stadium,84,1.0087
+bpl_male,0,"Zahur Ahmed Chowdhury Stadium, Chattogram",65,1.0954
+bpl_male,0,"Zahur Ahmed Chowdhury Stadium, Chittagong",33,1.0186
+lpl_male,0,"Mahinda Rajapaksa International Cricket Stadium, Sooriyawewa, Hambantota",29,1.0083
+lpl_male,0,Pallekele International Cricket Stadium,28,1.0314
+lpl_male,0,R Premadasa Stadium,52,0.9291
+lpl_male,0,Rangiri Dambulla International Stadium,18,1.0871
+lpl_male,0,Sinhalese Sports Club Ground,5,1.0295
 blast_male,0,Aigburth,2,0.9674
 blast_male,0,Arundel Castle Cricket Club Ground,3,1.0181
 blast_male,0,Castle Park Cricket Ground,1,1.0219
