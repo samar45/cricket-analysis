@@ -280,12 +280,12 @@ JJ Roy,,,right,high,,,manual-llm,
 DA Miller,,,left,high,,,manual-llm,
 CA Lynn,,,right,high,,,manual-llm,
 N Pooran,,,left,high,,yes,manual-llm,
-KL Rahul,,,right,high,,,manual-llm,
+KL Rahul,,,right,high,,yes,manual-llm,keeper verified wikipedia.org 2026-11-07
 DJ Malan,,,left,high,,,manual-llm,
 BB McCullum,,,right,high,,,manual-llm,
 Mohammad Rizwan,,,right,high,,yes,manual-llm,
 Shoaib Malik,,,right,high,,,manual-llm,
-PD Salt,,,right,high,,,manual-llm,
+PD Salt,,,right,high,,yes,manual-llm,keeper verified wikipedia.org 2026-11-07
 SW Billings,,,right,high,,,manual-llm,
 MS Dhoni,,,right,high,,yes,manual-llm,
 AB de Villiers,,,right,high,,,manual-llm,
@@ -323,13 +323,13 @@ BR McDermott,,,right,high,,,manual-llm,
 TH David,,,right,high,,,manual-llm,
 MK Pandey,,,right,high,,,manual-llm,
 Shubman Gill,,,right,high,,,manual-llm,
-GD Phillips,,,right,high,,,manual-llm,
+GD Phillips,,,right,high,,sometimes,manual-llm,keeper verified wikipedia.org 2026-11-07
 Ishan Kishan,,,left,high,,yes,manual-llm,
 LRPL Taylor,,,right,high,,,manual-llm,
 MS Wade,,,left,high,,yes,manual-llm,
 WL Madsen,,,right,high,,,manual-llm,
 AK Markram,right-arm off spin,high,right,high,,,web-verified,web: wisden.com 2026-10-24
-TL Seifert,,,right,high,,,manual-llm,
+TL Seifert,,,right,high,,yes,manual-llm,keeper verified wikipedia.org 2026-11-07
 E Lewis,,,left,high,,,manual-llm,
 RR Pant,,,left,high,,yes,manual-llm,verified wisden.com 2026-10-24
 JL Denly,,,right,high,,,manual-llm,
@@ -343,7 +343,7 @@ DPMD Jayawardene,,,right,high,,,manual-llm,
 RR Hendricks,,,right,high,,,manual-llm,
 TM Dilshan,right-arm off spin,high,right,high,,,web-verified,verified wikipedia.org 2026-10-24
 SE Rutherford,,,left,high,,,manual-llm,
-JP Inglis,,,right,high,,,manual-llm,
+JP Inglis,,,right,high,,yes,manual-llm,keeper verified wikipedia.org 2026-11-07
 MEK Hussey,,,left,high,,,manual-llm,
 CT Bancroft,,,right,high,,,manual-llm,
 AL Davies,,,right,high,,,manual-llm,verified wikipedia.org 2026-10-24
@@ -983,3 +983,15 @@ P Suyal,left-arm medium,high,right,high,,,web-verified,web: wikipedia.org 2026-1
 RV Gomez,right-arm medium,high,right,high,,,web-verified,web: wisden.com 2026-10-24
 Shashank Singh,right-arm off spin,high,right,high,,,web-verified,web: wikipedia.org 2026-10-24
 Raghu Sharma,right-arm leg spin,high,right,high,,,web-verified,web: espncricinfo.com 2026-10-24
+P Simran Singh,,,right,high,,yes,web-verified,keeper verified wikipedia.org 2026-11-07
+Dhruv Jurel,,,right,high,,yes,web-verified,keeper verified wikipedia.org 2026-11-07
+Abishek Porel,,,left,high,,yes,web-verified,keeper verified wikipedia.org 2026-11-07
+Urvil Patel,,,left,high,,yes,web-verified,keeper verified wikipedia.org 2026-11-07
+LG Pretorius,,,left,high,,yes,web-verified,keeper verified wikipedia.org 2026-11-07
+Vishnu Vinod,,,right,high,,yes,web-verified,keeper verified wikipedia.org 2026-11-07
+FH Allen,,,right,high,,sometimes,web-verified,keeper verified wikipedia.org 2026-11-07
+A Raghuvanshi,,,right,high,,sometimes,web-verified,keeper verified wikipedia.org 2026-11-07
+Anuj Rawat,,,left,high,,yes,web-verified,keeper verified wikipedia.org 2026-11-07
+Kumar Kushagra,,,right,high,,yes,web-verified,keeper verified wikipedia.org 2026-11-07
+Kartik Sharma,,,,,,yes,web-verified,keeper verified indiatvnews.com 2026-11-07
+Salil Arora,,,right,high,,yes,web-verified,keeper verified crictracker.com 2026-11-07
