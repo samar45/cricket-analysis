@@ -6,6 +6,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from cricket_analytics import api, competitions
+from cricket_analytics.models import trade
 from cricket_analytics.registry import Module, ParamSpec
 from cricket_analytics.sql.fragments import PHASES
 from cricket_analytics.viz import video
@@ -155,6 +156,10 @@ def _widget(mod: Module, p: ParamSpec, ctx: dict):
         return multiselect(
             key, label, choices(k, ctx.get("competition"), None), help=help, placeholder=f"Any {k}"
         )
+    if k == "player" and p.multi:  # trade tool: give / get are the players of team / team2
+        pool = {"give": "team", "get": "team2"}.get(p.name)
+        opts = trade.squad_names(ctx[pool]) if pool in ctx else []
+        return multiselect(key, label, opts, help=help, placeholder="None")
     if k in ("player", "player2"):
         opts = choices(k, ctx.get("competition"), ctx.get("season"))
         return select(key, label, opts, none_label=None if p.required else "Any player", help=help)

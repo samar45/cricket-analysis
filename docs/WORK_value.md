@@ -13,3 +13,7 @@ MILESTONE: D2a models/war.py finished: runs per win 99.3 (81-125; cross-checks 1
 MILESTONE: D2b pWAR for IPL 2027 written (models/data/pwar_ipl_2027.csv). Red flag checked: heavy shrinkage (k 3000/1600) is what the data supports (talent SD ~6-8 vs noise ~20 runs per 100 balls); top pWAR 0.52.
 MILESTONE: D2c out-of-sample 2024-26: bowlers pWAR r 0.32 vs 0.19 last-season WAR; batters r 0.06 (no skill shown, slope -0.08); team XI win share R2 0.3% (n=30) / 1.5% (n=66), nothing predicts it; realised-WAR ceiling R2 0.37-0.41. Older IPL seasons did not help (inside noise) -> weight 0.
 MILESTONE: D2d analysis/war.py + viz/war.py + viz/video/war.py + tests/test_war.py (17) + docs/VALUE_step3.md done.
+
+MILESTONE: G1 2026-11-06 models/trade.py: recent value (4/3/2/1 over Impact-era seasons, bootstrap range over own matches), best-XII search with documented rules, trade evaluation; trade_match_ra.csv reproduces season WAR (3e-7). Market 44.7 cr per win (ratio; OLS 6.4, R2 0.08).
+MILESTONE: G2 analysis/trade.py (module trade, views trade/squad), viz/trade.py, viz/video/trade.py, tests/test_trade.py (22), registry MULTI_KINDS += player, dashboard/ui.py multiselect for give/get (5 lines).
+MILESTONE: G3 docs/VALUE_step5.md: Pant/Kuldeep LSG +0.45 likely better, DC -0.54 likely worse; Natarajan/Ansari DC -0.22 likely worse, SRH too close; MI Hardik for Jaiswal+Punja: no change to either XII.

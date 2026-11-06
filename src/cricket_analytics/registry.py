@@ -20,7 +20,7 @@ KINDS = (
     "bool",
     "choice",
 )
-MULTI_KINDS = ("team", "opposition", "season", "venue")
+MULTI_KINDS = ("team", "opposition", "season", "venue", "player")
 
 
 @dataclass(frozen=True)

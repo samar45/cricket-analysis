@@ -123,3 +123,9 @@
 - Step 1 run expectancy + runs_added, step 2 win probability + wpa, IPL contracts file: verified by lead, committed (ecf635a + this commit).
 - Impact-era WP test: isolation did not help (chase Brier +0.003 worse); pooled kept. IPL chase win rate swings 45-63% by season (2026: 63%).
 - Steps 3 (WAR) and 4 (matchup predictor) stopped mid-way; partial files on branch wip/value-step3-4, untested. Resume from docs/JOURNEY.md section 6 item 0.
+
+## 2026-11-06 Advanced value steps 3-5 done
+- WAR/pWAR (runs per win 99 for IPL 2023+, 3 methods agree; Bumrah 2024 = 311 balls/20 wkts after shortened matches came back; Kohli 2016 973). Out of sample: batter pWAR r 0.06 (no skill), bowler 0.32; team win share ~ coin-flip spread.
+- Matchup predictor: beats league average by ~1% log loss on 33,303 IPL 2025-26 balls; P(out) calibrated within 0.7 pts. Kohli v Bumrah middle overs 1.31 runs/ball, 3.5% out (WagonLens PDF: 1.35, 4.5%).
+- Trade tool (option A, recent value): Pant/Kuldeep -> LSG +0.45 (likely better), DC -0.54 (likely worse). Lead found + fixed a bug: `team` param was swallowed by Filters (always MI); regression test added. Verdict labels overlapped on the card: wrapped.
+- Tests: value tests pass (trade 23); worker full run 518.
