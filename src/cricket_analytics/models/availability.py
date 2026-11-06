@@ -9,11 +9,15 @@ import pandas as pd
 
 from . import war as W
 from .backtest import player_year, predictor
-from .marcel import WEIGHTS, _mk
+from . import marcel as M
 
 SEASON_MATCHES = 14.0
 K_SHARE = 4.0  # weights' worth of the average share added (regression to the mean; a guess, not tuned)
-_pred_marcel = _mk(other_w=0.0)
+WEIGHTS = (5, 4, 3)  # = marcel.WEIGHTS (not imported: circular)
+
+
+def _pred_marcel(T, X, ctx):
+    return M._mk(other_w=0.0)(T, X, ctx)
 
 
 def share_table(X: int) -> pd.DataFrame:
