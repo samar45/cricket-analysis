@@ -37,4 +37,4 @@ def test_strategy_pick_respects_budget_slots_and_overseas_cap():
     df = pd.DataFrame({"cost": [5.0, 4.0, 3.0, 1.0], "overseas": [True, True, False, False]})
     assert pick(df, [0, 1, 2, 3], budget=9.0, n_max=3, os_max=1) == [0, 2, 3]  # 4.0 skipped: overseas cap
     assert pick(df, [0, 1, 2, 3], budget=100.0, n_max=2, os_max=2) == [0, 1]
-    assert percentile(2.0, [1, 2, 3]) == 100 / 3
+    assert abs(percentile(2.0, [1, 2, 3]) - 100 / 3) < 1e-9
