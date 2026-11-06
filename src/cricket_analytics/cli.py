@@ -1,4 +1,4 @@
-"""Command line: `cricket modules | run | schema | resolve | ask | facts | chart | update | health | runs | setup | ingest`.
+"""Command line: `cricket modules | run | backtest | schema | resolve | ask | facts | chart | update | health | runs | setup | ingest`.
 
 cricket modules
 cricket run batting --player "V Kohli" --competition ipl --group_by season --json
@@ -39,6 +39,20 @@ def cli(verbose: bool):
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO, format="%(levelname)s | %(message)s"
     )
+
+
+@cli.command()
+@click.option("--targets", default="2024,2025,2026", help="IPL seasons to forecast (data before each)")
+@click.option("--pool", type=click.Choice(["all", "common", "auction", "auction_os"]), default="all")
+@click.option("--what", default="total", help="total / bat / bowl / bat_rate / bowl_rate")
+@click.option("--predictors", default=None, help="comma list; default: zero,last_ipl,ipl3,recent_value,pwar,pwar_runs,lw_other,lw_all,price")
+@click.option("--min-balls", default=60, help="a player needs this many balls in the target season")
+def backtest(targets, pool, what, predictors, min_balls):
+    """Backtest value predictors: rank correlation with next IPL season's runs added (about 30 s)."""
+    from .models import backtest as bt
+
+    names = predictors.split(",") if predictors else bt.DEFAULT
+    click.echo(bt.main(pool, what, [int(x) for x in targets.split(",")], names, min_balls))
 
 
 @cli.command()

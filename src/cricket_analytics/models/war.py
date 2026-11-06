@@ -16,6 +16,7 @@ import pandas as pd
 
 from ..db import query
 from ..sql.filters import Filters
+from ..sql.fragments import phase_sql
 from .run_expectancy import BALL_COLS, USABLE, load, ra_state
 
 DATA = Path(__file__).parent / "data"
@@ -53,16 +54,18 @@ def _int_cols(df):
     return df
 
 
-def season_table(comp: str, db_path=None) -> tuple[pd.DataFrame, pd.DataFrame]:
+def season_table(comp: str, db_path=None, by_phase: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
     """(player-season-team rows, appearances) for one competition key.
 
     Rows: comp, sy (calendar year the season ended), season (label), team, player, role (bat/bowl), balls (faced / legal
     bowled), runs (off the bat / conceded), sc (scoring part of runs added), wk (wicket part), with sc + wk = runs added.
-    Appearances: comp, sy, team, player, matches (matches in which he batted, was non-striker, or bowled)."""
+    Appearances: comp, sy, team, player, matches (matches in which he batted, was non-striker, or bowled).
+    by_phase=True adds a `phase` column (powerplay / middle / death) to the rows; summing over it gives the default table."""
     f = Filters(competition=comp)
     st, sp = ra_state(f)
     sql = (
-        f"WITH d AS ({st}) SELECT {BALL_COLS}, d.batting_team, d.bowling_team, d.non_striker, m.date, m.season "
+        f"WITH d AS ({st}) SELECT {BALL_COLS}, d.batting_team, d.bowling_team, d.non_striker, m.date, m.season"
+        f"{', ' + phase_sql() + ' AS phase' if by_phase else ''} "
         f"FROM d JOIN matches m ON d.match_id = m.match_id WHERE {USABLE}"
     )
     rows = _int_cols(query(sql, sp, db_path=db_path))
@@ -73,7 +76,7 @@ def season_table(comp: str, db_path=None) -> tuple[pd.DataFrame, pd.DataFrame]:
     a = load().annotate(rows)
     sy = a.groupby("season").date.max().dt.year
     a["sy"] = a.season.map(sy).astype(int)
-    key = ["comp", "sy", "season", "team", "player", "role"]
+    key = ["comp", "sy", "season", "team", "player", "role"] + (["phase"] if by_phase else [])
     a["comp"] = comp
     s = (a.faced == 1) | (a.striker_out == 1)
     bs = a[s]
@@ -81,6 +84,7 @@ def season_table(comp: str, db_path=None) -> tuple[pd.DataFrame, pd.DataFrame]:
         dict(
             comp=comp,
             sy=bs.sy,
+            **({'phase': bs.phase} if by_phase else {}),
             season=bs.season,
             team=bs.batting_team,
             player=bs.batter,
@@ -97,6 +101,7 @@ def season_table(comp: str, db_path=None) -> tuple[pd.DataFrame, pd.DataFrame]:
         dict(
             comp=comp,
             sy=ns.sy,
+            **({'phase': ns.phase} if by_phase else {}),
             season=ns.season,
             team=ns.batting_team,
             player=ns.player_out,
@@ -112,6 +117,7 @@ def season_table(comp: str, db_path=None) -> tuple[pd.DataFrame, pd.DataFrame]:
         dict(
             comp=comp,
             sy=a.sy,
+            **({'phase': a.phase} if by_phase else {}),
             season=a.season,
             team=a.bowling_team,
             player=a.bowler,
@@ -147,7 +153,7 @@ def season_table(comp: str, db_path=None) -> tuple[pd.DataFrame, pd.DataFrame]:
         .rename(columns={"size": "matches"})
     )
     app.insert(0, "comp", comp)
-    return out[SEASON_COLS], app
+    return out[SEASON_COLS + (['phase'] if by_phase else [])], app
 
 
 # --------------------------------------------------------------------------- tables
