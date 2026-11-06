@@ -20,3 +20,12 @@ def test_marcel_shrinks_and_weights_balls():
     assert abs(f.bat["A"] - f.bat_rate["A"] * 500 / 12) < 1e-9
     # an old season outside the 3-year window is ignored
     assert marcel_frame(_tab(), ks, 2027, other_w=0.0).bat_rate.isna().all()
+
+
+def test_weighted_share_regresses_to_mean():
+    from cricket_analytics.models.availability import weighted_share
+
+    sh = pd.DataFrame({2024: [1.0, 0.0], 2023: [1.0, 0.0], 2022: [1.0, 0.0]}, index=["a", "b"])
+    assert list(weighted_share(sh)) == [1.0, 0.0]
+    s = weighted_share(sh, k=12.0, mean=0.5)  # k = one full set of weights of mean
+    assert abs(s["a"] - 0.75) < 1e-9 and abs(s["b"] - 0.25) < 1e-9

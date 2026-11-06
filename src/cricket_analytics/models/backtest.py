@@ -184,7 +184,17 @@ def truth_runs(T: pd.DataFrame, t: int) -> pd.DataFrame:
         cols[f"{r}_rate"] = g.ra / g.balls.where(g.balls > 0)
     out = pd.DataFrame(cols)
     out[["bat", "bowl", "bat_balls", "bowl_balls"]] = out[["bat", "bowl", "bat_balls", "bowl_balls"]].fillna(0.0)
-    return out
+    return out.join(opportunity(t))
+
+
+def opportunity(t: int) -> pd.DataFrame:
+    """IPL season t opportunity per player who appeared: share = matches played / the median team's matches that season (capped
+    at 1). With `balls` (balls faced + bowled) these are the backtest `what` = share / balls. Players with no appearance are not
+    in the truth, except sold players in the auction pools, who count 0."""
+    apps = W.season_table("ipl")[1]
+    apps = apps[apps.sy == t]
+    tm = apps.groupby("team").matches.max().median()
+    return pd.DataFrame({"share": (apps.groupby("player").matches.sum() / tm).clip(upper=1.0)})
 
 
 def _stats(x, y, runs_scale: bool, boot: int = 300, seed: int = 1) -> dict:
@@ -213,7 +223,12 @@ def _stats(x, y, runs_scale: bool, boot: int = 300, seed: int = 1) -> dict:
 def _pairs(pred: pd.DataFrame, truth: pd.DataFrame, what: str, minb: int):
     """(x, y) arrays for one target: total / bat / bowl (runs) or bat_rate / bowl_rate."""
     role = what.split("_")[0]
-    if what == "total":
+    if what in ("share", "balls"):
+        truth = truth.assign(balls=truth.bat_balls + truth.bowl_balls)
+        pl = truth.index[truth.share.notna()]
+        px = pred[what] if what in pred else pd.Series(dtype=float)
+        y = truth[what]
+    elif what == "total":
         pl = truth.index[(truth.bat_balls >= minb) | (truth.bowl_balls >= minb)]
         px = pred["total"] if "total" in pred else pred[["bat", "bowl"]].sum(axis=1, min_count=1)
         y = truth.bat + truth.bowl
@@ -261,6 +276,10 @@ def run(
         for n in names:
             for what in whats:
                 x, y, pl = _pairs(preds[n], truth, what, minb)
+                if keep is not None and what in ("share", "balls") and pool.startswith("auction") and what in preds[n]:
+                    pv = preds[n][what].dropna()  # sold but never played: truth 0
+                    miss = [p for p in keep if p not in set(pl) and p in pv.index]
+                    x, y, pl = np.append(x, pv.loc[miss].values), np.append(y, np.zeros(len(miss))), pl + miss
                 if keep is not None:
                     m = np.array([p in keep for p in pl], dtype=bool)
                     x, y = x[m], y[m]
@@ -285,7 +304,7 @@ def table(res: pd.DataFrame, what: str = "total") -> pd.DataFrame:
     return w.reindex(order + [n for n in w.index if n not in order])
 
 
-from . import marcel, value_variants  # noqa: E402,F401  (registers ipl3_ph, ipl3_wpa, ipl3_grp, marcel*)
+from . import availability, marcel, value_variants  # noqa: E402,F401  (registers ipl3_ph, ipl3_wpa, ipl3_grp, marcel*, share_*, balls_*, ropp_*)
 
 DEFAULT = ("zero", "last_ipl", "ipl3", "recent_value", "pwar", "pwar_runs", "lw_other", "lw_all", "price")
 
