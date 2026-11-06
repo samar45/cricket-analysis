@@ -80,16 +80,16 @@ def test_super_over_ties_store_their_winner():
     # 74 super-over ties (and 2 bowl-outs) keep result='tie' and carry the tie-break winner; 729315 KKR v RR 2014 -> RR
     n = query(
         "SELECT count(*) AS n, count(winner) AS w FROM matches WHERE result = 'tie' "
-        "AND outcome_method IN ('super over', 'bowl out') AND competition <> 'smat'",
+        "AND outcome_method IN ('super over', 'bowl out') AND competition NOT IN ('smat', 'ilt20', 'mlc', 'bpl', 'lpl')",
         db_path=DB,
     )
     assert (n.n[0], n.w[0]) == (76, 76)
     smat = query(
-        "SELECT count(*) AS n, count(winner) AS w FROM matches WHERE result = 'tie' AND competition = 'smat' "
+        "SELECT count(*) AS n, count(winner) AS w FROM matches WHERE result = 'tie' AND competition IN ('smat', 'ilt20', 'mlc', 'bpl', 'lpl') "
         "AND outcome_method IN ('super over', 'bowl out')",
         db_path=DB,
     )
-    assert smat.n[0] == smat.w[0]  # SMAT (added 2026-11-07) ties carry their winner too
+    assert smat.n[0] == smat.w[0]  # SMAT and the 2026-11-07 leagues' ties carry their winner too
     assert (
         query("SELECT winner FROM matches WHERE match_id = '729315'", db_path=DB).winner[0]
         == "Rajasthan Royals"

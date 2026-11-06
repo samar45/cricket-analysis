@@ -5,7 +5,7 @@ paths:
 
 sources:
   cricsheet:
-    formats: ["t20s", "ipl", "bbl", "psl", "cpl", "sa20", "hundred", "blast", "smat"]   # keys `cricket ingest` loads
+    formats: ["t20s", "ipl", "bbl", "psl", "cpl", "sa20", "hundred", "blast", "smat", "ilt20", "mlc", "bpl", "lpl"]   # keys `cricket ingest` loads
 
 scraping:
   user_agent: "CricketAnalyticsPlatform/0.1 (research project)"

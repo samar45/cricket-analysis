@@ -13,7 +13,7 @@ import duckdb
 import numpy as np
 import pandas as pd
 
-SOURCES = ["smat", "sa20", "t20i", "bbl", "psl", "cpl", "blast"]
+SOURCES = ["smat", "sa20", "t20i", "bbl", "psl", "cpl", "blast", "ilt20", "mlc", "bpl", "lpl"]
 MIN_BALLS = 200
 WICKET_COST = 20.0  # assumption: runs a wicket is worth when scoring "value" for the scouting list
 DATA = Path(__file__).parent / "data"
