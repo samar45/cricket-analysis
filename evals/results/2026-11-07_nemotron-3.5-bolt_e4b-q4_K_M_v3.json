@@ -1,0 +1,1600 @@
+{
+ "model": "nemotron-3.5-bolt:e4b-q4_K_M",
+ "summary": {
+  "n": 64,
+  "n_answerable": 51,
+  "module_accuracy": 0.647,
+  "param_accuracy_per_param": 0.521,
+  "param_accuracy_all_correct": 0.294,
+  "clarification_precision": 0.25,
+  "clarification_recall": 1.0,
+  "false_clarifications": 15,
+  "out_of_scope_ok": "8/8",
+  "golden_present": 0.276,
+  "golden_n": 29,
+  "seconds_mean": 24.57,
+  "seconds_max": 69.57
+ },
+ "questions": [
+  {
+   "id": "q01",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false,
+    "competition": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "how many runs has Kohli scored in the IPL",
+   "seconds": 20.98,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What season or range of seasons are you interested in for Kohli's IPL runs? Also, do you have any other specific criteria like team, venue, or top N players?",
+   "status": "no_tool"
+  },
+  {
+   "id": "q02",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": true,
+    "competition": true,
+    "season": true
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "rohit shrma ipl 2024 stats",
+   "seconds": 29.32,
+   "error": null,
+   "tool_call": {
+    "name": "stories",
+    "arguments": {
+     "competition": "ipl",
+     "player": "Rohit Sharma",
+     "season": "2024"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "player": "RG Sharma",
+    "season": 2024
+   },
+   "answer": "Story finder (player=RG Sharma, competition=ipl, season=2024), data through 2024-05-26. 2 rows. Top 5: record / record: rank 1, value a 105, n a 14; best_season / gap: rank 2, value a 150, n a 278, value b 150.",
+   "status": "ok"
+  },
+  {
+   "id": "q03",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": true,
+    "competition": true,
+    "phase": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "SKY powerplay strike rate in t20is",
+   "seconds": 21.13,
+   "error": null,
+   "tool_call": {
+    "name": "batting",
+    "arguments": {
+     "competition": "t20i",
+     "phase": "powerplay",
+     "player": "SKY",
+     "role": "batting"
+    },
+    "overrides": [
+     "true_performance",
+     "batting",
+     "true_performance needs the word 'true'"
+    ]
+   },
+   "resolved_params": {
+    "competition": "t20i",
+    "phase": "powerplay",
+    "player": "SA Yadav"
+   },
+   "answer": "Batting stats (player=SA Yadav, competition=t20i, phase=powerplay), data through 2026-10-14. batter SA Yadav, innings 63, not outs 39, total runs 680, balls 500, highest 36, average 28.33, strike rate 136, fifties 0, hundreds 0, ducks 4, fours 68.",
+   "status": "ok"
+  },
+  {
+   "id": "q04",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "competition": true,
+    "season": true
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "who scored the most runs in IPL 2023",
+   "seconds": 28.43,
+   "error": null,
+   "tool_call": {
+    "name": "season_awards",
+    "arguments": {
+     "competition": "ipl",
+     "season": "2023",
+     "role": "batting",
+     "top": 1
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "role": "batting",
+    "top": 1,
+    "season": 2023
+   },
+   "answer": "Season awards (competition=ipl, season=2023), data through 2023-05-29. 3 rows. Top 5: ipl / 2023: rank 1, matches 14, runs 361, balls 206; ipl / 2023: rank 1, matches 15, runs 450, balls 246; ipl / 2023: rank 1, matches 12, runs 280, balls 150.",
+   "status": "ok"
+  },
+  {
+   "id": "q05",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": true,
+    "competition": true,
+    "phase": true,
+    "season_from": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "Dhoni death overs batting since 2020 in ipl",
+   "seconds": 7.54,
+   "error": null,
+   "tool_call": {
+    "name": "batting",
+    "arguments": {
+     "competition": "ipl",
+     "season_from": 2020,
+     "season_to": 2024,
+     "phase": "death",
+     "player": "Dhoni",
+     "role": "batting"
+    },
+    "overrides": [
+     "true_performance",
+     "batting",
+     "true_performance needs the word 'true'"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "phase": "death",
+    "player": "MS Dhoni",
+    "season_from": 2020
+   },
+   "answer": "Batting stats (player=MS Dhoni, competition=ipl, season_from=2020, phase=death), data through 2026-05-31. batter MS Dhoni, innings 66, not outs 34, total runs 827, balls 500, highest 43, average 25.84, strike rate 165.4, fifties 0, hundreds 0, ducks 3, fours 65.",
+   "status": "ok"
+  },
+  {
+   "id": "q06",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false,
+    "competition": true,
+    "group_by": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "kohli runs by season in ipl",
+   "seconds": 22.02,
+   "error": null,
+   "tool_call": {
+    "name": "season_awards",
+    "arguments": {
+     "competition": "ipl",
+     "role": "batting",
+     "season_from": 2008,
+     "season_to": 2024,
+     "team": "Chennai Super Kings"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "role": "batting",
+    "team": "Chennai Super Kings"
+   },
+   "answer": "Season awards (competition=ipl, team=Chennai Super Kings), data through 2026-05-21. 246 rows. Top 5: ipl / 2026: rank 1, matches 14, runs 239, balls 156; ipl / 2026: rank 2, matches 14, runs 198, balls 153; ipl / 2026: rank 3, matches 7, runs 102, balls 47; ipl / 2026: rank 4, matches 5, runs 98, balls 53; ipl / 2026: rank 5, matches 5, runs 83, balls 44.",
+   "status": "ok"
+  },
+  {
+   "id": "q07",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false,
+    "competition": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "bumra wickets in ipl",
+   "seconds": 45.66,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What season or range of seasons are you interested in for Bumrah's wickets in the IPL? Also, would you like to filter by team, venue, or any other criteria?",
+   "status": "no_tool"
+  },
+  {
+   "id": "q08",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": true,
+    "phase": true,
+    "season_from": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "bumrah death over economy since 2020",
+   "seconds": 9.71,
+   "error": null,
+   "tool_call": {
+    "name": "bowling",
+    "arguments": {
+     "competition": "ipl",
+     "season_from": 2020,
+     "season_to": 2024,
+     "phase": "death",
+     "player": "Jasprit Bumrah",
+     "role": "bowling"
+    },
+    "overrides": [
+     "true_performance",
+     "bowling",
+     "true_performance needs the word 'true'"
+    ]
+   },
+   "resolved_params": {
+    "phase": "death",
+    "player": "JJ Bumrah",
+    "season_from": 2020
+   },
+   "answer": "Bowling stats (player=JJ Bumrah, season_from=2020, phase=death), data through 2026-10-14. bowler JJ Bumrah, innings 104, wickets 79, runs conceded 1207, balls 990, economy 7.32, average 15.28, strike rate 12.53, dot pct 35.5, boundary pct 13, dots 351, fours conceded 91.",
+   "status": "ok"
+  },
+  {
+   "id": "q09",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "phase": true,
+    "last_n_years": true,
+    "min_balls": true
+   },
+   "params_ok": true,
+   "question": "best powerplay economy in ipl last 3 years min 200 balls",
+   "seconds": 48.45,
+   "error": null,
+   "tool_call": {
+    "name": "bowling",
+    "arguments": {
+     "competition": "ipl",
+     "last_n_years": 3,
+     "min_balls": 200,
+     "phase": "powerplay",
+     "role": "bowling",
+     "season_from": 2021,
+     "season_to": 2023,
+     "top": 1
+    },
+    "overrides": [
+     "season_awards",
+     "bowling",
+     "no season word: a plain leaderboard"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "min_balls": 200,
+    "phase": "powerplay",
+    "last_n_years": 3
+   },
+   "answer": "Bowling stats (competition=ipl, last_n_years=3, phase=powerplay), data through 2026-05-31. 21 rows. Top 5: B Kumar / 3/5: innings 46, wickets 35, runs conceded 812, balls 630; Mohammed Siraj / 3/26: innings 46, wickets 29, runs conceded 983, balls 690; K Rabada / 3/23: innings 32, wickets 25, runs conceded 701, balls 432; TA Boult / 3/14: innings 36, wickets 22, runs conceded 634, balls 456; Arshdeep Singh / 3/10: innings 44, wickets 22, runs conceded 771, balls 522.",
+   "status": "ok"
+  },
+  {
+   "id": "q10",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false,
+    "player2": false,
+    "competition": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "kohli vs bumrah in ipl",
+   "seconds": 34.92,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What specific information are you looking for regarding Kohli vs Bumrah in the IPL? For example, are you interested in:\n\n1.  **Match statistics** (e.g., head-to-head records, performance in specific m",
+   "status": "no_tool"
+  },
+  {
+   "id": "q11",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false,
+    "player2": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "how does Rohit play Rashid Khan",
+   "seconds": 42.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I do not have a tool that can directly compare how Rohit Sharma plays against Rashid Khan. The available tools are for retrieving statistics, team records, auction data, and player stories based on sp",
+   "status": "no_tool"
+  },
+  {
+   "id": "q12",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false,
+    "player2": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "virat kholi vs rohit sharma compare",
+   "seconds": 37.91,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What kind of comparison are you looking for between Virat Kohli and Rohit Sharma? For example, are you interested in:\n\n1.  **Career Stats:** (e.g., total runs, average, centuries)\n2.  **Recent Form:**",
+   "status": "no_tool"
+  },
+  {
+   "id": "q13",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false,
+    "player2": false,
+    "role": false
+   },
+   "params_ok": false,
+   "question": "compare bumrah and rabada bowling",
+   "seconds": 27.87,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What competition, season, and any other specific details (like team, venue, or top players) would you like to use for the comparison between Bumrah and Rabada?\n\nFor example, are you interested in:\n*  ",
+   "status": "no_tool"
+  },
+  {
+   "id": "q14",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false,
+    "player2": false,
+    "competition": false
+   },
+   "params_ok": false,
+   "question": "Buttler or Gill who is better in the ipl",
+   "seconds": 37.45,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I need more information to give you a definitive answer on whether Buttler or Gill is better in the IPL. \"Better\" can mean different things (e.g., higher average, more impact, better in specific phase",
+   "status": "no_tool"
+  },
+  {
+   "id": "q15",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "how does Dhoni do against spin",
+   "seconds": 16.92,
+   "error": null,
+   "tool_call": {
+    "name": "pace_vs_spin",
+    "arguments": {},
+    "overrides": [
+     null,
+     "pace_vs_spin",
+     "phrase 'against spin' means pace_vs_spin"
+    ]
+   },
+   "resolved_params": {},
+   "answer": "Bowling-type matchups (pace vs spin, and each bowling type) (all data), data through 2026-10-14. 8641 rows. Top 5: JC Buttler / kind: innings 408, runs 8,118, balls 5,284, strike rate 153.63; JC Buttler / kind: innings 325, runs 4,404, balls 3,154, strike rate 139.63; JC Buttler / kind: innings 129, runs 1,325, balls 901, strike rate 147.06; V Kohli / kind: innings 376, runs 8,300, balls 5,869, strike rate 141.42; V Kohli / kind: innings 297, runs 4,440, balls 3,588, strike rate 123.75.",
+   "status": "ok"
+  },
+  {
+   "id": "q16",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "competition": true
+   },
+   "params_ok": false,
+   "question": "Russell vs pace and spin in ipl",
+   "seconds": 38.06,
+   "error": null,
+   "tool_call": {
+    "name": "pace_vs_spin",
+    "arguments": {},
+    "overrides": [
+     null,
+     "pace_vs_spin",
+     "phrase 'vs pace' means pace_vs_spin"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl"
+   },
+   "answer": "Bowling-type matchups (pace vs spin, and each bowling type) (competition=ipl), data through 2026-05-31. 939 rows. Top 5: V Kohli / kind: innings 271, runs 5,840, balls 4,158, strike rate 140.45; V Kohli / kind: innings 209, runs 3,313, balls 2,652, strike rate 124.92; V Kohli / kind: innings 28, runs 183, balls 116, strike rate 157.76; RG Sharma / kind: innings 271, runs 4,744, balls 3,313, strike rate 143.19; RG Sharma / kind: innings 207, runs 2,412, balls 2,075, strike rate 116.24.",
+   "status": "ok"
+  },
+  {
+   "id": "q17",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "mode": true,
+    "competition": true,
+    "season_from": true
+   },
+   "params_ok": true,
+   "question": "which team is weakest against spin in ipl since 2022",
+   "seconds": 67.04,
+   "error": null,
+   "tool_call": {
+    "name": "pace_vs_spin",
+    "arguments": {},
+    "overrides": [
+     null,
+     "pace_vs_spin",
+     "phrase 'against spin' means pace_vs_spin"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "season_from": 2022,
+    "mode": "team_vs_type"
+   },
+   "answer": "Bowling-type matchups (pace vs spin, and each bowling type) (competition=ipl, season_from=2022), data through 2026-05-31. 30 rows. Top 5: Royal Challengers Bengaluru / kind: runs 8,217, balls 5,228, strike rate 157.17, dot pct 33.3; Royal Challengers Bengaluru / kind: runs 4,536, balls 3,262, strike rate 139.06, dot pct 29.8; Royal Challengers Bengaluru / kind: runs 336, balls 171, strike rate 196.49, dot pct 24; Rajasthan Royals / kind: runs 8,792, balls 5,690, strike rate 154.52, dot pct 36.7; Rajasthan Royals / kind: runs 3,983, balls 2,897, strike rate 137.49, dot pct 31.6.",
+   "status": "ok"
+  },
+  {
+   "id": "q18",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "who is Hardik Pandya, what role does he play",
+   "seconds": 30.96,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I do not have a tool that can provide a general biography or the specific role of a player like Hardik Pandya. The available tools are for retrieving detailed, statistical, and performance data relate",
+   "status": "no_tool"
+  },
+  {
+   "id": "q19",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "bowl_type": false,
+    "min_matches": false
+   },
+   "params_ok": false,
+   "question": "list left arm orthodox spinners with 50+ matches",
+   "seconds": 4.71,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What competition are you interested in (e.g., ipl, t20i, bbl)? Also, do you have a specific season or time frame in mind?",
+   "status": "no_tool"
+  },
+  {
+   "id": "q20",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false
+   },
+   "params_ok": false,
+   "question": "profile of Rashid Khan",
+   "seconds": 52.65,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What competition, season, or other details are you interested in for Rashid Khan's profile? For example, are you looking for his stats in the IPL, T20Is, or a specific season?\n\nYou can use tools like ",
+   "status": "no_tool"
+  },
+  {
+   "id": "q21",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "competition": true
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "Kohli at home vs away in ipl",
+   "seconds": 45.13,
+   "error": null,
+   "tool_call": {
+    "name": "home_away",
+    "arguments": {},
+    "overrides": [
+     null,
+     "home_away",
+     "phrase 'home' means home_away"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl"
+   },
+   "answer": "Home vs away (competition=ipl), data through 2026-05-31. 45 rows. Top 5: Mumbai Indians / home: matches 103, won 63, lost 40, no result 0; Mumbai Indians / away: matches 99, won 52, lost 47, no result 0; Mumbai Indians / neutral: matches 89, won 42, lost 47, no result 0; Royal Challengers Bengaluru / home: matches 100, won 50, lost 47, no result 3; Royal Challengers Bengaluru / away: matches 101, won 49, lost 52, no result 0.",
+   "status": "ok"
+  },
+  {
+   "id": "q22",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "team": false,
+    "competition": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "chenai super kings home vs away record",
+   "seconds": 18.39,
+   "error": null,
+   "tool_call": {
+    "name": "home_away",
+    "arguments": {},
+    "overrides": [
+     null,
+     "home_away",
+     "phrase 'home' means home_away"
+    ]
+   },
+   "resolved_params": {},
+   "answer": "Home vs away (all data), data through 2026-10-14. 622 rows. Top 5: Mumbai Indians / home: matches 103, won 63, lost 40, no result 0; Mumbai Indians / away: matches 99, won 52, lost 47, no result 0; Mumbai Indians / neutral: matches 89, won 42, lost 47, no result 0; Pakistan / home: matches 59, won 40, lost 17, no result 2; Pakistan / away: matches 115, won 58, lost 52, no result 5.",
+   "status": "ok"
+  },
+  {
+   "id": "q23",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "role": false
+   },
+   "params_ok": false,
+   "question": "Bumrah home away bowling",
+   "seconds": 19.48,
+   "error": null,
+   "tool_call": {
+    "name": "home_away",
+    "arguments": {},
+    "overrides": [
+     null,
+     "home_away",
+     "phrase 'home' means home_away"
+    ]
+   },
+   "resolved_params": {},
+   "answer": "Home vs away (all data), data through 2026-10-14. 622 rows. Top 5: Mumbai Indians / home: matches 103, won 63, lost 40, no result 0; Mumbai Indians / away: matches 99, won 52, lost 47, no result 0; Mumbai Indians / neutral: matches 89, won 42, lost 47, no result 0; Pakistan / home: matches 59, won 40, lost 17, no result 2; Pakistan / away: matches 115, won 58, lost 52, no result 5.",
+   "status": "ok"
+  },
+  {
+   "id": "q24",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true
+   },
+   "params_ok": true,
+   "question": "who performs best under pressure in ipl",
+   "seconds": 32.57,
+   "error": null,
+   "tool_call": {
+    "name": "pressure",
+    "arguments": {},
+    "overrides": [
+     null,
+     "pressure",
+     "phrase 'pressure' means pressure"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl"
+   },
+   "answer": "Performance under pressure (competition=ipl), data through 2026-05-31. 40 rows. Top 5: V Suryavanshi: pressure balls 97, pressure runs 221, pressure outs 5, pressure sr 227.84; RD Rickelton: pressure balls 120, pressure runs 247, pressure outs 6, pressure sr 205.83; JJ Roy: pressure balls 63, pressure runs 125, pressure outs 3, pressure sr 198.41; Naman Dhir: pressure balls 88, pressure runs 169, pressure outs 6, pressure sr 192.05; LS Livingstone: pressure balls 119, pressure runs 227, pressure outs 5, pressure sr 190.76.",
+   "status": "ok"
+  },
+  {
+   "id": "q25",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "level": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "Dhoni in extreme pressure situations",
+   "seconds": 32.95,
+   "error": null,
+   "tool_call": {
+    "name": "pressure",
+    "arguments": {},
+    "overrides": [
+     null,
+     "pressure",
+     "phrase 'pressure' means pressure"
+    ]
+   },
+   "resolved_params": {},
+   "answer": "Performance under pressure (all data), data through 2026-10-14. 40 rows. Top 5: KC D'Souza: pressure balls 112, pressure runs 273, pressure outs 2, pressure sr 243.75; V Suryavanshi: pressure balls 99, pressure runs 227, pressure outs 5, pressure sr 229.29; CM Carroll: pressure balls 65, pressure runs 145, pressure outs 2, pressure sr 223.08; AHT Donald: pressure balls 145, pressure runs 311, pressure outs 11, pressure sr 214.48; Karanbir Singh: pressure balls 150, pressure runs 321, pressure outs 4, pressure sr 214.",
+   "status": "ok"
+  },
+  {
+   "id": "q26",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false
+   },
+   "params_ok": false,
+   "golden_ok": true,
+   "question": "Kohli chasing vs setting",
+   "seconds": 44.98,
+   "error": null,
+   "tool_call": {
+    "name": "chase_vs_set",
+    "arguments": {},
+    "overrides": [
+     null,
+     "chase_vs_set",
+     "phrase 'chasing' means chase_vs_set"
+    ]
+   },
+   "resolved_params": {},
+   "answer": "Setting vs chasing (players) (all data), data through 2026-10-14. 12376 rows. Top 5: JC Buttler / setting: innings 209, not outs 21, runs 7,236, balls 4,897; JC Buttler / chasing: innings 225, not outs 38, runs 6,611, balls 4,442; V Kohli / setting: innings 207, not outs 25, runs 6,940, balls 5,188; V Kohli / chasing: innings 180, not outs 49, runs 6,359, balls 4,653; AD Hales / setting: innings 214, not outs 5, runs 5,473, balls 3,818.",
+   "status": "ok"
+  },
+  {
+   "id": "q27",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "season_from": true
+   },
+   "params_ok": true,
+   "question": "best chasers in ipl since 2020",
+   "seconds": 21.67,
+   "error": null,
+   "tool_call": {
+    "name": "chase_vs_set",
+    "arguments": {
+     "competition": "ipl",
+     "group_by": "season",
+     "last_n_years": 5,
+     "min_matches": 1,
+     "season_from": 2020,
+     "season_to": 2024
+    },
+    "overrides": [
+     "teams",
+     "chase_vs_set",
+     "phrase 'chasers' means chase_vs_set"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "season_from": 2020
+   },
+   "answer": "Setting vs chasing (players) (competition=ipl, season_from=2020), data through 2026-05-31. 682 rows. Top 5: Shubman Gill / setting: innings 50, not outs 3, runs 2,033, balls 1,362; Shubman Gill / chasing: innings 57, not outs 5, runs 2,066, balls 1,497; V Kohli / setting: innings 60, not outs 6, runs 2,092, balls 1,559; V Kohli / chasing: innings 46, not outs 12, runs 1,832, balls 1,255; KL Rahul / setting: innings 45, not outs 7, runs 2,097, balls 1,466.",
+   "status": "ok"
+  },
+  {
+   "id": "q28",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "role": false
+   },
+   "params_ok": false,
+   "question": "does Hardik bowl better when defending",
+   "seconds": 34.05,
+   "error": null,
+   "tool_call": {
+    "name": "chase_vs_set",
+    "arguments": {},
+    "overrides": [
+     null,
+     "chase_vs_set",
+     "phrase 'defending' means chase_vs_set"
+    ]
+   },
+   "resolved_params": {},
+   "answer": "Setting vs chasing (players) (all data), data through 2026-10-14. 12376 rows. Top 5: JC Buttler / setting: innings 209, not outs 21, runs 7,236, balls 4,897; JC Buttler / chasing: innings 225, not outs 38, runs 6,611, balls 4,442; V Kohli / setting: innings 207, not outs 25, runs 6,940, balls 5,188; V Kohli / chasing: innings 180, not outs 49, runs 6,359, balls 4,653; AD Hales / setting: innings 214, not outs 5, runs 5,473, balls 3,818.",
+   "status": "ok"
+  },
+  {
+   "id": "q29",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "how does Rohit get out",
+   "seconds": 44.02,
+   "error": null,
+   "tool_call": {
+    "name": "dismissal_profile",
+    "arguments": {},
+    "overrides": [
+     null,
+     "dismissal_profile",
+     "phrase 'get out' means dismissal_profile"
+    ]
+   },
+   "resolved_params": {},
+   "answer": "Dismissal profile (all data), data through 2026-10-14. 21770 rows. Top 5: AD Hales / caught (fielder): outs 242, pct 55.8; AD Hales / bowled: outs 102, pct 23.5; AD Hales / caught (keeper): outs 35, pct 8.1; AD Hales / lbw: outs 17, pct 3.9; AD Hales / stumped: outs 15, pct 3.5.",
+   "status": "ok"
+  },
+  {
+   "id": "q30",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "group_by": true
+   },
+   "params_ok": false,
+   "question": "how do spinners vs pacers get kohli out",
+   "seconds": 69.57,
+   "error": null,
+   "tool_call": {
+    "name": "dismissal_profile",
+    "arguments": {},
+    "overrides": [
+     null,
+     "dismissal_profile",
+     "phrase 'get kohli out' means dismissal_profile"
+    ]
+   },
+   "resolved_params": {
+    "group_by": "bowler_kind"
+   },
+   "answer": "Dismissal profile (all data), data through 2026-10-14. 33137 rows. Top 5: AD Hales / pace: outs 129, pct 58.9; AD Hales / pace: outs 51, pct 23.3; AD Hales / pace: outs 21, pct 9.6; AD Hales / pace: outs 8, pct 3.7; AD Hales / pace: outs 5, pct 2.3.",
+   "status": "ok"
+  },
+  {
+   "id": "q31",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "phase": true
+   },
+   "params_ok": false,
+   "question": "Warner dismissals in the powerplay",
+   "seconds": 18.28,
+   "error": null,
+   "tool_call": {
+    "name": "dismissal_profile",
+    "arguments": {},
+    "overrides": [
+     null,
+     "dismissal_profile",
+     "phrase 'dismissals' means dismissal_profile"
+    ]
+   },
+   "resolved_params": {
+    "phase": "powerplay",
+    "venue": [
+     "Warner Park, Basseterre",
+     "Warner Park, St Kitts"
+    ]
+   },
+   "answer": "Dismissal profile (phase=powerplay), data through 2026-09-03. 194 rows. Top 5: E Lewis / caught (fielder): outs 18, pct 60; E Lewis / caught (keeper): outs 7, pct 23.3; E Lewis / lbw: outs 3, pct 10; E Lewis / bowled: outs 2, pct 6.7; ADS Fletcher / caught (fielder): outs 8, pct 44.4.",
+   "status": "ok"
+  },
+  {
+   "id": "q32",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "team": true,
+    "opposition": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "MI vs CSK head to head",
+   "seconds": 17.16,
+   "error": null,
+   "tool_call": {
+    "name": "teams",
+    "arguments": {
+     "team": "mi",
+     "opposition": "csk"
+    },
+    "overrides": [
+     null,
+     "teams",
+     "two teams on either side of vs: 'mi', 'csk'"
+    ]
+   },
+   "resolved_params": {
+    "team": "Mumbai Indians",
+    "opposition": "Chennai Super Kings",
+    "competition": "ipl"
+   },
+   "answer": "Team records (team=Mumbai Indians, opposition=Chennai Super Kings, competition=ipl), data through 2026-05-02. team Mumbai Indians, played 41, won 21, lost 20, tied 0, no result 0, win pct 51.2, toss won 22, won after toss win 14, bat first matches 22, bat first wins 10, chase matches 19.",
+   "status": "ok"
+  },
+  {
+   "id": "q33",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "last_n_years": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "which ipl team has won the most in last 3 years",
+   "seconds": 5.56,
+   "error": null,
+   "tool_call": {
+    "name": "teams",
+    "arguments": {
+     "competition": "ipl",
+     "group_by": "team",
+     "last_n_years": 3
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "group_by": "team",
+    "last_n_years": 3
+   },
+   "answer": "Team records (competition=ipl, last_n_years=3), data through 2026-05-31. 10 rows. Top 5: Royal Challengers Bengaluru: played 46, won 29, lost 17, tied 0; Kolkata Knight Riders: played 41, won 22, lost 17, tied 0; Sunrisers Hyderabad: played 45, won 24, lost 20, tied 0; Gujarat Titans: played 44, won 24, lost 20, tied 0; Punjab Kings: played 46, won 22, lost 21, tied 0.",
+   "status": "ok"
+  },
+  {
+   "id": "q34",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true
+   },
+   "params_ok": true,
+   "question": "which venue is highest scoring in ipl",
+   "seconds": 18.68,
+   "error": null,
+   "tool_call": {
+    "name": "venues",
+    "arguments": {
+     "competition": "ipl",
+     "group_by": "venue",
+     "min_matches": 1
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "group_by": "venue",
+    "min_matches": 1
+   },
+   "answer": "Venue summary (competition=ipl), data through 2026-05-31. 45 rows. Top 5: Wankhede Stadium / Mumbai: matches 132, avg 1st innings 173.1, avg 2nd innings 162, highest 1st innings 243; Eden Gardens / Kolkata: matches 107, avg 1st innings 168.6, avg 2nd innings 154.7, highest 1st innings 261; Arun Jaitley Stadium / Delhi: matches 104, avg 1st innings 171.8, avg 2nd innings 158.4, highest 1st innings 278; MA Chidambaram Stadium, Chepauk / Chennai: matches 98, avg 1st innings 165.6, avg 2nd innings 152.3, highest 1st innings 246; Rajiv Gandhi International Stadium, Uppal / Hyderabad: matches 90, avg 1st innings 168.3, avg 2nd innings 156.6, highest 1st innings 286.",
+   "status": "ok"
+  },
+  {
+   "id": "q35",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "venue": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "wankhede stats",
+   "seconds": 18.86,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: Which competition are you interested in (e.g., ipl, t20i, bbl, etc.)? Also, do you want stats for a specific season or a range of seasons?",
+   "status": "no_tool"
+  },
+  {
+   "id": "q36",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "competition": false,
+    "group_by": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "top partnerships in the ipl",
+   "seconds": 18.37,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What time frame are you interested in for the IPL (e.g., last 5 years, a specific season)? Also, are you interested in batting partnerships or bowling partnerships?",
+   "status": "no_tool"
+  },
+  {
+   "id": "q37",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "window": true
+   },
+   "params_ok": false,
+   "question": "kohli form last 10 innings",
+   "seconds": 18.01,
+   "error": null,
+   "tool_call": {
+    "name": "form",
+    "arguments": {},
+    "overrides": [
+     null,
+     "form",
+     "phrase 'form' means form"
+    ]
+   },
+   "resolved_params": {
+    "window": 10
+   },
+   "answer": "I could not run that: Module 'form' needs param 'player'",
+   "status": "error"
+  },
+  {
+   "id": "q38",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "role": false
+   },
+   "params_ok": false,
+   "question": "is Bumrah in form recently",
+   "seconds": 18.63,
+   "error": null,
+   "tool_call": {
+    "name": "form",
+    "arguments": {},
+    "overrides": [
+     null,
+     "form",
+     "phrase 'form' means form"
+    ]
+   },
+   "resolved_params": {},
+   "answer": "I could not run that: Module 'form' needs param 'player'",
+   "status": "error"
+  },
+  {
+   "id": "q39",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "season": true
+   },
+   "params_ok": true,
+   "golden_ok": false,
+   "question": "who had the most impact in ipl 2025",
+   "seconds": 25.6,
+   "error": null,
+   "tool_call": {
+    "name": "impact",
+    "arguments": {},
+    "overrides": [
+     null,
+     "impact",
+     "phrase 'impact' means impact"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "season": 2025
+   },
+   "answer": "Player impact score (competition=ipl, season=2025), data through 2025-06-03. 30 rows. Top 5: SA Yadav: matches 16, total runs 717, total wickets 0, fours 69; B Sai Sudharsan: matches 15, total runs 759, total wickets 0, fours 88; SS Iyer: matches 17, total runs 604, total wickets 0, fours 43; N Pooran: matches 14, total runs 524, total wickets 0, fours 45; Priyansh Arya: matches 18, total runs 545, total wickets 0, fours 60.",
+   "status": "ok"
+  },
+  {
+   "id": "q40",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true
+   },
+   "params_ok": true,
+   "question": "true strike rate leaders in the ipl",
+   "seconds": 20.46,
+   "error": null,
+   "tool_call": {
+    "name": "true_performance",
+    "arguments": {},
+    "overrides": [
+     null,
+     "true_performance",
+     "phrase 'true strike' means true_performance"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl"
+   },
+   "answer": "True strike rate / true economy (competition=ipl), data through 2026-05-31. 40 rows. Top 5: V Suryavanshi: matches 23, total runs 1,028, total balls 449, raw sr 228.95; FH Allen: matches 11, total runs 349, total balls 163, raw sr 214.11; Urvil Patel: matches 10, total runs 197, total balls 96, raw sr 205.21; J Fraser-McGurk: matches 15, total runs 385, total balls 193, raw sr 199.48; Priyansh Arya: matches 31, total runs 909, total balls 471, raw sr 192.99.",
+   "status": "ok"
+  },
+  {
+   "id": "q41",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "role": false,
+    "phase": true
+   },
+   "params_ok": false,
+   "question": "true economy of death bowlers",
+   "seconds": 19.34,
+   "error": null,
+   "tool_call": {
+    "name": "true_performance",
+    "arguments": {},
+    "overrides": [
+     null,
+     "true_performance",
+     "phrase 'true economy' means true_performance"
+    ]
+   },
+   "resolved_params": {
+    "phase": "death"
+   },
+   "answer": "True strike rate / true economy (phase=death), data through 2026-10-14. 40 rows. Top 5: Manan Bashir: matches 3, total runs 93, total balls 30, raw sr 310; A Johnson: matches 3, total runs 102, total balls 38, raw sr 268.42; CM Carroll: matches 2, total runs 88, total balls 34, raw sr 258.82; D Doyle-Calle: matches 9, total runs 173, total balls 67, raw sr 258.21; HAM Shah: matches 9, total runs 235, total balls 96, raw sr 244.79.",
+   "status": "ok"
+  },
+  {
+   "id": "q42",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "role": false
+   },
+   "params_ok": false,
+   "question": "best death overs hitters",
+   "seconds": 19.25,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What competition are you interested in (e.g., ipl, t20i, bbl)? Also, please specify the season or a range of seasons, and if you have a preferred team, player, or venue.",
+   "status": "no_tool"
+  },
+  {
+   "id": "q43",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "role": false,
+    "competition": false
+   },
+   "params_ok": false,
+   "question": "best death bowlers in t20is",
+   "seconds": 18.79,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What time frame are you interested in? For example, the last 5 years, a specific season, or a range of seasons? Also, would you like to filter by a specific team or venue?",
+   "status": "no_tool"
+  },
+  {
+   "id": "q44",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "award": true,
+    "competition": true,
+    "season": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "best debutants of ipl 2024",
+   "seconds": 6.48,
+   "error": null,
+   "tool_call": {
+    "name": "season_awards",
+    "arguments": {
+     "award": "debutants",
+     "competition": "ipl",
+     "season": "2024",
+     "top": 10
+    }
+   },
+   "resolved_params": {
+    "award": "debutants",
+    "competition": "ipl",
+    "top": 10,
+    "season": 2024
+   },
+   "answer": "Season awards (competition=ipl, season=2024), data through 2024-05-26. 10 rows. Top 5: ipl / 2024: rank 1, matches 9, runs 330, balls 141; ipl / 2024: rank 2, matches 11, runs 303, balls 212; ipl / 2024: rank 3, matches 8, runs 230, balls 131; ipl / 2024: rank 4, matches 10, runs 222, balls 138; ipl / 2024: rank 5, matches 9, runs 189, balls 113.",
+   "status": "ok"
+  },
+  {
+   "id": "q45",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "phase": true
+   },
+   "params_ok": true,
+   "question": "powerplay leaders each ipl season",
+   "seconds": 23.38,
+   "error": null,
+   "tool_call": {
+    "name": "season_awards",
+    "arguments": {
+     "award": "phase_leaders",
+     "competition": "ipl",
+     "phase": "powerplay",
+     "role": "batting",
+     "season_from": 2008,
+     "season_to": 2024
+    }
+   },
+   "resolved_params": {
+    "award": "phase_leaders",
+    "competition": "ipl",
+    "phase": "powerplay",
+    "role": "batting"
+   },
+   "answer": "Season awards (competition=ipl, phase=powerplay), data through 2026-05-31. 95 rows. Top 5: ipl / 2026: rank 1, matches 16, runs 521, balls 223; ipl / 2026: rank 2, matches 15, runs 369, balls 172; ipl / 2026: rank 3, matches 16, runs 360, balls 206; ipl / 2026: rank 4, matches 17, runs 347, balls 243; ipl / 2026: rank 5, matches 15, runs 337, balls 198.",
+   "status": "ok"
+  },
+  {
+   "id": "q46",
+   "clar_pred": true,
+   "clar_expected": true,
+   "question": "how is Sharma doing in the ipl",
+   "seconds": 35.19,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What specific information about Sharma are you looking for? For example, are you interested in:\n\n1.  **Season Awards** (e.g., top batsmen/bowlers in a specific season)?\n2.  **Team Records** (e.g., how",
+   "status": "no_tool"
+  },
+  {
+   "id": "q47",
+   "clar_pred": true,
+   "clar_expected": true,
+   "question": "compare kohli with",
+   "seconds": 33.73,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: Please specify who you would like to compare Kohli with. For example, you can ask to compare him with another player, or compare him based on a specific metric (e.g., season awards, true strike rate, ",
+   "status": "no_tool"
+  },
+  {
+   "id": "q48",
+   "clar_pred": true,
+   "clar_expected": true,
+   "question": "show me the stats",
+   "seconds": 29.16,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What kind of stats are you looking for? For example, are you interested in:\n\n1.  **Team records** (wins, losses, win percentage) for a specific **competition** (e.g., IPL)?\n2.  **Player performance** ",
+   "status": "no_tool"
+  },
+  {
+   "id": "q49",
+   "clar_pred": true,
+   "clar_expected": true,
+   "question": "what about Patel's economy",
+   "seconds": 18.5,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: What competition, season, and role are you interested in for Patel? Also, please provide any other relevant details like team, venue, or a specific time frame.",
+   "status": "no_tool"
+  },
+  {
+   "id": "q50",
+   "clar_pred": true,
+   "clar_expected": true,
+   "question": "who is better",
+   "seconds": 62.97,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: Please provide more context so I can answer your question. \"Who is better\" is too vague.\n\nTo give you a helpful comparison, please tell me:\n\n1.  **Who** are you comparing (e.g., two players, two teams",
+   "status": "no_tool"
+  },
+  {
+   "id": "x01",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "competition": true,
+    "order": true,
+    "n": true
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "naman dhir debut match score ipl",
+   "seconds": 23.44,
+   "error": null,
+   "tool_call": {
+    "name": "innings_list",
+    "arguments": {},
+    "overrides": [
+     null,
+     "innings_list",
+     "phrase 'debut' means innings_list"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "order": "first",
+    "n": 1
+   },
+   "answer": "Innings list (debut, last N matches, best innings) (competition=ipl), data through 2026-05-31. date 2008-04-18 00:00:00, season 2007/08, competition ipl, player SC Ganguly, team Kolkata Knight Riders, opposition Royal Challengers Bengaluru, venue M Chinnaswamy Stadium, position 2, runs 10, balls 12, fours 2, sixes 0.",
+   "status": "ok"
+  },
+  {
+   "id": "x02",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "order": true,
+    "n": true
+   },
+   "params_ok": false,
+   "question": "naman dhir last 5 matches",
+   "seconds": 18.61,
+   "error": null,
+   "tool_call": {
+    "name": "innings_list",
+    "arguments": {},
+    "overrides": [
+     null,
+     "innings_list",
+     "phrase 'last 5 matches' means innings_list"
+    ]
+   },
+   "resolved_params": {
+    "order": "last",
+    "n": 5
+   },
+   "answer": "Innings list (debut, last N matches, best innings) (all data), data through 2026-10-14. 5 rows. Top 5: 2026/27 / t20i: position 2, runs 11, balls 31, fours 0; 2026/27 / t20i: position 3, runs 5, balls 7, fours 1; 2026/27 / t20i: position 5, runs 8, balls 9, fours 0; 2026/27 / t20i: position 9, runs 0, balls 1, fours 0; 2026/27 / t20i: position 11, runs 1, balls 5, fours 0.",
+   "status": "ok"
+  },
+  {
+   "id": "x03",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false,
+    "competition": false,
+    "order": false,
+    "n": false
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "Kohli's last 10 IPL innings",
+   "seconds": 42.97,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I can retrieve various statistics for a player, but I do not have a specific function to list a player's \"last 10 innings.\"\n\nHowever, I can use the available tools to get performance data for Virat Ko",
+   "status": "no_tool"
+  },
+  {
+   "id": "x04",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "competition": true,
+    "role": true,
+    "order": true,
+    "n": true
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "Bumrah's best figures in an IPL match",
+   "seconds": 14.18,
+   "error": null,
+   "tool_call": {
+    "name": "innings_list",
+    "arguments": {
+     "award": "phase_leaders",
+     "competition": "ipl",
+     "phase": "powerplay",
+     "role": "bowling",
+     "season_from": 2015,
+     "season_to": 2024,
+     "team": "Mumbai Indians",
+     "top": 1,
+     "venue": "Wankhede"
+    },
+    "overrides": [
+     "season_awards",
+     "innings_list",
+     "phrase 'best figures' means innings_list"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "role": "bowling",
+    "team": "Mumbai Indians",
+    "order": "best",
+    "n": 1
+   },
+   "answer": "Innings list (debut, last N matches, best innings) (competition=ipl, team=Mumbai Indians), data through 2026-05-24. date 2019-04-06 00:00:00, season 2019, competition ipl, player AS Joseph, team Mumbai Indians, opposition Sunrisers Hyderabad, venue Rajiv Gandhi International Stadium, Uppal, overs 3.4, runs 12, wickets 6, figures 6/12, balls 22.",
+   "status": "ok"
+  },
+  {
+   "id": "x05",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "venue": true,
+    "order": true,
+    "n": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "highest score at Wankhede in the IPL",
+   "seconds": 19.16,
+   "error": null,
+   "tool_call": {
+    "name": "innings_list",
+    "arguments": {
+     "competition": "ipl",
+     "group_by": "venue",
+     "min_matches": 1,
+     "venue": "Wankhede"
+    },
+    "overrides": [
+     "venues",
+     "innings_list",
+     "phrase 'highest score' means innings_list"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "venue": "Wankhede Stadium",
+    "order": "best",
+    "n": 1
+   },
+   "answer": "Innings list (debut, last N matches, best innings) (competition=ipl), data through 2026-05-24. date 2015-05-10 00:00:00, season 2015, competition ipl, player AB de Villiers, team Royal Challengers Bengaluru, opposition Mumbai Indians, venue Wankhede Stadium, position 3, runs 133, balls 59, fours 19, sixes 4.",
+   "status": "ok"
+  },
+  {
+   "id": "x06",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false,
+    "competition": true,
+    "order": true,
+    "n": true
+   },
+   "params_ok": false,
+   "golden_ok": false,
+   "question": "what did Kohli score on his IPL debut",
+   "seconds": 21.48,
+   "error": null,
+   "tool_call": {
+    "name": "innings_list",
+    "arguments": {},
+    "overrides": [
+     null,
+     "innings_list",
+     "phrase 'debut' means innings_list"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "order": "first",
+    "n": 1
+   },
+   "answer": "Innings list (debut, last N matches, best innings) (competition=ipl), data through 2026-05-31. date 2008-04-18 00:00:00, season 2007/08, competition ipl, player SC Ganguly, team Kolkata Knight Riders, opposition Royal Challengers Bengaluru, venue M Chinnaswamy Stadium, position 2, runs 10, balls 12, fours 2, sixes 0.",
+   "status": "ok"
+  },
+  {
+   "id": "o01",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "how many runs did Kohli score in Test cricket",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer Test, ODI or first-class cricket.",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "o02",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "Rohit Sharma ODI batting average",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer Test, ODI or first-class cricket.",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "o03",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "what line and length does Bumrah bowl to left handers",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer line, length, speed or swing (the data has no ball tracking).",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "o04",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "how many catches has Kohli dropped in the IPL",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer dropped catches or fielding errors (the data does not record them).",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "o05",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "will it rain at Wankhede tomorrow",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer weather.",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "o06",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "who is the best football player in the world",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer non-cricket topics.",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "o07",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "who won the 2019 ODI World Cup final",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer Test, ODI or first-class cricket.",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "o08",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "which shot does Suryakumar play most against fast bowlers",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer which shots a batter plays (the data has no shot types).",
+   "status": "out_of_scope"
+  }
+ ]
+}

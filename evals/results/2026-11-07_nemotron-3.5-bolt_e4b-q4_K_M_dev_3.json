@@ -1,0 +1,76 @@
+{
+ "model": "nemotron-3.5-bolt:e4b-q4_K_M",
+ "summary": {
+  "n": 2,
+  "n_answerable": 2,
+  "module_accuracy": 1.0,
+  "param_accuracy_per_param": 1.0,
+  "param_accuracy_all_correct": 1.0,
+  "clarification_precision": null,
+  "clarification_recall": null,
+  "false_clarifications": 0,
+  "out_of_scope_ok": null,
+  "golden_present": null,
+  "golden_n": 0,
+  "seconds_mean": 16.48,
+  "seconds_max": 28.49
+ },
+ "questions": [
+  {
+   "id": "d07",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": true
+   },
+   "params_ok": true,
+   "question": "ek ball pe Rohit vs spin kya expected hai middle overs",
+   "seconds": 28.49,
+   "error": null,
+   "tool_call": {
+    "name": "matchup_predict",
+    "arguments": {},
+    "overrides": [
+     null,
+     "matchup_predict",
+     "phrase 'ek ball' means matchup_predict"
+    ]
+   },
+   "resolved_params": {
+    "phase": "middle",
+    "player": "RG Sharma"
+   },
+   "answer": "Matchup predictor (batter v bowler / bowling type) (player=RG Sharma, phase=middle), data through 2026-10-14. batter RG Sharma, bowl type typical bowler, bowl type source none, phase middle, wickets down any, innings any, required rate any, exp runs per ball 1.44, exp runs per 6 8.62, strike rate 143.7, p out 0.05, balls per dismissal 20.",
+   "status": "ok"
+  },
+  {
+   "id": "d13",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": true
+   },
+   "params_ok": true,
+   "question": "how much did Rishabh Pant go for in the auction",
+   "seconds": 4.47,
+   "error": null,
+   "tool_call": {
+    "name": "auction",
+    "arguments": {},
+    "overrides": [
+     null,
+     "auction",
+     "phrase 'auction' means auction"
+    ]
+   },
+   "resolved_params": {
+    "player": "RR Pant",
+    "view": "player"
+   },
+   "answer": "IPL auction: predicted price and moneyball market check (player=RR Pant), data through 2026-10-14. player Rishabh Pant, auction 2025, base cr 2, overseas no, capped yes, last price cr 16, recent war 2y 0.62, batting value 0.11, bowling value 0.1, t20 balls before 3077, p sold 1, p10 cr 3.43.",
+   "status": "ok"
+  }
+ ]
+}

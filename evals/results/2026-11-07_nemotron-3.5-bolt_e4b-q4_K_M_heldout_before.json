@@ -1,0 +1,491 @@
+{
+ "model": "nemotron-3.5-bolt:e4b-q4_K_M",
+ "summary": {
+  "n": 20,
+  "n_answerable": 17,
+  "module_accuracy": 0.412,
+  "param_accuracy_per_param": 0.632,
+  "param_accuracy_all_correct": 0.412,
+  "clarification_precision": 0.0,
+  "clarification_recall": null,
+  "false_clarifications": 5,
+  "out_of_scope_ok": "2/3",
+  "golden_present": null,
+  "golden_n": 0,
+  "seconds_mean": 54.95,
+  "seconds_max": 126.82
+ },
+ "questions": [
+  {
+   "id": "h01",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "competition": false,
+    "season": false
+   },
+   "params_ok": false,
+   "question": "who added the most runs above average in ipl 2025",
+   "seconds": 81.68,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I do not have data for the IPL 2025 season as it has not been played yet. The available tools allow querying data for past or projected seasons, but not for a future season like 2025.\n\nIf you would li",
+   "status": "no_tool"
+  },
+  {
+   "id": "h02",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "season": true
+   },
+   "params_ok": true,
+   "question": "which batters swung win probability most in ipl 2024",
+   "seconds": 55.8,
+   "error": null,
+   "tool_call": {
+    "name": "wpa",
+    "arguments": {
+     "competition": "ipl",
+     "season": "2024",
+     "role": "batting",
+     "view": "players"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "role": "batting",
+    "view": "players",
+    "season": 2024
+   },
+   "answer": "Win Probability Added (competition=ipl, season=2024), data through 2024-05-26. 40 rows. Top 5: V Kohli / 2024-04-28: matches 15, balls 478, runs 741, dismissals 12; N Pooran / 2024-05-17: matches 14, balls 280, runs 499, dismissals 8; RM Patidar / 2024-04-25: matches 13, balls 222, runs 395, dismissals 13; JC Buttler / 2024-04-16: matches 11, balls 254, runs 358, dismissals 9; Shashank Singh / 2024-04-04: matches 14, balls 215, runs 354, dismissals 8.",
+   "status": "ok"
+  },
+  {
+   "id": "h03",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "season": true
+   },
+   "params_ok": true,
+   "question": "bhai wpa leaders bowlers ipl 2023 kaun hai",
+   "seconds": 24.08,
+   "error": null,
+   "tool_call": {
+    "name": "wpa",
+    "arguments": {
+     "competition": "ipl",
+     "season": "2023",
+     "role": "bowling",
+     "view": "players"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "role": "bowling",
+    "view": "players",
+    "season": 2023
+   },
+   "answer": "Win Probability Added (competition=ipl, season=2023), data through 2023-05-29. 40 rows. Top 5: Mohammed Siraj / 2023-04-20: matches 14, legal balls 300, runs conceded 375, wickets 19; MM Sharma / 2023-04-22: matches 13, legal balls 247, runs conceded 325, wickets 24; CV Varun / 2023-05-04: matches 13, legal balls 292, runs conceded 403, wickets 19; Rashid Khan / 2023-05-05: matches 16, legal balls 384, runs conceded 508, wickets 27; Mohammed Shami / 2023-05-15: matches 16, legal balls 372, runs conceded 493, wickets 28.",
+   "status": "ok"
+  },
+  {
+   "id": "h04",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "competition": false,
+    "season": false
+   },
+   "params_ok": false,
+   "question": "who added the most wins in IPL 2025",
+   "seconds": 76.66,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I can provide information for IPL seasons up to 2024, but I do not have data for IPL 2025 yet.\n\nIf you would like to know who added the most wins in a past IPL season (e.g., 2023 or 2024), please spec",
+   "status": "no_tool"
+  },
+  {
+   "id": "h05",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "view": true
+   },
+   "params_ok": true,
+   "question": "projected war for ipl 2027 best players",
+   "seconds": 67.53,
+   "error": null,
+   "tool_call": {
+    "name": "war",
+    "arguments": {
+     "competition": "ipl",
+     "season": "2027",
+     "view": "projected"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "view": "projected",
+    "season": 2027
+   },
+   "answer": "I could not run that: view=projected is the fixed IPL 2027 table: only the player filter applies",
+   "status": "error"
+  },
+  {
+   "id": "h06",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "player": false
+   },
+   "params_ok": false,
+   "question": "how will Kohli do against left arm pace in the death when chasing a high rate",
+   "seconds": 126.82,
+   "error": null,
+   "tool_call": {
+    "name": "chase_vs_set",
+    "arguments": {},
+    "overrides": [
+     null,
+     "chase_vs_set",
+     "phrase 'chasing' means chase_vs_set"
+    ]
+   },
+   "resolved_params": {
+    "phase": "death"
+   },
+   "answer": "Setting vs chasing (players) (phase=death), data through 2026-10-14. 9712 rows. Top 5: KA Pollard / setting: innings 210, not outs 78, runs 3,795, balls 2,095; KA Pollard / chasing: innings 129, not outs 48, runs 1,972, balls 1,109; MS Dhoni / setting: innings 158, not outs 77, runs 2,671, balls 1,561; MS Dhoni / chasing: innings 107, not outs 60, runs 1,793, balls 1,079; AD Russell / setting: innings 137, not outs 43, runs 2,189, balls 1,160.",
+   "status": "ok"
+  },
+  {
+   "id": "h07",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {},
+   "params_ok": false,
+   "question": "predict Bumrah vs Kohli per ball outcome",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer predictions about future matches.",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "h08",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": true
+   },
+   "params_ok": true,
+   "question": "what if Mumbai swap Hardik for Jaiswal from Rajasthan, who wins from the trade",
+   "seconds": 69.05,
+   "error": null,
+   "tool_call": {
+    "name": "trade",
+    "arguments": {
+     "baseline": "current",
+     "competition": "ipl",
+     "get": "Hardik",
+     "give": "Jaiswal",
+     "team": "Mumbai Indians",
+     "team2": "Rajasthan Royals",
+     "view": "trade"
+    }
+   },
+   "resolved_params": {
+    "baseline": "current",
+    "get": "Hardik",
+    "give": "Jaiswal",
+    "team": "Mumbai Indians",
+    "team2": "Rajasthan Royals",
+    "view": "trade",
+    "competition": "ipl"
+   },
+   "answer": "I could not run that: 'Jaiswal' is not in the MI squad. Valid names: Allah Ghazanfar (AM Ghazanfar), Ashwani Kumar, Corbin Bosch (C Bosch), Danish Malewar (DV Malewar), Deepak Chahar (DL Chahar), Hardik Pandya (HH Pandya), Jasprit Bumrah (JJ Bumrah), Keshav Maharaj (KA Maharaj), Krish Bhagat, Mahipal Lomror (MK Lomror), Mayank Markande (M Markande), Mayank Rawat (M Rawat), Mohammad Izhar, Naman Dhir, Raghu Sharma, Robin Minz (R Minz), Rohit Sharma (RG Sharma), Ruchit Ahir (RDB Ahir), Ryan Rickelton (RD Rickelton), Shardul Thakur (SN Thakur), Sherfane Rutherford (SE Rutherford), Suryakumar Yadav (SA Yadav), Tilak Varma, Trent Boult (TA Boult), Will Jacks (WG Jacks)",
+   "status": "error"
+  },
+  {
+   "id": "h09",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "view": false
+   },
+   "params_ok": false,
+   "question": "which players were bought at the ipl auction for the most money, and what did the model expect them to cost",
+   "seconds": 106.48,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I can use the `scarcity` tool to get information about the IPL auction, but it provides a scarcity index per role, not a list of players bought for the most money or their expected costs.\n\nThe availab",
+   "status": "no_tool"
+  },
+  {
+   "id": "h10",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "view": false
+   },
+   "params_ok": false,
+   "question": "cheapest alternatives to expensive auction buys ipl",
+   "seconds": 115.37,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I can help you find information related to IPL auctions, but I need a bit more detail to give you the best answer.\n\nThe `scarcity` tool can give you insights into **team needs** and **auction supply/d",
+   "status": "no_tool"
+  },
+  {
+   "id": "h11",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {},
+   "params_ok": true,
+   "question": "which roles are scarce going into the ipl 2027 auction",
+   "seconds": 40.1,
+   "error": null,
+   "tool_call": {
+    "name": "scarcity",
+    "arguments": {
+     "competition": "ipl",
+     "view": "2027"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "view": "2027"
+   },
+   "answer": "IPL auction supply and demand: scarcity index per role (competition=ipl), data through 2026-05-31. 9 rows. Top 5: keeper / PROVISIONAL until retentions (17 Nov 2026); supply assumed from earlier mini auctions: teams needing 5, need slots 5, demand 7.18, supply all assumed 4; spin / PROVISIONAL until retentions (17 Nov 2026); supply assumed from earlier mini auctions: teams needing 7, need slots 10, demand 8.23, supply all assumed 12; middle / PROVISIONAL until retentions (17 Nov 2026); supply assumed from earlier mini auctions: teams needing 7, need slots 10, demand 12.74, supply all assumed 18; opener / PROVISIONAL until retentions (17 Nov 2026); supply assumed from earlier mini auctions: teams needing 8, need slots 10, demand 11.77, supply all assumed 16; death_pace / PROVISIONAL until retentions (17 Nov 2026); supply assumed from earlier mini auctions: teams needing 5, need slots 5, demand 8.4, supply all assumed 20.",
+   "status": "ok"
+  },
+  {
+   "id": "h12",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "competition": true,
+    "season": true
+   },
+   "params_ok": false,
+   "question": "most catches by a fielder in ipl 2024",
+   "seconds": 14.0,
+   "error": null,
+   "tool_call": {
+    "name": "season_awards",
+    "arguments": {
+     "competition": "ipl",
+     "season": "2024",
+     "role": "bowling",
+     "top": 1
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "role": "bowling",
+    "top": 1,
+    "season": 2024
+   },
+   "answer": "Season awards (competition=ipl, season=2024), data through 2024-05-26. 3 rows. Top 5: ipl / 2024: rank 1, matches 15, wickets 12, runs conceded 267; ipl / 2024: rank 1, matches 14, wickets 17, runs conceded 296; ipl / 2024: rank 1, matches 13, wickets 16, runs conceded 218.",
+   "status": "ok"
+  },
+  {
+   "id": "h13",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "competition": true
+   },
+   "params_ok": false,
+   "question": "Kholi ipl runs at Chinnaswamy",
+   "seconds": 32.75,
+   "error": null,
+   "tool_call": {
+    "name": "stories",
+    "arguments": {
+     "competition": "ipl",
+     "player": "Kholi",
+     "season": "2024",
+     "venue": "Chinnaswamy"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "player": "V Kohli",
+    "venue": "M Chinnaswamy Stadium"
+   },
+   "answer": "Story finder (player=V Kohli, competition=ipl), data through 2026-04-24. 9 rows. Top 5: pace_vs_spin / gap: rank 1, value a 34.61, n a 64, value b 72.44; pressure / gap: rank 2, value a 30.5, n a 18, value b 58.57; death_overs / gap: rank 3, value a 27.8, n a 21, value b 41.05; dismissal / gap: rank 4, value a 21.43, n a 84, value b 17.57; record / record: rank 5, value a 113, n a 96.",
+   "status": "ok"
+  },
+  {
+   "id": "h14",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "phase": true
+   },
+   "params_ok": true,
+   "question": "Rashid Khan economy at the death in ipl",
+   "seconds": 57.54,
+   "error": null,
+   "tool_call": {
+    "name": "bowling",
+    "arguments": {
+     "competition": "ipl",
+     "phase": "death",
+     "player": "Rashid Khan",
+     "role": "bowling"
+    },
+    "overrides": [
+     "true_performance",
+     "bowling",
+     "true_performance needs the word 'true'"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "phase": "death",
+    "player": "Rashid Khan"
+   },
+   "answer": "Bowling stats (player=Rashid Khan, competition=ipl, phase=death), data through 2026-05-31. bowler Rashid Khan, innings 92, wickets 43, runs conceded 919, balls 630, economy 8.75, average 21.37, strike rate 14.65, dot pct 34.3, boundary pct 17.9, dots 216, fours conceded 54.",
+   "status": "ok"
+  },
+  {
+   "id": "h15",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {},
+   "params_ok": false,
+   "question": "how does Dhoni do in the last 10 innings",
+   "seconds": 55.24,
+   "error": null,
+   "tool_call": {
+    "name": "innings_list",
+    "arguments": {},
+    "overrides": [
+     null,
+     "innings_list",
+     "phrase 'last 10 innings' means innings_list"
+    ]
+   },
+   "resolved_params": {
+    "order": "last",
+    "n": 10
+   },
+   "answer": "Innings list (debut, last N matches, best innings) (all data), data through 2026-10-14. 10 rows. Top 5: 2026/27 / t20i: position 1, runs 18, balls 17, fours 3; 2026/27 / t20i: position 2, runs 11, balls 31, fours 0; 2026/27 / t20i: position 3, runs 5, balls 7, fours 1; 2026/27 / t20i: position 5, runs 8, balls 9, fours 0; 2026/27 / t20i: position 6, runs 0, balls 1, fours 0.",
+   "status": "ok"
+  },
+  {
+   "id": "h16",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {},
+   "params_ok": true,
+   "question": "csk vs mi head to head record",
+   "seconds": 53.41,
+   "error": null,
+   "tool_call": {
+    "name": "teams",
+    "arguments": {
+     "team": "csk",
+     "opposition": "mi"
+    },
+    "overrides": [
+     null,
+     "teams",
+     "two teams on either side of vs: 'csk', 'mi'"
+    ]
+   },
+   "resolved_params": {
+    "team": "Chennai Super Kings",
+    "opposition": "Mumbai Indians",
+    "competition": "ipl"
+   },
+   "answer": "Team records (team=Chennai Super Kings, opposition=Mumbai Indians, competition=ipl), data through 2026-05-02. team Chennai Super Kings, played 41, won 20, lost 21, tied 0, no result 0, win pct 48.8, toss won 19, won after toss win 12, bat first matches 19, bat first wins 8, chase matches 22.",
+   "status": "ok"
+  },
+  {
+   "id": "h17",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {},
+   "params_ok": false,
+   "question": "best ipl partnerships of all time",
+   "seconds": 85.79,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I do not have a specific tool to retrieve the \"best IPL partnerships of all time.\" The available tools focus on player statistics, team records, auction data, and match-specific metrics (like WAR, WPA",
+   "status": "no_tool"
+  },
+  {
+   "id": "h18",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "how many wickets did Anderson take in the Ashes",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer Test, ODI or first-class cricket.",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "h19",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": false,
+   "question": "what was the speed of Shami's fastest delivery",
+   "seconds": 36.59,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "No analysis module fits this question. Model said: I do not have a tool that can provide the speed of a specific bowler's fastest delivery. The available tools focus on performance statistics like strike rate, economy, WAR, win probability, team recor",
+   "status": "no_tool"
+  },
+  {
+   "id": "h20",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "who will win the ipl final tonight",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer predictions about future matches.",
+   "status": "out_of_scope"
+  }
+ ]
+}

@@ -1,0 +1,581 @@
+{
+ "model": "nemotron-3.5-bolt:e4b-q4_K_M",
+ "summary": {
+  "n": 20,
+  "n_answerable": 18,
+  "module_accuracy": 0.889,
+  "param_accuracy_per_param": 0.8,
+  "param_accuracy_all_correct": 0.778,
+  "clarification_precision": 0.0,
+  "clarification_recall": null,
+  "false_clarifications": 1,
+  "out_of_scope_ok": "2/2",
+  "golden_present": null,
+  "golden_n": 0,
+  "seconds_mean": 26.73,
+  "seconds_max": 61.58
+ },
+ "questions": [
+  {
+   "id": "d01",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true
+   },
+   "params_ok": true,
+   "question": "top 10 bowlers by runs saved vs average in the ipl",
+   "seconds": 52.16,
+   "error": null,
+   "tool_call": {
+    "name": "runs_added",
+    "arguments": {},
+    "overrides": [
+     null,
+     "runs_added",
+     "phrase 'runs saved' means runs_added"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl"
+   },
+   "answer": "Runs added (vs the average player in the same situation) (competition=ipl), data through 2026-05-31. 40 rows. Top 5: AB de Villiers: balls 3,385, runs 5,139, strike rate 151.82, runs added 721.8; DA Warner: balls 4,678, runs 6,534, strike rate 139.68, runs added 667.3; CH Gayle: balls 3,247, runs 4,786, strike rate 147.4, runs added 612.7; KL Rahul: balls 4,152, runs 5,755, strike rate 138.61, runs added 560.6; AD Russell: balls 1,493, runs 2,597, strike rate 173.95, runs added 551.2.",
+   "status": "ok"
+  },
+  {
+   "id": "d02",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "season": true
+   },
+   "params_ok": true,
+   "question": "runs added per 100 balls for batters in bbl 2024",
+   "seconds": 28.16,
+   "error": null,
+   "tool_call": {
+    "name": "runs_added",
+    "arguments": {
+     "competition": "bbl",
+     "min_balls": 100,
+     "phase": "middle",
+     "role": "batting",
+     "season": "2024"
+    },
+    "overrides": [
+     "true_performance",
+     "runs_added",
+     "phrase 'runs added' means runs_added"
+    ]
+   },
+   "resolved_params": {
+    "competition": "bbl",
+    "min_balls": 100,
+    "phase": "middle",
+    "role": "batting",
+    "season": 2024
+   },
+   "answer": "Runs added (vs the average player in the same situation) (competition=bbl, season=2024, phase=middle), data through 2025-01-27. 10 rows. Top 5: MT Renshaw: balls 123, runs 216, strike rate 175.61, runs added 52.6; AI Ross: balls 126, runs 178, strike rate 141.27, runs added 30.6; MP Stoinis: balls 156, runs 216, strike rate 138.46, runs added 19.7; SW Billings: balls 154, runs 201, strike rate 130.52, runs added 14.2; Nikhil Chaudhary: balls 129, runs 170, strike rate 131.78, runs added 13.1.",
+   "status": "ok"
+  },
+  {
+   "id": "d03",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "season": true
+   },
+   "params_ok": true,
+   "question": "biggest moments player credited with win probability, ipl 2022",
+   "seconds": 22.64,
+   "error": null,
+   "tool_call": {
+    "name": "wpa",
+    "arguments": {
+     "competition": "ipl",
+     "season": "2022",
+     "view": "players"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "view": "players",
+    "season": 2022
+   },
+   "answer": "Win Probability Added (competition=ipl, season=2022), data through 2022-05-29. 40 rows. Top 5: JC Buttler / 2022-05-24: matches 17, balls 579, runs 863, dismissals 15; DA Miller / 2022-04-17: matches 16, balls 335, runs 481, dismissals 7; KD Karthik / 2022-04-05: matches 16, balls 179, runs 330, dismissals 6; TH David / 2022-05-17: matches 8, balls 85, runs 186, dismissals 5; R Tewatia / 2022-04-08: matches 12, balls 147, runs 217, dismissals 7.",
+   "status": "ok"
+  },
+  {
+   "id": "d04",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": true
+   },
+   "params_ok": true,
+   "question": "wpa for the 2023 ipl final match view",
+   "seconds": 23.45,
+   "error": null,
+   "tool_call": {
+    "name": "wpa",
+    "arguments": {
+     "competition": "ipl",
+     "season": "2023",
+     "view": "match"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "view": "match",
+    "season": 2023
+   },
+   "answer": "I could not run that: view=match needs match_id",
+   "status": "error"
+  },
+  {
+   "id": "d05",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "season": true
+   },
+   "params_ok": true,
+   "question": "wins above replacement for batters ipl 2024",
+   "seconds": 25.85,
+   "error": null,
+   "tool_call": {
+    "name": "war",
+    "arguments": {
+     "competition": "ipl",
+     "role": "batting",
+     "season": "2024",
+     "view": "season"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "role": "batting",
+    "view": "season",
+    "season": 2024
+   },
+   "answer": "Wins above replacement (WAR) and projected WAR for IPL 2027 (competition=ipl, season=2024), data through 2024-05-26. 40 rows. Top 5: N Pooran: season 2,024, balls 280, runs 499, runs added 92.2; J Fraser-McGurk: season 2,024, balls 141, runs 330, runs added 76.7; Tilak Varma: season 2,024, balls 278, runs 416, runs added 75.3; Shashank Singh: season 2,024, balls 215, runs 354, runs added 69.2; KD Karthik: season 2,024, balls 174, runs 326, runs added 68.",
+   "status": "ok"
+  },
+  {
+   "id": "d06",
+   "clar_pred": true,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": true
+   },
+   "params_ok": true,
+   "question": "who is projected to be the best bowler in ipl 2027",
+   "seconds": 23.09,
+   "error": null,
+   "tool_call": {
+    "name": "war",
+    "arguments": {
+     "competition": "ipl",
+     "player": "all",
+     "role": "bowling",
+     "season": "2027",
+     "view": "projected"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "role": "bowling",
+    "view": "projected",
+    "season": 2027
+   },
+   "answer": "I need to know who/what you mean: 'all' could be FH Allen or FA Allen or KA Pollard or Salil Arora.",
+   "status": "clarify"
+  },
+  {
+   "id": "d07",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false
+   },
+   "params_ok": false,
+   "question": "ek ball pe Rohit vs spin kya expected hai middle overs",
+   "seconds": 54.38,
+   "error": null,
+   "tool_call": {
+    "name": "matchup_predict",
+    "arguments": {},
+    "overrides": [
+     null,
+     "matchup_predict",
+     "phrase 'ek ball' means matchup_predict"
+    ]
+   },
+   "resolved_params": {
+    "phase": "middle"
+   },
+   "answer": "I could not run that: Module 'matchup_predict' needs param 'player'",
+   "status": "error"
+  },
+  {
+   "id": "d08",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {},
+   "params_ok": true,
+   "question": "expected runs per ball for Buttler against right-arm fast in powerplay",
+   "seconds": 25.95,
+   "error": null,
+   "tool_call": {
+    "name": "matchup_predict",
+    "arguments": {
+     "competition": "ipl",
+     "phase": "powerplay",
+     "player": "Jos Buttler",
+     "role": "batting"
+    },
+    "overrides": [
+     "true_performance",
+     "matchup_predict",
+     "phrase 'per ball' means matchup_predict"
+    ]
+   },
+   "resolved_params": {
+    "phase": "powerplay",
+    "player": "JC Buttler"
+   },
+   "answer": "Matchup predictor (batter v bowler / bowling type) (player=JC Buttler, phase=powerplay), data through 2026-10-14. batter JC Buttler, bowl type typical bowler, bowl type source none, phase powerplay, wickets down any, innings any, required rate any, exp runs per ball 1.55, exp runs per 6 9.31, strike rate 155.2, p out 0.03, balls per dismissal 29.6.",
+   "status": "ok"
+  },
+  {
+   "id": "d09",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {},
+   "params_ok": true,
+   "question": "trade Pant to Delhi for Kuldeep, is it good for both",
+   "seconds": 10.32,
+   "error": null,
+   "tool_call": {
+    "name": "trade",
+    "arguments": {
+     "competition": "ipl",
+     "get": "Pant",
+     "give": "Kuldeep",
+     "team": "Delhi Capitals",
+     "team2": "Delhi Capitals",
+     "view": "trade"
+    }
+   },
+   "resolved_params": {
+    "get": "Pant",
+    "give": "Kuldeep",
+    "team": "Delhi Capitals",
+    "team2": "Delhi Capitals",
+    "view": "trade",
+    "competition": "ipl"
+   },
+   "answer": "I could not run that: Pick two different teams",
+   "status": "error"
+  },
+  {
+   "id": "d10",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": true
+   },
+   "params_ok": true,
+   "question": "show the best XII squad for CSK",
+   "seconds": 22.79,
+   "error": null,
+   "tool_call": {
+    "name": "trade",
+    "arguments": {
+     "baseline": "current",
+     "competition": "ipl",
+     "team": "Chennai Super Kings",
+     "view": "squad"
+    }
+   },
+   "resolved_params": {
+    "baseline": "current",
+    "team": "Chennai Super Kings",
+    "view": "squad",
+    "competition": "ipl"
+   },
+   "answer": "IPL trade tool: best XII before and after a player swap (competition=ipl, team=Chennai Super Kings), data through 2026-05-21. 25 rows. Top 5: Noor Ahmad / bowler: overseas 1, salary cr 10, war 2023 0.03, war 2024 -0.09; Kartik Sharma / wicketkeeper: overseas 0, salary cr 14.2, war 2023 0, war 2024 0; Akeal Hosein / bowler: overseas 1, salary cr 2, war 2023 -0.08, war 2024 0; Sanju Samson / wicketkeeper: overseas 0, salary cr 18, war 2023 0.05, war 2024 0.36; Anshul Kamboj / bowler: overseas 0, salary cr 3.4, war 2023 0, war 2024 -0.28.",
+   "status": "ok"
+  },
+  {
+   "id": "d11",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "view": false
+   },
+   "params_ok": false,
+   "question": "predicted auction price for players on the block 2026",
+   "seconds": 5.31,
+   "error": null,
+   "tool_call": {
+    "name": "matchup_predict",
+    "arguments": {
+     "competition": "ipl",
+     "view": "2027"
+    },
+    "overrides": [
+     "scarcity",
+     "matchup_predict",
+     "phrase 'predicted' means matchup_predict"
+    ]
+   },
+   "resolved_params": {
+    "season": 2026
+   },
+   "answer": "I could not run that: Module 'matchup_predict' needs param 'player'",
+   "status": "error"
+  },
+  {
+   "id": "d12",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": true
+   },
+   "params_ok": true,
+   "question": "did uncapped indians give value for money at auction",
+   "seconds": 60.38,
+   "error": null,
+   "tool_call": {
+    "name": "auction",
+    "arguments": {},
+    "overrides": [
+     null,
+     "auction",
+     "phrase 'auction' means auction"
+    ]
+   },
+   "resolved_params": {
+    "view": "market"
+   },
+   "answer": "IPL auction: predicted price and moneyball market check (all data), data through 2026-10-14. 3 rows. Top 5: capped Indian: players 135, crore spent 1,014.6, war total 10.82, war per 10cr 0.11; overseas: players 206, crore spent 994.8, war total 5.1, war per 10cr 0.05; uncapped Indian: players 270, crore spent 378.1, war total -5.78, war per 10cr -0.15.",
+   "status": "ok"
+  },
+  {
+   "id": "d13",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": false
+   },
+   "params_ok": false,
+   "question": "how much did Rishabh Pant go for in the auction",
+   "seconds": 4.89,
+   "error": null,
+   "tool_call": {
+    "name": "auction",
+    "arguments": {},
+    "overrides": [
+     null,
+     "auction",
+     "phrase 'auction' means auction"
+    ]
+   },
+   "resolved_params": {
+    "view": "predict"
+   },
+   "answer": "IPL auction: predicted price and moneyball market check (all data), data through 2026-10-14. 60 rows. Top 5: Ravi Bishnoi / bowler: base cr 2, p sold 0.92, p10 cr 4.45, p50 cr 6.93; Matheesha Pathirana / bowler: base cr 2, p sold 0.87, p10 cr 3.46, p50 cr 5.39; Venkatesh Iyer / all-rounder: base cr 2, p sold 0.87, p10 cr 3.27, p50 cr 5.09; Daryl Mitchell / ar: base cr 2, p sold 0.72, p10 cr 2.42, p50 cr 3.77; Cameron Green / batter: base cr 2, p sold 0.73, p10 cr 2.4, p50 cr 3.74.",
+   "status": "ok"
+  },
+  {
+   "id": "d14",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": true
+   },
+   "params_ok": true,
+   "question": "which auction players actually played matches after being bought",
+   "seconds": 61.58,
+   "error": null,
+   "tool_call": {
+    "name": "auction",
+    "arguments": {},
+    "overrides": [
+     null,
+     "auction",
+     "phrase 'auction' means auction"
+    ]
+   },
+   "resolved_params": {
+    "view": "played"
+   },
+   "answer": "IPL auction: predicted price and moneyball market check (all data), data through 2026-10-14. 4 rows. Top 5: capped Indian / 62% (16): ; overseas / 62% (21): ; retained / -: ; uncapped Indian / 49% (172): .",
+   "status": "ok"
+  },
+  {
+   "id": "d15",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": false,
+   "param_hits": {
+    "view": false
+   },
+   "params_ok": false,
+   "question": "team needs ahead of next auction, keepers or spinners",
+   "seconds": 17.71,
+   "error": null,
+   "tool_call": {
+    "name": "auction",
+    "arguments": {},
+    "overrides": [
+     null,
+     "auction",
+     "phrase 'auction' means auction"
+    ]
+   },
+   "resolved_params": {
+    "view": "predict"
+   },
+   "answer": "IPL auction: predicted price and moneyball market check (all data), data through 2026-10-14. 60 rows. Top 5: Ravi Bishnoi / bowler: base cr 2, p sold 0.92, p10 cr 4.45, p50 cr 6.93; Matheesha Pathirana / bowler: base cr 2, p sold 0.87, p10 cr 3.46, p50 cr 5.39; Venkatesh Iyer / all-rounder: base cr 2, p sold 0.87, p10 cr 3.27, p50 cr 5.09; Daryl Mitchell / ar: base cr 2, p sold 0.72, p10 cr 2.42, p50 cr 3.77; Cameron Green / batter: base cr 2, p sold 0.73, p10 cr 2.4, p50 cr 3.74.",
+   "status": "ok"
+  },
+  {
+   "id": "d16",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true
+   },
+   "params_ok": true,
+   "question": "best wicketkeeper stumpings in ipl",
+   "seconds": 20.57,
+   "error": null,
+   "tool_call": {
+    "name": "fielding",
+    "arguments": {},
+    "overrides": [
+     null,
+     "fielding",
+     "phrase 'stumpings' means fielding"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl"
+   },
+   "answer": "Fielding stats (competition=ipl), data through 2026-05-31. 818 rows. Top 5: MS Dhoni: matches 265, catches 158, catches keeper 158, caught and bowled 0; KD Karthik: matches 250, catches 145, catches keeper 145, caught and bowled 0; RV Uthappa: matches 200, catches 92, catches keeper 92, caught and bowled 0; AB de Villiers: matches 179, catches 120, catches keeper 0, caught and bowled 0; V Kohli: matches 278, catches 126, catches keeper 0, caught and bowled 0.",
+   "status": "ok"
+  },
+  {
+   "id": "d17",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true
+   },
+   "params_ok": true,
+   "question": "run outs involved by outfielders t20i",
+   "seconds": 52.16,
+   "error": null,
+   "tool_call": {
+    "name": "fielding",
+    "arguments": {},
+    "overrides": [
+     null,
+     "fielding",
+     "phrase 'run outs involved' means fielding"
+    ]
+   },
+   "resolved_params": {
+    "competition": "t20i"
+   },
+   "answer": "Fielding stats (competition=t20i), data through 2026-10-14. 4745 rows. Top 5: JC Buttler: matches 152, catches 98, catches keeper 98, caught and bowled 0; Q de Kock: matches 106, catches 94, catches keeper 94, caught and bowled 0; D Ndikubwimana: matches 95, catches 66, catches keeper 0, caught and bowled 0; MS Dhoni: matches 92, catches 52, catches keeper 52, caught and bowled 0; Liton Das: matches 112, catches 72, catches keeper 72, caught and bowled 0.",
+   "status": "ok"
+  },
+  {
+   "id": "d18",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "season": true,
+    "phase": true
+   },
+   "params_ok": true,
+   "question": "Virat Kohli strike rate in powerplay ipl 2023",
+   "seconds": 23.22,
+   "error": null,
+   "tool_call": {
+    "name": "batting",
+    "arguments": {
+     "competition": "ipl",
+     "phase": "powerplay",
+     "player": "Virat Kohli",
+     "role": "batting",
+     "season": "2023"
+    },
+    "overrides": [
+     "true_performance",
+     "batting",
+     "true_performance needs the word 'true'"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "phase": "powerplay",
+    "player": "V Kohli",
+    "season": 2023
+   },
+   "answer": "Batting stats (player=V Kohli, competition=ipl, season=2023, phase=powerplay), data through 2023-05-29. batter V Kohli, innings 14, not outs 10, total runs 301, balls 220, highest 42, average 75.25, strike rate 136.82, fifties 0, hundreds 0, ducks 1, fours 41.",
+   "status": "ok"
+  },
+  {
+   "id": "d19",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "how many centuries has Root made in Test cricket",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer Test, ODI or first-class cricket.",
+   "status": "out_of_scope"
+  },
+  {
+   "id": "d20",
+   "clar_pred": false,
+   "clar_expected": false,
+   "status_expected": "out_of_scope",
+   "status_ok": true,
+   "question": "which delivery length does Starc use",
+   "seconds": 0.0,
+   "error": null,
+   "tool_call": null,
+   "resolved_params": null,
+   "answer": "This app has T20 ball-by-ball data only; it can't answer line, length, speed or swing (the data has no ball tracking).",
+   "status": "out_of_scope"
+  }
+ ]
+}

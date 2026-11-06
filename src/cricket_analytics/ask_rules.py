@@ -29,7 +29,7 @@ _OOS = [
         "weather",
     ),
     (
-        r"\b(?:will|who will)\b.*\b(?:win|score|take)\b.*\b(?:tomorrow|next|tonight|upcoming)\b|\bpredict(?:ion|ions)?\b|\btomorrow\b",
+        r"\b(?:will|who will)\b.*\b(?:win|score|take)\b.*\b(?:tomorrow|next|tonight|upcoming)\b|\bpredict\w*\b.*\b(?:match|final|winner|champions?|tonight)\b|\bwho\b.*\bwin\b.*\btonight\b|\btonight\b|\btomorrow\b",
         "predictions about future matches",
     ),
     (
@@ -72,6 +72,36 @@ def competition_in(question: str) -> str | None:
 _KIND = r"spin(?:ners?|ner)?|pace(?:rs?)?|seam(?:ers?)?|fast(?:\s+bowlers?)?|slow(?:\s+bowlers?)?"
 # first match wins; the order matters (form beats "last 10 innings"; "get out" beats "against spin")
 _ROUTES = [
+    # value modules first: their words are unmistakable
+    (
+        "scarcity",
+        r"\bscarc\w*|\bteam needs?\b|\bsupply and demand\b|\bdemand\b.*\b(?:role|keeper|spinner)",
+    ),
+    (
+        "auction",
+        r"\bauctions?\b|\bsold for\b|\bwent for\b|\bbought for\b|\bcrores?\b|\bunsold\b|\bprice tag\b|\bmoneyball\b|\bpurse\b",
+    ),
+    (
+        "trade",
+        r"\btrad(?:e|es|ed|ing)\b|\bswap(?:s|ped|ping)?\b|\bbest (?:xii|xi|11|12)\b|\bsquad\b",
+    ),
+    ("wpa", r"\bwin prob\w*|\bwpa\b|\bswung\b|\bswing(?:ed)? (?:the )?(?:game|match)"),
+    (
+        "war",
+        r"\bwar\b|\bwins above replacement\b|\b(?:added|adds|adding) the most wins\b|\bwins added\b|\bprojected\b",
+    ),
+    (
+        "runs_added",
+        r"\bruns added\b|\babove (?:the )?average\b|\bruns (?:saved|above)\b|\brun expectancy\b|\bvs (?:the )?average player\b",
+    ),
+    (
+        "matchup_predict",
+        r"\bpredict\w*\b|\bper[- ]ball\b|\bek ball\b|\bwhat if\b.*\bfaces?\b|\bhow (?:will|would)\b.*\b(?:do|fare|score)\b.*\b(?:against|vs\.?)\b",
+    ),
+    (
+        "fielding",
+        r"\bcatches\b|\bcatchers?\b|\bstumpings?\b|\brun[- ]?outs? (?:effected|involved|by)\b|\bfielders?\b|\bfielding\b|\bbest keepers?\b",
+    ),
     ("true_performance", r"\btrue\s+(?:strike|economy|batting|bowling|performance|average)"),
     ("form", r"\bform\b"),
     (
@@ -128,3 +158,64 @@ def partnership_group(question: str) -> str:
     if re.search(r"\bwicket\b", q):
         return "wicket"
     return "stand"
+
+
+def auction_view(question: str, has_player: bool) -> str:
+    q = question.lower()
+    if re.search(r"\bcheap\w*|\balternatives?\b", q):
+        return "cheapest"
+    if re.search(
+        r"\bactually played\b|\bplayed (?:any|matches|after)\b|\bbench(?:ed)?\b|\bdid .* play\b", q
+    ):
+        return "played"
+    if re.search(
+        r"\bmarket\b|\bvalue for money\b|\bmoneyball\b|\bover-?paid\b|\bunder-?paid\b|\buncapped\b|\bexpected to cost\b|\bworth\b|\bgroup\b",
+        q,
+    ):
+        return "market"
+    if has_player:
+        return "player"
+    return "predict"
+
+
+def war_view(question: str) -> str | None:
+    return (
+        "projected"
+        if re.search(
+            r"\bproject\w*|\b2027\b|\bnext (?:season|ipl)\b|\bforecast\w*", question.lower()
+        )
+        else None
+    )
+
+
+def trade_view(question: str) -> str | None:
+    return (
+        "squad"
+        if re.search(r"\bbest (?:xii|xi|11|12)\b|\bsquad\b", question.lower())
+        and not re.search(r"\bswap|\btrad", question.lower())
+        else None
+    )
+
+
+def scarcity_view(question: str) -> str | None:
+    q = question.lower()
+    if re.search(r"\bneeds?\b", q):
+        return "team_needs"
+    return "2027" if re.search(r"\b2027\b|\bnext auction\b|\bupcoming\b", q) else None
+
+
+_NAME_IN_Q = re.compile(
+    r"\bhow much (?:did|was|has|is) (.+?) (?:go|get|got|fetch|sell|sold|cost|fetched)\b|\bprice of (.+?)(?: in | at | for |$)",
+    re.I,
+)
+
+
+def player_in_question(question: str, aliases) -> str | None:
+    """A player the model left out: a known alias ('rohit', 'sky') or the name in 'how much did X go for'."""
+    q = question.lower()
+    for k in sorted(aliases, key=len, reverse=True):
+        if re.search(rf"\b{re.escape(k)}\b", q):
+            return k
+    if m := _NAME_IN_Q.search(question):
+        return (m.group(1) or m.group(2)).strip()
+    return None

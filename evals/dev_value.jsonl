@@ -1,0 +1,20 @@
+{"id": "d01", "question": "top 10 bowlers by runs saved vs average in the ipl", "expected_module": "runs_added", "expected_params": {"competition": "ipl"}, "expect_clarification": false}
+{"id": "d02", "question": "runs added per 100 balls for batters in bbl 2024", "expected_module": "runs_added", "expected_params": {"season": 2024}, "expect_clarification": false}
+{"id": "d03", "question": "biggest moments player credited with win probability, ipl 2022", "expected_module": "wpa", "expected_params": {"competition": "ipl", "season": 2022}, "expect_clarification": false}
+{"id": "d04", "question": "wpa for the 2023 ipl final match view", "expected_module": "wpa", "expected_params": {"view": "match"}, "expect_clarification": false}
+{"id": "d05", "question": "wins above replacement for batters ipl 2024", "expected_module": "war", "expected_params": {"competition": "ipl", "season": 2024}, "expect_clarification": false}
+{"id": "d06", "question": "who is projected to be the best bowler in ipl 2027", "expected_module": "war", "expected_params": {"view": "projected"}, "expect_clarification": false}
+{"id": "d07", "question": "ek ball pe Rohit vs spin kya expected hai middle overs", "expected_module": "matchup_predict", "expected_params": {"player": "RG Sharma"}, "expect_clarification": false}
+{"id": "d08", "question": "expected runs per ball for Buttler against right-arm fast in powerplay", "expected_module": "matchup_predict", "expected_params": {}, "expect_clarification": false}
+{"id": "d09", "question": "trade Pant to Delhi for Kuldeep, is it good for both", "expected_module": "trade", "expected_params": {}, "expect_clarification": false}
+{"id": "d10", "question": "show the best XII squad for CSK", "expected_module": "trade", "expected_params": {"view": "squad"}, "expect_clarification": false}
+{"id": "d11", "question": "predicted auction price for players on the block 2026", "expected_module": "auction", "expected_params": {"view": "predict"}, "expect_clarification": false}
+{"id": "d12", "question": "did uncapped indians give value for money at auction", "expected_module": "auction", "expected_params": {"view": "market"}, "expect_clarification": false}
+{"id": "d13", "question": "how much did Rishabh Pant go for in the auction", "expected_module": "auction", "expected_params": {"view": "player"}, "expect_clarification": false}
+{"id": "d14", "question": "which auction players actually played matches after being bought", "expected_module": "auction", "expected_params": {"view": "played"}, "expect_clarification": false}
+{"id": "d15", "question": "team needs ahead of next auction, keepers or spinners", "expected_module": "scarcity", "expected_params": {"view": "team_needs"}, "expect_clarification": false}
+{"id": "d16", "question": "best wicketkeeper stumpings in ipl", "expected_module": "fielding", "expected_params": {"competition": "ipl"}, "expect_clarification": false}
+{"id": "d17", "question": "run outs involved by outfielders t20i", "expected_module": "fielding", "expected_params": {"competition": "t20i"}, "expect_clarification": false}
+{"id": "d18", "question": "Virat Kohli strike rate in powerplay ipl 2023", "expected_module": "batting", "expected_params": {"competition": "ipl", "season": 2023, "phase": "powerplay"}, "expect_clarification": false}
+{"id": "d19", "question": "how many centuries has Root made in Test cricket", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "d20", "question": "which delivery length does Starc use", "expect_status": "out_of_scope", "expect_clarification": false}

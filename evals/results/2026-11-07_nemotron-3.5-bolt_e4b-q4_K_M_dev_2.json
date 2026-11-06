@@ -1,0 +1,190 @@
+{
+ "model": "nemotron-3.5-bolt:e4b-q4_K_M",
+ "summary": {
+  "n": 6,
+  "n_answerable": 6,
+  "module_accuracy": 1.0,
+  "param_accuracy_per_param": 0.6,
+  "param_accuracy_all_correct": 0.667,
+  "clarification_precision": null,
+  "clarification_recall": null,
+  "false_clarifications": 0,
+  "out_of_scope_ok": null,
+  "golden_present": null,
+  "golden_n": 0,
+  "seconds_mean": 18.14,
+  "seconds_max": 40.15
+ },
+ "questions": [
+  {
+   "id": "d01",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true
+   },
+   "params_ok": true,
+   "question": "top 10 bowlers by runs saved vs average in the ipl",
+   "seconds": 33.64,
+   "error": null,
+   "tool_call": {
+    "name": "runs_added",
+    "arguments": {},
+    "overrides": [
+     null,
+     "runs_added",
+     "phrase 'runs saved' means runs_added"
+    ]
+   },
+   "resolved_params": {
+    "competition": "ipl"
+   },
+   "answer": "Runs added (vs the average player in the same situation) (competition=ipl), data through 2026-05-31. 40 rows. Top 5: AB de Villiers: balls 3,385, runs 5,139, strike rate 151.82, runs added 721.8; DA Warner: balls 4,678, runs 6,534, strike rate 139.68, runs added 667.3; CH Gayle: balls 3,247, runs 4,786, strike rate 147.4, runs added 612.7; KL Rahul: balls 4,152, runs 5,755, strike rate 138.61, runs added 560.6; AD Russell: balls 1,493, runs 2,597, strike rate 173.95, runs added 551.2.",
+   "status": "ok"
+  },
+  {
+   "id": "d07",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": false
+   },
+   "params_ok": false,
+   "question": "ek ball pe Rohit vs spin kya expected hai middle overs",
+   "seconds": 40.15,
+   "error": null,
+   "tool_call": {
+    "name": "matchup_predict",
+    "arguments": {},
+    "overrides": [
+     null,
+     "matchup_predict",
+     "phrase 'ek ball' means matchup_predict"
+    ]
+   },
+   "resolved_params": {
+    "phase": "middle"
+   },
+   "answer": "I could not run that: Module 'matchup_predict' needs param 'player'",
+   "status": "error"
+  },
+  {
+   "id": "d09",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {},
+   "params_ok": true,
+   "question": "trade Pant to Delhi for Kuldeep, is it good for both",
+   "seconds": 9.27,
+   "error": null,
+   "tool_call": {
+    "name": "trade",
+    "arguments": {
+     "competition": "ipl",
+     "get": "Pant",
+     "give": "Kuldeep",
+     "team": "Delhi Capitals",
+     "team2": "Delhi Capitals",
+     "view": "trade"
+    }
+   },
+   "resolved_params": {
+    "get": "Pant",
+    "give": "Kuldeep",
+    "team": "Delhi Capitals",
+    "team2": "Delhi Capitals",
+    "view": "trade",
+    "competition": "ipl"
+   },
+   "answer": "I could not run that: Pick two different teams",
+   "status": "error"
+  },
+  {
+   "id": "d11",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": true
+   },
+   "params_ok": true,
+   "question": "predicted auction price for players on the block 2026",
+   "seconds": 5.48,
+   "error": null,
+   "tool_call": {
+    "name": "auction",
+    "arguments": {
+     "competition": "ipl",
+     "view": "2027"
+    },
+    "overrides": [
+     "scarcity",
+     "auction",
+     "phrase 'auction' means auction"
+    ]
+   },
+   "resolved_params": {
+    "view": "predict"
+   },
+   "answer": "IPL auction: predicted price and moneyball market check (all data), data through 2026-10-14. 60 rows. Top 5: Ravi Bishnoi / bowler: base cr 2, p sold 0.92, p10 cr 4.45, p50 cr 6.93; Matheesha Pathirana / bowler: base cr 2, p sold 0.87, p10 cr 3.46, p50 cr 5.39; Venkatesh Iyer / all-rounder: base cr 2, p sold 0.87, p10 cr 3.27, p50 cr 5.09; Daryl Mitchell / ar: base cr 2, p sold 0.72, p10 cr 2.42, p50 cr 3.77; Cameron Green / batter: base cr 2, p sold 0.73, p10 cr 2.4, p50 cr 3.74.",
+   "status": "ok"
+  },
+  {
+   "id": "d13",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": false
+   },
+   "params_ok": false,
+   "question": "how much did Rishabh Pant go for in the auction",
+   "seconds": 4.47,
+   "error": null,
+   "tool_call": {
+    "name": "auction",
+    "arguments": {},
+    "overrides": [
+     null,
+     "auction",
+     "phrase 'auction' means auction"
+    ]
+   },
+   "resolved_params": {
+    "view": "predict"
+   },
+   "answer": "IPL auction: predicted price and moneyball market check (all data), data through 2026-10-14. 60 rows. Top 5: Ravi Bishnoi / bowler: base cr 2, p sold 0.92, p10 cr 4.45, p50 cr 6.93; Matheesha Pathirana / bowler: base cr 2, p sold 0.87, p10 cr 3.46, p50 cr 5.39; Venkatesh Iyer / all-rounder: base cr 2, p sold 0.87, p10 cr 3.27, p50 cr 5.09; Daryl Mitchell / ar: base cr 2, p sold 0.72, p10 cr 2.42, p50 cr 3.77; Cameron Green / batter: base cr 2, p sold 0.73, p10 cr 2.4, p50 cr 3.74.",
+   "status": "ok"
+  },
+  {
+   "id": "d15",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "view": true
+   },
+   "params_ok": true,
+   "question": "team needs ahead of next auction, keepers or spinners",
+   "seconds": 15.84,
+   "error": null,
+   "tool_call": {
+    "name": "scarcity",
+    "arguments": {},
+    "overrides": [
+     null,
+     "scarcity",
+     "phrase 'team needs' means scarcity"
+    ]
+   },
+   "resolved_params": {
+    "view": "team_needs"
+   },
+   "answer": "IPL auction supply and demand: scarcity index per role (all data), data through 2026-10-14. 10 rows. Top 5: CSK / opener 1, opener 2, top order, middle 1, middle 2, pp pace, death pace, spin 2: year 2,026, squad n 16, open spots 9, overseas n 4; DC / keeper, opener 2, top order, middle 2, finisher, pp pace, mid pace, death pace, spin 2: year 2,026, squad n 17, open spots 8, overseas n 3; GT / middle 1, middle 2, finisher, pp pace, spin 2: year 2,026, squad n 20, open spots 5, overseas n 4; KKR / keeper, opener 1, opener 2, top order, middle 1, middle 2, finisher, death pace: year 2,026, squad n 12, open spots 13, overseas n 2; LSG / middle 2, finisher, pp pace, mid pace, death pace, spin 1: year 2,026, squad n 19, open spots 6, overseas n 4.",
+   "status": "ok"
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+{"id": "h01", "question": "who added the most runs above average in ipl 2025", "expected_module": "runs_added", "expected_params": {"competition": "ipl", "season": 2025}, "expect_clarification": false}
+{"id": "h02", "question": "which batters swung win probability most in ipl 2024", "expected_module": "wpa", "expected_params": {"competition": "ipl", "season": 2024}, "expect_clarification": false}
+{"id": "h03", "question": "bhai wpa leaders bowlers ipl 2023 kaun hai", "expected_module": "wpa", "expected_params": {"competition": "ipl", "season": 2023}, "expect_clarification": false}
+{"id": "h04", "question": "who added the most wins in IPL 2025", "expected_module": "war", "expected_params": {"competition": "ipl", "season": 2025}, "expect_clarification": false}
+{"id": "h05", "question": "projected war for ipl 2027 best players", "expected_module": "war", "expected_params": {"competition": "ipl", "view": "projected"}, "expect_clarification": false}
+{"id": "h06", "question": "how will Kohli do against left arm pace in the death when chasing a high rate", "expected_module": "matchup_predict", "expected_params": {"player": "V Kohli"}, "expect_clarification": false}
+{"id": "h07", "question": "predict Bumrah vs Kohli per ball outcome", "expected_module": "matchup_predict", "expected_params": {}, "expect_clarification": false}
+{"id": "h08", "question": "what if Mumbai swap Hardik for Jaiswal from Rajasthan, who wins from the trade", "expected_module": "trade", "expected_params": {"view": "trade"}, "expect_clarification": false}
+{"id": "h09", "question": "which players were bought at the ipl auction for the most money, and what did the model expect them to cost", "expected_module": "auction", "expected_params": {"view": "market"}, "expect_clarification": false}
+{"id": "h10", "question": "cheapest alternatives to expensive auction buys ipl", "expected_module": "auction", "expected_params": {"view": "cheapest"}, "expect_clarification": false}
+{"id": "h11", "question": "which roles are scarce going into the ipl 2027 auction", "expected_module": "scarcity", "expected_params": {}, "expect_clarification": false}
+{"id": "h12", "question": "most catches by a fielder in ipl 2024", "expected_module": "fielding", "expected_params": {"competition": "ipl", "season": 2024}, "expect_clarification": false}
+{"id": "h13", "question": "Kholi ipl runs at Chinnaswamy", "expected_module": "batting", "expected_params": {"competition": "ipl"}, "expect_clarification": false}
+{"id": "h14", "question": "Rashid Khan economy at the death in ipl", "expected_module": "bowling", "expected_params": {"competition": "ipl", "phase": "death"}, "expect_clarification": false}
+{"id": "h15", "question": "how does Dhoni do in the last 10 innings", "expected_module": "form", "expected_params": {}, "expect_clarification": false}
+{"id": "h16", "question": "csk vs mi head to head record", "expected_module": "teams", "expected_params": {}, "expect_clarification": false}
+{"id": "h17", "question": "best ipl partnerships of all time", "expected_module": "partnerships", "expected_params": {}, "expect_clarification": false}
+{"id": "h18", "question": "how many wickets did Anderson take in the Ashes", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "h19", "question": "what was the speed of Shami's fastest delivery", "expect_status": "out_of_scope", "expect_clarification": false}
+{"id": "h20", "question": "who will win the ipl final tonight", "expect_status": "out_of_scope", "expect_clarification": false}

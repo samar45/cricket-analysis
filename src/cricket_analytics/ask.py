@@ -8,6 +8,7 @@ numbers: names are resolved to exact data names in Python (ambiguous -> candidat
 through api.run, and the answer sentence is built from the result rows.
 """
 
+import datetime as dt
 import json
 import re
 import time
@@ -77,8 +78,21 @@ SYSTEM = (
     "competition: ipl = IPL, t20i = men's T20 internationals, t20i_women = women's T20 internationals; "
     "leave it out for all leagues. A single year like 2024 goes in season; 'last 3 seasons' means last_n_years=3. "
     "'best/top/most' questions are lists: do not give a player. 'X vs Y' or 'X against Y' for a batter and a bowler "
-    "is matchup (player = batter, player2 = bowler); compare is only for 'compare X and Y'. If no tool fits, answer in words without a tool call."
+    "is matchup (player = batter, player2 = bowler); compare is only for 'compare X and Y'. "
+    "Wins above replacement / 'added the most wins' = war; runs above average = runs_added; win probability = wpa; "
+    "'predict' or expected outcome per ball for a batter v bowler = matchup_predict; IPL auction prices = auction; "
+    "player swaps = trade; catches, stumpings, run-outs = fielding. If no tool fits, answer in words without a tool call."
 )
+
+
+def system_prompt() -> str:
+    """SYSTEM plus today's date and how far the data goes, so the model never says a recent season has not happened."""
+    try:
+        info = api.data_info()["competitions"]
+        thr = "; ".join(f"{c['competition']} to {c['latest']}" for c in info)
+    except Exception:  # no DB: the prompt still works
+        thr = "unknown"
+    return f"{SYSTEM} Today is {dt.date.today()}. The data runs through: {thr}. Seasons up to those dates have happened and are in the data."
 
 
 class AskError(RuntimeError):
@@ -137,8 +151,11 @@ def _chat(question: str, model: str, timeout: int = 180) -> dict:
         "stream": False,
         "think": False,
         "keep_alive": "10m",
-        "options": {"temperature": 0, "num_ctx": 6144},
-        "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": question}],
+        "options": {"temperature": 0, "num_ctx": 12288},
+        "messages": [
+            {"role": "system", "content": system_prompt()},
+            {"role": "user", "content": question},
+        ],
         "tools": tools(),
     }
     try:
@@ -427,6 +444,10 @@ def _only_competition(team: str) -> str | None:
     return found.pop() if len(found) == 1 and None not in found else None
 
 
+_PLAYER_FILL = {
+    "matchup_predict",
+    "auction",
+}  # modules where a missing player is the model slipping, not intent
 _SEASON_KEYS = ("season", "season_from", "season_to", "last_n_years")
 
 
@@ -492,6 +513,23 @@ def resolve(
             a["mode"] = "team_vs_type"
     if mod.id == "dismissal_profile" and (g := ask_rules.dismissal_group(question)):
         a["group_by"] = g
+    for m_id, fn in (
+        ("war", ask_rules.war_view),
+        ("trade", ask_rules.trade_view),
+        ("scarcity", ask_rules.scarcity_view),
+    ):
+        if mod.id == m_id and "view" in allowed and (v := fn(question)):
+            a["view"] = v
+    if "player" in allowed and "player" not in a and mod.id in _PLAYER_FILL:
+        if who := ask_rules.player_in_question(question, _PLAYER_ALIAS):
+            a["player"] = who
+    if (
+        mod.id == "war" and a.get("view") == "projected"
+    ):  # the fixed IPL 2027 table takes no season/competition filter
+        for k in (*_SEASON_KEYS, "competition"):
+            a.pop(k, None)
+    if mod.id == "auction":  # the model rarely picks a view; wording decides
+        a["view"] = ask_rules.auction_view(question, "player" in a)
     if mod.id == "partnerships":
         a["group_by"] = ask_rules.partnership_group(question)
     if "venue" in a and question:  # a ground the model made up (not in the question) is dropped
@@ -507,7 +545,7 @@ def resolve(
             a["venue"] = v
     asks, picks = [], dict(picks or {})
     comp = a.get("competition")
-    for key in ("team", "opposition", "venue", "player", "player2"):
+    for key in ("team", "opposition", "venue", "player", "player2", "give", "get"):
         if key not in a:
             continue
         if key in picks:
@@ -519,7 +557,7 @@ def resolve(
             picker = {"team": pick_team, "opposition": pick_team, "venue": pick_venue}.get(
                 key, pick_player
             )
-            exact, cands = picker(str(v), comp)
+            exact, cands = picker(str(v), comp or ("ipl" if key in ("give", "get") else None))
             if exact:
                 done.extend(exact if isinstance(exact, list) else [exact])
             else:
@@ -568,13 +606,15 @@ def apply_rules(question: str, tool: dict | None, db_path: Path | None = None) -
             q = question.lower()
             if (
                 not mod
-                and cur not in ("matchup", "compare", None)
+                and cur not in ("matchup", "matchup_predict", "compare", None)
                 and "player" in args
                 and "player2" in args
                 and re.search(r"\bvs\.?\b|\bversus\b|\bagainst\b", q)
                 and not re.search(r"compare|better|\bor\b", q)
             ):
                 mod, why = "matchup", "a player vs a second player means matchup"
+    if mod and mod == cur and pair:  # already teams, but the model may have left a side out
+        return {**tool, "arguments": args}
     if not mod or mod == cur:
         return tool
     return {"name": mod, "arguments": args, "overrides": [(tool or {}).get("name"), mod, why]}

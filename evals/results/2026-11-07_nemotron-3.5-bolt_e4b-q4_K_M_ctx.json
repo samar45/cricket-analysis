@@ -1,0 +1,225 @@
+{
+ "model": "nemotron-3.5-bolt:e4b-q4_K_M",
+ "summary": {
+  "n": 7,
+  "n_answerable": 7,
+  "module_accuracy": 1.0,
+  "param_accuracy_per_param": 1.0,
+  "param_accuracy_all_correct": 1.0,
+  "clarification_precision": null,
+  "clarification_recall": null,
+  "false_clarifications": 0,
+  "out_of_scope_ok": null,
+  "golden_present": 0.667,
+  "golden_n": 6,
+  "seconds_mean": 29.46,
+  "seconds_max": 161.37
+ },
+ "questions": [
+  {
+   "id": "q01",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": true,
+    "competition": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "how many runs has Kohli scored in the IPL",
+   "seconds": 161.37,
+   "error": null,
+   "tool_call": {
+    "name": "batting",
+    "arguments": {
+     "competition": "ipl",
+     "group_by": "player",
+     "player": "Kohli"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "group_by": "player",
+    "player": "V Kohli"
+   },
+   "answer": "Batting stats (player=V Kohli, competition=ipl), data through 2026-05-31. batter V Kohli, innings 275, not outs 44, total runs 9336, balls 6926, highest 113, average 40.42, strike rate 134.8, fifties 68, hundreds 9, ducks 12, fours 845.",
+   "status": "ok"
+  },
+  {
+   "id": "q02",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": true,
+    "competition": true,
+    "season": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "rohit shrma ipl 2024 stats",
+   "seconds": 9.12,
+   "error": null,
+   "tool_call": {
+    "name": "batting",
+    "arguments": {
+     "competition": "ipl",
+     "player": "rohit shrma",
+     "season": "2024"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "player": "RG Sharma",
+    "season": 2024
+   },
+   "answer": "Batting stats (player=RG Sharma, competition=ipl, season=2024), data through 2024-05-26. batter RG Sharma, innings 14, not outs 1, total runs 417, balls 278, highest 105, average 32.08, strike rate 150, fifties 1, hundreds 1, ducks 1, fours 45.",
+   "status": "ok"
+  },
+  {
+   "id": "q10",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": true,
+    "player2": true,
+    "competition": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "kohli vs bumrah in ipl",
+   "seconds": 4.94,
+   "error": null,
+   "tool_call": {
+    "name": "matchup",
+    "arguments": {
+     "competition": "ipl",
+     "player": "kohli",
+     "player2": "bumrah"
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "player": "V Kohli",
+    "player2": "JJ Bumrah"
+   },
+   "answer": "Batter vs bowler (player=V Kohli, player2=JJ Bumrah, competition=ipl), data through 2026-05-31. batter V Kohli, bowler JJ Bumrah, balls 108, runs 159, dismissals 5, strike rate 147.22, average 31.8, dot pct 34.3, boundary pct 20.4, economy 8.89, dots 37, ones 37.",
+   "status": "ok"
+  },
+  {
+   "id": "q22",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "team": true,
+    "competition": true
+   },
+   "params_ok": true,
+   "golden_ok": false,
+   "question": "chenai super kings home vs away record",
+   "seconds": 8.37,
+   "error": null,
+   "tool_call": {
+    "name": "home_away",
+    "arguments": {
+     "competition": "ipl",
+     "team": "Chennai Super Kings"
+    }
+   },
+   "resolved_params": {
+    "team": "Chennai Super Kings",
+    "competition": "ipl"
+   },
+   "answer": "Home vs away (competition=ipl, team=Chennai Super Kings), data through 2026-05-21. 3 rows. Top 5: Chennai Super Kings / home: matches 84, won 55, lost 29, no result 0; Chennai Super Kings / away: matches 88, won 43, lost 44, no result 1; Chennai Super Kings / neutral: matches 94, won 50, lost 44, no result 0.",
+   "status": "ok"
+  },
+  {
+   "id": "q29",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": true
+   },
+   "params_ok": true,
+   "golden_ok": false,
+   "question": "how does Rohit get out",
+   "seconds": 3.83,
+   "error": null,
+   "tool_call": {
+    "name": "dismissal_profile",
+    "arguments": {
+     "competition": "ipl",
+     "player": "Rohit"
+    }
+   },
+   "resolved_params": {
+    "player": "RG Sharma"
+   },
+   "answer": "Dismissal profile (player=RG Sharma), data through 2026-10-14. 7 rows. Top 5: RG Sharma / caught (fielder): outs 212, pct 56.8; RG Sharma / bowled: outs 53, pct 14.2; RG Sharma / caught (keeper): outs 44, pct 11.8; RG Sharma / lbw: outs 28, pct 7.5; RG Sharma / run out: outs 16, pct 4.3.",
+   "status": "ok"
+  },
+  {
+   "id": "q36",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "competition": true,
+    "group_by": true
+   },
+   "params_ok": true,
+   "golden_ok": true,
+   "question": "top partnerships in the ipl",
+   "seconds": 8.15,
+   "error": null,
+   "tool_call": {
+    "name": "partnerships",
+    "arguments": {
+     "competition": "ipl",
+     "group_by": "pair",
+     "top": 10
+    }
+   },
+   "resolved_params": {
+    "competition": "ipl",
+    "group_by": "stand",
+    "top": 10
+   },
+   "answer": "Batting partnerships (competition=ipl), data through 2026-05-31. 10 rows. Top 5: AB de Villiers / V Kohli: wicket no 2, unbroken 0, runs 229, balls 97; KL Rahul / N Rana: wicket no 2, unbroken 0, runs 220, balls 96; AB de Villiers / V Kohli: wicket no 2, unbroken 1, runs 215, balls 102; B Sai Sudharsan / Shubman Gill: wicket no 1, unbroken 0, runs 210, balls 104; KL Rahul / Q de Kock: wicket no 1, unbroken 1, runs 210, balls 121.",
+   "status": "ok"
+  },
+  {
+   "id": "q38",
+   "clar_pred": false,
+   "clar_expected": false,
+   "module_ok": true,
+   "param_hits": {
+    "player": true,
+    "role": true
+   },
+   "params_ok": true,
+   "question": "is Bumrah in form recently",
+   "seconds": 10.48,
+   "error": null,
+   "tool_call": {
+    "name": "form",
+    "arguments": {
+     "competition": "t20i",
+     "last_n_years": 3,
+     "player": "Bumrah",
+     "role": "bowler"
+    }
+   },
+   "resolved_params": {
+    "player": "JJ Bumrah",
+    "role": "bowler"
+   },
+   "answer": "Player form (player=JJ Bumrah), data through 2026-10-14. 259 rows. Top 5: 2013 / M Chinnaswamy Stadium: spell no 1, wickets 3, runs conceded 32, balls 24; 2013 / Arun Jaitley Stadium: spell no 2, wickets 0, runs conceded 38, balls 18; 2014 / Dubai International Cricket Stadium: spell no 3, wickets 0, runs conceded 14, balls 12; 2014 / Wankhede Stadium: spell no 4, wickets 0, runs conceded 25, balls 24; 2014 / Wankhede Stadium: spell no 5, wickets 2, runs conceded 22, balls 24.",
+   "status": "ok"
+  }
+ ]
+}
