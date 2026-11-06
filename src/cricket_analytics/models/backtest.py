@@ -138,12 +138,12 @@ def _league_weighted(T, X, with_ipl: bool, years: int = 3) -> pd.DataFrame:
         w = w.where(d.comp != "ipl", 1.0)
     d = d.assign(w=w).dropna(subset=["w"])
     d["wra"] = d.ra * d.w
-    out = pd.DataFrame()
+    cols = {}
     for r in ("bat", "bowl"):
         g = d[d.role == r].groupby("player")[["balls", "wra"]].sum()
-        out[f"{r}_rate"] = g.wra / (g.balls + K_SHRINK[r])
-        out[r] = out[f"{r}_rate"] * 100
-    return out
+        cols[f"{r}_rate"] = g.wra / (g.balls + K_SHRINK[r])
+        cols[r] = cols[f"{r}_rate"] * 100
+    return pd.DataFrame(cols)  # a dict of Series is aligned on the union of players (bowlers who never bat stay)
 
 
 @predictor("lw_other")
@@ -177,11 +177,12 @@ def truth_runs(T: pd.DataFrame, t: int) -> pd.DataFrame:
     """IPL season t: bat / bowl runs added, balls, rates, per player."""
     p = player_year(T, ["ipl"])
     p = p[p.sy == t]
-    out = pd.DataFrame()
+    cols = {}
     for r in ("bat", "bowl"):
         g = p[p.role == r].set_index("player")
-        out[r], out[f"{r}_balls"] = g.ra, g.balls
-        out[f"{r}_rate"] = g.ra / g.balls.where(g.balls > 0)
+        cols[r], cols[f"{r}_balls"] = g.ra, g.balls
+        cols[f"{r}_rate"] = g.ra / g.balls.where(g.balls > 0)
+    out = pd.DataFrame(cols)
     out[["bat", "bowl", "bat_balls", "bowl_balls"]] = out[["bat", "bowl", "bat_balls", "bowl_balls"]].fillna(0.0)
     return out
 
@@ -283,6 +284,8 @@ def table(res: pd.DataFrame, what: str = "total") -> pd.DataFrame:
     order = [n for n in PREDICTORS if n in w.index]
     return w.reindex(order + [n for n in w.index if n not in order])
 
+
+from . import value_variants  # noqa: E402,F401  (registers ipl3_ph, ipl3_wpa, ipl3_grp)
 
 DEFAULT = ("zero", "last_ipl", "ipl3", "recent_value", "pwar", "pwar_runs", "lw_other", "lw_all", "price")
 
