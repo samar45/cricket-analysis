@@ -1,0 +1,11 @@
+test,term,estimate,lo90,hi90,n,note
+"A price (log), auction FE",exposure per +1 SD,-0.0404,-0.102,0.0226,615,1 SD of exposure = 0.40; estimate = change in log price (0.10 = +10.5%)
+"A price (log), auction FE",log_base,1.3316,1.1564,1.5036,615,
+"A price (log), auction FE",capped_f,-0.443,-0.7742,-0.0998,615,
+"A price (log), auction FE",overseas_f,-0.3064,-0.4631,-0.1441,615,
+"A price (log), auction FE",value_main,0.0051,-0.0017,0.0123,615,
+"A2 price (log), no FE (mega dummy)",exposure per +1 SD,-0.045,-0.1084,0.0157,615,1 SD of exposure = 0.40; estimate = change in log price (0.10 = +10.5%)
+"B P(sold), auction FE",exposure per +1 SD (points),-0.3614,-2.5218,1.6509,1024,615 sold of 1024 on the block; average marginal effect in percentage points; 300 bootstrap draws
+C out of sample 2024 (trained on earlier auctions),RMSE gain from scarcity (log price),0.0024,0.0008,0.0042,72,"RMSE without 1.252, with 1.250; train n=284"
+C out of sample 2025 (trained on earlier auctions),RMSE gain from scarcity (log price),-0.0004,-0.0062,0.0056,182,"RMSE without 0.799, with 0.799; train n=356"
+C out of sample 2026 (trained on earlier auctions),RMSE gain from scarcity (log price),0.0028,-0.0024,0.0086,77,"RMSE without 1.019, with 1.017; train n=538"
