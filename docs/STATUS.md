@@ -136,3 +136,4 @@
 
 ## 2026-11-07 Backtest M9 + phase/scarcity M10 (docs/VALUE_backtest.md)
 - `cricket backtest`: rolling data<=X -> IPL X+1. Best pooled rho 0.12 (last 3 IPL seasons); pWAR 0.03, lw_other 0.04; Dec 2025 overseas buys n=20: price +0.24, lw_other -0.18. Phase weights (death 1.2) and Indian/overseas replacement: no gain, kept as optional views (`value_variants.compare`); Hardik -2.04 flat, -2.11 phase, -2.06 group. Auction room + auction caveats say shortlist, not prediction. Fixed: truth table dropped never-batting bowlers.
+- 2026-11-07: player DOBs from Wikidata (via Cricsheet people.csv Cricinfo IDs) -> reference/player_dob.csv (91% of IPL 2023-26 players); first age curve in docs/VALUE_age.md (no clear age signal yet)
