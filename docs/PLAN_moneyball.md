@@ -19,6 +19,9 @@ from the table below (`docs/JOURNEY.md` §6 points here).
 | M7 | "Auction room" page | auction pool with predicted price range, value, scarcity, bargain flag; uncapped scouting list | M | done (dashboard/auction_room.py (page 'Auction room')) |
 | M8 | Re-run with real 2027 data | after retentions (17 Nov 2026) and auction (16 Dec 2026) | S | waits for dates (17 Nov, 16 Dec 2026) |
 | M9 | Backtest | generic "data up to X -> IPL X+1" tool (`cricket backtest`), baselines, pooled tables | M | done (docs/VALUE_backtest.md) |
+| M11 | Marcel-style stable skill | 5/4/3 seasons, parts shrunk by own k; `marcel*` predictors | S | done: marcel_ipl rho 0.15 vs ipl3 0.12 (noise), MAE not below pwar_runs; optional only (docs/VALUE_moneyball_v2.md) |
+| M12 | Availability | truth `share`/`balls`, share predictors, rate x opportunity | S | done: share rho 0.54 (price 0.42 for overseas buys); rate x opportunity no gain |
+| M13 | Buying-strategy simulation 2023-26 | rule buyers vs actual vs 1000 random, simple rules | M | done: model buyer 49th percentile of random, value-per-crore rule 0.1th, actual 60th; no rule beats random |
 | M10 | Phase difficulty + Indian scarcity | fitted phase weights and Indian/overseas replacement, kept only if backtest no worse; Hardik before/after | M | done: both pass keep rule, no gain, optional views only (docs/VALUE_backtest.md section 4) |
 
 Out of scope unless Samar asks: paid data, scraping banned sites, line/length/shot data.

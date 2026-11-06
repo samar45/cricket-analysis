@@ -44,8 +44,8 @@ def cli(verbose: bool):
 @cli.command()
 @click.option("--targets", default="2024,2025,2026", help="IPL seasons to forecast (data before each)")
 @click.option("--pool", type=click.Choice(["all", "common", "auction", "auction_os"]), default="all")
-@click.option("--what", default="total", help="total / bat / bowl / bat_rate / bowl_rate")
-@click.option("--predictors", default=None, help="comma list; default: zero,last_ipl,ipl3,recent_value,pwar,pwar_runs,lw_other,lw_all,price")
+@click.option("--what", default="total", help="total / bat / bowl / bat_rate / bowl_rate / share (matches played) / balls")
+@click.option("--predictors", default=None, help="comma list; default: zero,last_ipl,ipl3,recent_value,pwar,pwar_runs,lw_other,lw_all,price; also marcel,marcel_ipl,marcel_skill,share_last,share_3,share_price,balls_3,ropp_share")
 @click.option("--min-balls", default=60, help="a player needs this many balls in the target season")
 def backtest(targets, pool, what, predictors, min_balls):
     """Backtest value predictors: rank correlation with next IPL season's runs added (about 30 s)."""
