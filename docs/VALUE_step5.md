@@ -1,4 +1,4 @@
-# Step 5: IPL trade tool (option A: recent value, honest ranges, no playoff or title odds)
+# Step 5: IPL trade tool (option A: recent value, honest ranges; section 6 adds simulated playoff and title odds)
 
 Built 2026-11-06. Everything is **measured by us** (Cricsheet ball-by-ball to 2026-05-31, contracts from `reference/ipl_contracts.csv`) unless marked guess.
 Code: `models/trade.py`, `analysis/trade.py` (module `trade`), `viz/trade.py`, `viz/video/trade.py`, `tests/test_trade.py` (22 tests, 2 need the real DB).
@@ -6,7 +6,7 @@ Saved data: `models/data/trade_match_ra.csv` (7,932 rows: runs added, balls and 
 Use: `cricket run trade --team "Mumbai Indians" --team2 "Rajasthan Royals" --give "Hardik Pandya" --get "Yashasvi Jaiswal, Yash Raj Punja"`; `--view squad` lists one squad; `--baseline before_trades` undoes the announced trades of the named players first. The dashboard (Explore, experimental) drives it: team and team2 are fixed lists of the ten teams, give and get are multiselects filled from the chosen team's contract players.
 
 ## Headline
-1. The tool shows **recent value** (what a player delivered in the Impact Player era), not a forecast. Our own tests (VALUE_step3) say batters' projections have no out-of-sample skill and team win share is mostly luck, so there are **no playoff or title odds**. A check of the recent value itself: it predicts next season's WAR with r 0.13 and slope 0.17 (218 player-seasons, targets 2025 and 2026). About a sixth of a season's value repeats. A verdict therefore describes the past evidence, not the future.
+1. The tool shows **recent value** (what a player delivered in the Impact Player era), not a forecast. Our own tests (VALUE_step3) say batters' projections have no out-of-sample skill and team win share is mostly luck, so any playoff or title odds must carry a wide range (section 6). A check of the recent value itself: it predicts next season's WAR with r 0.13 and slope 0.17 (218 player-seasons, targets 2025 and 2026). About a sixth of a season's value repeats. A verdict therefore describes the past evidence, not the future.
 2. Every number carries a range (10th to 90th percentile of 400 bootstrap draws over the player's own matches). A swap whose range straddles 0 is "too close to call".
 3. **Market price: 44.7 crore per win** (what the ten squads paid on average per win above replacement). Salary is only loosely tied to recent value (R^2 0.08), so this is a price paid, not what a win is worth.
 4. Of the three requested cases, only Pant for Kuldeep gives a verdict that excludes "too close to call" on both sides; the Hardik trade changes nothing in either best XII (Jaiswal's recent value is negative).
@@ -74,4 +74,28 @@ None of Hardik, Jaiswal or Punja is in either best XII (recent values -0.44, -0.
 5. Market price (44.7 cr per win) rests on one season of salaries and a squad total (about 24 positive wins); OLS gives 6.4 cr per win with R^2 0.08. Surplus and "net value" in crore depend entirely on which you pick.
 6. The impact-player weight (0.5), the 20-over and 5-bowler rule, the 6-batter rule and the hole definitions are my judgement; changing them moves XII values by a few tenths of a win.
 7. Search is a heuristic, ranges are slightly optimistic (selection on point values), and 400 draws give percentiles good to about 0.02.
-8. Ideas (not built): put a "must play" toggle for named stars; a keeper column in the reviewed list; an auction-budget view for the 16 Dec mini-auction.
+8. Ideas (not built): a keeper column in the reviewed list; an auction-budget view for the 16 Dec mini-auction.
+
+## 6. Round H (2026-11-06): trade card, playoff / title odds, must-play (all measured by us unless marked guess)
+Code: `models/trade.py` (`fit_beta`, `simulate`, `pick_xii(force=)`), `analysis/trade.py` (`_card`, param `must_play`), `viz/trade.py` (`html(result)`), `dashboard/app.py` + `ui.py` (generic hook: any viz module with `html(result)` gets it shown with `st.html`). Data: `models/data/trade_beta_matches.csv` (215 rows; rebuild `python -m cricket_analytics.models.trade beta`, about 2 s, reads the DB read-only).
+- **Card**: left = who each side receives (price, RECENT WAR with 10-90 range, bowlers' pWAR small) and net value in crore; right = XII value, playoff odds, title odds, purse, assets, net value before / after for both teams, a note and a one-sentence verdict; "More analysis" = where the value came from and holes. The plain Plotly chart is kept for PNG and the video tab (not shown beside the card).
+- **Match-win slope (beta)**: for each IPL 2024-26 match with a winner (215 matches; 4 no-results dropped), each team's value = sum of recent value of its **most-used XI that season**, with each player's value computed from **earlier seasons only** (weights 4,3,2,1 counted back from the season before; a missed season counts 0). Logistic regression of "team 1 won" on the value gap, no intercept. **beta = 0.094 wins-a-season (10th to 90th percentile of 1,000 bootstrap draws over matches: -0.028 to 0.237; beta > 0 in 84.5% of draws)**. Meaning: a team whose XII is worth 1 win a season more wins a game about 52.4% of the time (50% + 0.094/4). The SD of the gap between two XIs is 1.4, so a typical match is shifted by about 3 points. This agrees with VALUE_step3 (squad value barely predicts win share); a prior-seasons value is a noisy measure, so the slope is probably biased towards 0 (guess).
+- **Simulation**: 10 teams in the 2022-style format (guess for 2027: groups MI KKR RR DC LSG / CSK SRH RCB PBKS GT; each plays its group four others twice, its rival in the other group twice, the other four once = 14 games; 70 league games). Win chance = logistic(beta x XII value A - XII value B), XII value from `pick_xii` (impact player at half weight). Top 4 by wins (random tie-break instead of net run rate) go to Qualifier 1 / Eliminator / Qualifier 2 / Final, each game with the same win chance. 40 beta draws x 1,000 seasons = **40,000 seasons per scenario**, the same random numbers for "before" and "after" so differences are not simulation noise. Other eight teams: current squads, no must-play. Brackets on odds = 10th to 90th percentile over beta draws; a team's average league odds sit near 40% (playoffs) and 10% (title) with spread 34-48% and 7-14% across the ten teams.
+- **Purse and assets (guess)**: purse = 125 cr cap (the 2026 rule; 2027 not announced) minus squad salaries; assets = XII value x market price per win (44.7 cr, ratio method of section 2); net value = swap surplus as before (zero-sum between the two teams).
+- **Holes**: kept. Fill chances are not computed: the auction pool is unknown until retentions (17 Nov 2026), so the card says so.
+- **Must play** (`must_play`, any names from either squad): forced into that team's XI before and after (the swap search never removes them). Rules (overseas, keeper, bowlers) still apply as penalties.
+
+### Results (current squads)
+| trade | team | XII before to after (change, 10-90) | playoff odds before to after (change in points, 10-90) | title odds change (10-90) | net value |
+|---|---|---|---|---|---|
+| MI gives Hardik (16.35 cr), gets Jaiswal (18 cr), Hardik must play | MI | 2.30 to 2.69 (+0.39, +0.03 to +0.67) | 42% to 45% (+3.3, 0.0 to +7.0) | +1.6 (0.0 to +3.8) | +6.7 cr |
+| | RR | 2.32 to 2.01 (-0.31, -0.71 to +0.20) | 41% to 38% (-2.8, -6.2 to +0.1) | -1.3 (-2.9 to 0.0) | -6.7 cr |
+| LSG gives Pant, gets Kuldeep (baseline before_trades) | LSG | 1.04 to 1.49 (+0.45) | 30% to 34% (+3.3, -0.2 to +7.0) | +1.0 (-0.1 to +2.0) | +35.7 cr |
+| | DC | 1.93 to 1.40 (-0.54) | 38% to 33% (-4.2, -9.9 to +0.3) | -1.4 (-3.0 to +0.1) | -23.7 cr |
+
+Reading: even a swap that changes an XII by half a win moves playoff odds by 3-4 points, and the 10-90 range includes 0 for almost every cell: **the season is mostly luck**. Without must-play, MI's best XII does not change (Hardik is outside it), odds change 0.0. The "MI +6.7 cr" in the Hardik case is mostly money (MI pays 18 cr for a player with recent value -0.25, but saves 16.35 cr of Hardik's recent -0.44).
+
+### Doubts
+1. beta rests on 215 matches and a noisy prior-seasons value; its interval includes 0 (and slightly negative values). If it is really 0, all odds changes are 0; if it is 0.24 they roughly double.
+2. Groups, rivals and the 125 cr cap are guesses; net run rate is replaced by a random tie-break.
+3. `viz/video/trade.py` was not changed (no odds on the video card).

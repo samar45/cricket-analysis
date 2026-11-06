@@ -379,8 +379,16 @@ def _penalty(sel, a) -> float:
 
 def _search(a, n: int, seed: int = 7) -> np.ndarray:
     val, m = a["val"], len(a["val"])
+    force = a.get(
+        "force", np.zeros(m, bool)
+    )  # must-play players: in every start, never swapped out
+    free = np.flatnonzero(~force)
+    k = n - int(force.sum())
     rng = np.random.default_rng(seed)
-    starts = [np.argsort(-val)[:n]] + [rng.permutation(m)[:n] for _ in range(30)]
+    fixed = np.flatnonzero(force)
+    starts = [np.r_[fixed, free[np.argsort(-val[free])][:k]]] + [
+        np.r_[fixed, rng.permutation(free)[:k]] for _ in range(30)
+    ]
     best, best_f = None, -1e18
     for st in starts:
         sel = np.zeros(m, bool)
@@ -388,7 +396,7 @@ def _search(a, n: int, seed: int = 7) -> np.ndarray:
         f = val[sel].sum() - _penalty(sel, a)
         while True:
             move_to = None
-            for i, o in itertools.product(np.flatnonzero(sel), np.flatnonzero(~sel)):
+            for i, o in itertools.product(np.flatnonzero(sel & ~force), np.flatnonzero(~sel)):
                 s2 = sel.copy()
                 s2[i], s2[o] = False, True
                 f2 = val[s2].sum() - _penalty(s2, a)
@@ -402,18 +410,21 @@ def _search(a, n: int, seed: int = 7) -> np.ndarray:
     return best
 
 
-def pick_xii(pt: pd.DataFrame) -> dict:
+def pick_xii(pt: pd.DataFrame, force=()) -> dict:
     """Best legal XI plus impact player from one squad (rows of player_table).
 
     Rules enforced (as penalties in a swap search that starts from the top-valued 11 and 30 random starts, so no ILP library):
     at most 4 overseas in the XI; a keeper from the REVIEWED list (a 'yes', else a 'sometimes'; if the squad has none the rule is
     dropped and flagged, never guessed); at least 5 bowling options with 20+ expected overs between them; at least 6 usual
     top-seven batters. The impact player is the best remaining player (an Indian if the XI already has 4 overseas), counted at
-    IMPACT_WEIGHT, and only if his value is above 0.
+    IMPACT_WEIGHT, and only if his value is above 0. `force` = labels of players who must be in the XI (a captain or star in poor form).
     Returns {'xi': [index labels], 'impact': label or None, 'value': float, 'flags': [str], 'penalty': float}."""
     n = 11
     if len(pt) < n:
         raise ValueError(f"A squad needs at least {n} players, this one has {len(pt)}")
+    fmask = pt.index.isin(list(force))
+    if fmask.sum() > n:
+        raise ValueError(f"must_play lists {int(fmask.sum())} players of one team; an XI has {n}")
     yes = pt.keeper.values.astype(bool)
     some = pt.keeper_some.values.astype(bool) & ~yes
     flags = []
@@ -430,6 +441,7 @@ def pick_xii(pt: pd.DataFrame) -> dict:
         "bat7": (
             (pt.bat_pos.fillna(99).values <= 7.0) & (pt.bat_matches.fillna(0).values >= 5)
         ).astype(int),
+        "force": fmask,
     }
     sel = _search(a, n)
     pen = float(_penalty(sel, a))
@@ -513,6 +525,190 @@ def holes(pt: pd.DataFrame, ref: dict) -> list[str]:
     return [s for s, x in sv.items() if x is None or x < ref[s]]
 
 
+# ── season simulation: playoff and title odds ────────────────────────────────────────────────────────────────
+BETA_CSV = w.DATA / "trade_beta_matches.csv"
+BETA_BOOT, BETA_SEED = 1000, 20261107
+SIM_BETAS, SIM_SEASONS = 40, 1000  # 40 beta draws x 1000 seasons = 40,000 seasons per scenario
+PURSE_CAP = 125.0  # cr: the 2026 purse rule; a guess for 2027 (not announced)
+# 2022+ format: two groups of five; a team plays its group rivals twice, its "rival" in the other group twice, the other four once
+GROUPS = (("MI", "KKR", "RR", "DC", "LSG"), ("CSK", "SRH", "RCB", "PBKS", "GT"))
+RIVALS = (
+    ("MI", "CSK"),
+    ("KKR", "PBKS"),
+    ("RR", "RCB"),
+    ("DC", "SRH"),
+    ("LSG", "GT"),
+)  # 2022 pairing; 2027 groups unknown
+ORDER = tuple(t for g in GROUPS for t in g)
+
+
+def fixtures() -> list[tuple[int, int]]:
+    """70 league games as pairs of ORDER indices (each team plays 14)."""
+    ix, pairs = {t: i for i, t in enumerate(ORDER)}, []
+    for a, b in itertools.combinations(ORDER, 2):
+        same = any(a in g and b in g for g in GROUPS)
+        rival = (a, b) in RIVALS or (b, a) in RIVALS
+        pairs += [(ix[a], ix[b])] * (2 if same or rival else 1)
+    return pairs
+
+
+def prior_values(m: pd.DataFrame, season: int, prm: dict) -> pd.Series:
+    """Recent value (point estimate) of every player using only seasons BEFORE `season`: weights 4,3,2,1 counted back from
+    the season before, from the player's first season in the data (a missed season counts 0). Used only to fit beta."""
+    e = prm["era"]["2023"]
+    repl = m.role.map({"bat": e["repl"]["bat"] / 100.0, "bowl": e["repl"]["bowl"] / 100.0})
+    g = m.assign(war=(m.ra - repl * m.balls) / e["rpw"])
+    g = g[g.sy < season].groupby(["player", "sy"]).war.sum().unstack()
+    out = {}
+    for p, row in g.iterrows():
+        first = row.dropna().index.min()
+        ss = list(range(int(first), season))
+        wt = np.array([max(1.0, 5.0 - (season - s)) for s in ss])
+        out[p] = float((wt * row.reindex(ss).fillna(0.0).values).sum() / wt.sum())
+    return pd.Series(out, dtype=float)
+
+
+def build_beta_matches(db_path=None) -> pd.DataFrame:
+    """One row per IPL 2024-26 match with a winner: both teams' most-used XI (that season) valued from PRIOR seasons only."""
+    from ..db import query
+
+    m, prm = pd.read_csv(MATCH_CSV), w.load_params()
+    mt = query(
+        "SELECT match_id, date, team1, team2, winner FROM matches WHERE competition = 'ipl' AND date >= '2024-01-01' "
+        "AND winner IS NOT NULL",
+        [],
+        db_path=db_path,
+    )
+    lu = query(
+        """SELECT DISTINCT d.match_id, t.team, t.p AS player FROM deliveries d JOIN matches m USING (match_id),
+           LATERAL (VALUES (d.batting_team, d.batter), (d.batting_team, d.non_striker), (d.bowling_team, d.bowler)) AS t(team, p)
+           WHERE m.competition = 'ipl' AND m.date >= '2024-01-01' AND d.innings <= 2""",
+        [],
+        db_path=db_path,
+    )
+    mt["sy"] = pd.to_datetime(mt.date).dt.year
+    lu = lu.merge(mt[["match_id", "sy"]], on="match_id")
+    rows = []
+    for sy, g in lu.groupby("sy"):
+        pv = prior_values(m, int(sy), prm)
+        cnt = g.groupby(["team", "player"]).size().reset_index(name="n")
+        xi = (
+            cnt.sort_values(["team", "n", "player"], ascending=[True, False, True])
+            .groupby("team")
+            .head(11)
+        )
+        x = xi.assign(v=xi.player.map(pv).fillna(0.0)).groupby("team").v.sum()
+        for r in mt[mt.sy == sy].itertuples():
+            if r.team1 in x.index and r.team2 in x.index:
+                rows.append(
+                    (
+                        r.match_id,
+                        sy,
+                        r.team1,
+                        r.team2,
+                        int(r.winner == r.team1),
+                        x[r.team1],
+                        x[r.team2],
+                    )
+                )
+    out = pd.DataFrame(rows, columns=["match_id", "sy", "team1", "team2", "team1_won", "x1", "x2"])
+    return out.round(5)
+
+
+def fit_beta(d: pd.DataFrame, boot: int = BETA_BOOT, seed: int = BETA_SEED) -> dict:
+    """Logistic slope (no intercept: team1 is not a home side) of the match result on the difference in XI value
+    (wins a season). Newton steps; the bootstrap resamples matches. Returns beta, its draws, 10-90 range and n."""
+    x, y = (d.x1 - d.x2).values.astype(float), d.team1_won.values.astype(float)
+
+    def one(x, y):
+        b = 0.0
+        for _ in range(25):
+            p = 1 / (1 + np.exp(-b * x))
+            g, h = ((y - p) * x).sum(), (p * (1 - p) * x * x).sum()
+            if h < 1e-12:
+                break
+            b += g / h
+        return b
+
+    rng = np.random.default_rng(seed)
+    draws = np.array(
+        [one(x[i], y[i]) for i in (rng.integers(0, len(x), len(x)) for _ in range(boot))]
+    )
+    b = one(x, y)
+    return {
+        "beta": float(b),
+        "draws": draws,
+        "lo": float(np.percentile(draws, 10)),
+        "hi": float(np.percentile(draws, 90)),
+        "n": int(len(x)),
+        "p_positive": float((draws > 0).mean()),
+    }
+
+
+@lru_cache(maxsize=1)
+def beta() -> dict:
+    if not BETA_CSV.exists():
+        raise FileNotFoundError(
+            f"{BETA_CSV.name} missing: run  python -m cricket_analytics.models.trade beta"
+        )
+    return fit_beta(pd.read_csv(BETA_CSV))
+
+
+def simulate(
+    strength: dict, beta_draws, seed: int = 11, betas: int = SIM_BETAS, seasons: int = SIM_SEASONS
+) -> dict:
+    """Season simulation. strength = {abbr: XII value}. Each of `betas` beta draws runs `seasons` seasons: 70 league games
+    (win chance = logistic(beta x value difference)), top 4 by wins (ties random) to Q1 / Eliminator / Q2 / Final.
+    The same random numbers are used for every scenario (same seed), so a before/after difference is not simulation noise.
+    Returns {'playoff': (betas, 10), 'title': (betas, 10)} shares in ORDER order."""
+    rng = np.random.default_rng(seed)
+    bt = rng.choice(np.asarray(beta_draws), betas)
+    fx = fixtures()
+    s = np.array([strength[t] for t in ORDER])
+    u = rng.random((betas, seasons, len(fx)))
+    tie = rng.random((betas, seasons, 10))
+    po = rng.random((betas, seasons, 4))
+    wins = np.zeros((betas, seasons, 10))
+    for k, (i, j) in enumerate(fx):
+        pw = 1 / (1 + np.exp(-bt * (s[i] - s[j])))[:, None]
+        w_i = u[:, :, k] < pw
+        wins[:, :, i] += w_i
+        wins[:, :, j] += ~w_i
+    top = np.argsort(-(wins + 0.5 * tie), axis=2)[
+        :, :, :4
+    ]  # wins are whole numbers: the 0.5 x tie term only breaks ties
+
+    def win(a, b, r):  # team index arrays; a wins with chance logistic(beta x diff)
+        p = 1 / (1 + np.exp(-bt[:, None] * (s[a] - s[b])))
+        return np.where(r < p, a, b)
+
+    t1, t2, t3, t4 = (top[:, :, i] for i in range(4))
+    q1w, el = win(t1, t2, po[:, :, 0]), win(t3, t4, po[:, :, 1])
+    q1l = np.where(q1w == t1, t2, t1)
+    q2 = win(q1l, el, po[:, :, 2])
+    champ = win(q1w, q2, po[:, :, 3])
+    eye = np.arange(10)
+    return {
+        "playoff": (top[..., None] == eye).any(2).mean(1),
+        "title": (champ[..., None] == eye).mean(1),
+        "wins": wins.mean((0, 1)),
+    }
+
+
+def odds_summary(before: dict, after: dict, kinds=("playoff", "title")) -> dict:
+    """{(team, kind): {'before'|'after'|'diff': (mean over all seasons, 10th, 90th percentile over beta draws)}}."""
+
+    def f(d):
+        return (float(d.mean()), float(np.percentile(d, 10)), float(np.percentile(d, 90)))
+
+    out = {}
+    for kind in kinds:
+        for i, t in enumerate(ORDER):
+            b, a = before[kind][:, i], after[kind][:, i]
+            out[(t, kind)] = {"before": f(b), "after": f(a), "diff": f(a - b)}
+    return out
+
+
 # ── trade ────────────────────────────────────────────────────────────────────────────────────────────────────
 def resolve(pt: pd.DataFrame, names, team: str) -> list[str]:
     """Squad labels for names given as contract name or Cricsheet name (case-insensitive). Unknown -> ValueError with valid names."""
@@ -577,8 +773,11 @@ def evaluate(
     baseline: str = "current",
     contracts: pd.DataFrame | None = None,
     v: Values | None = None,
+    must_play=(),
+    odds: bool = True,
 ) -> dict:
-    """Trade evaluation. `give` leaves `team` for `team2`, `get` arrives from `team2`.
+    """Trade evaluation. `give` leaves `team` for `team2`, `get` arrives from `team2`. `must_play` = names forced into their
+    team's XI (before and after). odds=True adds a season simulation (playoff and title odds, see simulate()).
     Returns {'teams': {abbr: {...before/after numbers...}}, 'give': [...], 'get': [...], 'league': {...}}."""
     v = values() if v is None else v
     c = load_contracts() if contracts is None else contracts
@@ -590,14 +789,16 @@ def evaluate(
     gk, tk = resolve(A, give, a), resolve(B, get, b)
     ref = league_slot_means(tab)
     cpw = market_fit(tab)["cr_per_win_ratio"]
+    force = resolve(tab, must_play, "league") if must_play else []
     A2 = pd.concat([A.drop(index=gk), moved_rows(B, tk, a, c)])
     B2 = pd.concat([B.drop(index=tk), moved_rows(A, gk, b, c)])
     out = {}
     for ab, before, after, got, lost in ((a, A, A2, tk, gk), (b, B, B2, gk, tk)):
         res = {"got": got, "lost": lost}
         for tag, pt in (("before", before), ("after", after)):
-            pick = pick_xii(pt)
-            d = xii_draws(pick, pt, draws_for(pt, v))
+            pick = pick_xii(pt, force)
+            D = draws_for(pt, v)
+            d = xii_draws(pick, pt, D)
             lo, hi = rng_text(d)
             who = pick["xi"] + ([pick["impact"]] if pick["impact"] else [])
             sal = float(pt.loc[who, "salary"].sum())
@@ -613,6 +814,9 @@ def evaluate(
                 "holes": holes(pt, ref),
                 "n_squad": len(pt),
                 "table": pt,
+                "assets_cr": pick["value"] * cpw,  # XII value at the market price per win
+                "purse_left_cr": PURSE_CAP - float(pt.salary.sum()),
+                "pdraws": D,
             }
         dd = res["after"]["draws"] - res["before"]["draws"]
         res["delta"] = float(res["after"]["value"] - res["before"]["value"])
@@ -620,15 +824,38 @@ def evaluate(
         res["p_better"] = float((dd > 0).mean())
         res["verdict"] = verdict(res["p_better"], res["delta_lo"], res["delta_hi"])
         res["purse_change"] = res["before"]["squad_salary"] - res["after"]["squad_salary"]
+
         # net value in rupees: surplus (value x market crore per win - salary above base) of who arrives minus who leaves
-        sur = lambda t, ks: float(
-            sum(t.loc[k, "value"] * cpw - (t.loc[k, "salary"] - REPL_SALARY) for k in ks)
-        )  # noqa: E731
+        def sur(t, ks):
+            return float(
+                sum(t.loc[k, "value"] * cpw - (t.loc[k, "salary"] - REPL_SALARY) for k in ks)
+            )
+
         res["net_value_cr"] = sur(res["after"]["table"], got) - sur(res["before"]["table"], lost)
         res["holes_created"] = [h for h in res["after"]["holes"] if h not in res["before"]["holes"]]
         res["holes_filled"] = [h for h in res["before"]["holes"] if h not in res["after"]["holes"]]
+        res["got_detail"] = player_cards(res["after"]["table"], res["after"]["pdraws"], got)
         out[ab] = res
+    sim = None
+    if odds:
+        bt = beta()
+        strength = {}
+        for t in TEAMS:
+            strength[t] = (
+                out[t]["before"]["value"]
+                if t in out
+                else pick_xii(tab[tab.team == t], force)["value"]
+            )
+        after = {**strength, a: out[a]["after"]["value"], b: out[b]["after"]["value"]}
+        sim = {
+            "beta": {k: bt[k] for k in ("beta", "lo", "hi", "n", "p_positive")},
+            "odds": odds_summary(simulate(strength, bt["draws"]), simulate(after, bt["draws"])),
+            "seasons": SIM_BETAS * SIM_SEASONS,
+        }
     return {
+        "sim": sim,
+        "cr_per_win": cpw,
+        "must_play": force,
         "teams": out,
         "give": gk,
         "get": tk,
@@ -636,6 +863,26 @@ def evaluate(
         "baseline": baseline,
         "order": (a, b),
     }
+
+
+def player_cards(pt: pd.DataFrame, D: np.ndarray, keys) -> list[dict]:
+    """What a trade card shows for each player: price, recent value with its 10-90 range, bowler pWAR."""
+    pos = {k: i for i, k in enumerate(pt.index)}
+    out = []
+    for k in keys:
+        r, d = pt.loc[k], D[pos[k]]
+        out.append(
+            {
+                "name": str(r.player),
+                "price": float(r.salary),
+                "value": float(r.value),
+                "lo": float(np.percentile(d, 10)),
+                "hi": float(np.percentile(d, 90)),
+                "pwar_bowl": float(r.pwar_bowl) if r.is_bowler else None,
+                "evidence": bool(r.has_evidence),
+            }
+        )
+    return out
 
 
 def squad_names(team: str) -> list[str]:
@@ -689,6 +936,16 @@ def squad_view(team: str) -> pd.DataFrame:
 
 
 def main() -> None:
+    import sys
+
+    if "beta" in sys.argv[1:]:
+        d = build_beta_matches()
+        d.to_csv(BETA_CSV, index=False)
+        b = fit_beta(d)
+        print(
+            f"wrote {BETA_CSV.name}: {len(d)} matches; beta {b['beta']:.3f} (10-90: {b['lo']:.3f} to {b['hi']:.3f})"
+        )
+        return
     m = build()
     print(f"wrote {MATCH_CSV.name}: {len(m)} rows")
 

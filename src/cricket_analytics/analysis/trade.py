@@ -16,6 +16,55 @@ def _label(pt: pd.DataFrame, keys) -> str:
     return ", ".join(f"{pt.loc[k, 'player']} ({pt.loc[k, 'salary']:g} cr)" for k in keys) or "-"
 
 
+def _pct(t):
+    return tuple(round(100 * x, 1) for x in t)
+
+
+def _card(r: dict) -> dict:
+    """Everything the trade card (viz/trade.py html) shows, as plain numbers; odds in percent."""
+    sim, names = r["sim"], {}
+    for x in r["teams"].values():
+        for tag in ("before", "after"):
+            names |= dict(zip(x[tag]["table"].index, x[tag]["table"].player))
+    teams = {}
+    for ab in r["order"]:
+        x = r["teams"][ab]
+        b, a = x["before"], x["after"]
+        teams[ab] = {
+            "name": T.TEAMS[ab],
+            "receives": x["got_detail"],
+            "gives": x["lost"],
+            "net_cr": x["net_value_cr"],
+            "xii": {
+                "before": (b["value"], b["lo"], b["hi"]),
+                "after": (a["value"], a["lo"], a["hi"]),
+                "change": (x["delta"], x["delta_lo"], x["delta_hi"]),
+            },
+            "odds": None
+            if sim is None
+            else {
+                k: {m: _pct(sim["odds"][(ab, k)][m]) for m in ("before", "after", "diff")}
+                for k in ("playoff", "title")
+            },
+            "purse": (b["purse_left_cr"], a["purse_left_cr"]),
+            "assets": (b["assets_cr"], a["assets_cr"]),
+            "holes_after": a["holes"],
+            "holes_created": x["holes_created"],
+            "holes_filled": x["holes_filled"],
+            "verdict": x["verdict"],
+            "flags": a["pick"]["flags"],
+        }
+    return {
+        "order": r["order"],
+        "teams": teams,
+        "beta": None if sim is None else sim["beta"],
+        "seasons": None if sim is None else sim["seasons"],
+        "cr_per_win": r["cr_per_win"],
+        "must_play": [names.get(k, k) for k in r["must_play"]],
+        "purse_cap": T.PURSE_CAP,
+    }
+
+
 def _trade_frame(r: dict) -> pd.DataFrame:
     rows = []
     for ab in r["order"]:
@@ -27,6 +76,17 @@ def _trade_frame(r: dict) -> pd.DataFrame:
             for k in x["got"]
             if not a["table"].loc[k, "has_evidence"]
         ]
+        odds = {}
+        if r["sim"] is not None:
+            for k in ("playoff", "title"):
+                o = r["sim"]["odds"][(ab, k)]
+                odds |= {
+                    f"{k}_pct_before": round(100 * o["before"][0], 1),
+                    f"{k}_pct_after": round(100 * o["after"][0], 1),
+                    f"{k}_pts_change": round(100 * o["diff"][0], 1),
+                    f"{k}_pts_change_lo": round(100 * o["diff"][1], 1),
+                    f"{k}_pts_change_hi": round(100 * o["diff"][2], 1),
+                }
         rows.append(
             {
                 "team": T.TEAMS[ab],
@@ -47,6 +107,11 @@ def _trade_frame(r: dict) -> pd.DataFrame:
                 "squad_salary_after": round(a["squad_salary"], 2),
                 "purse_freed_cr": round(x["purse_change"], 2),
                 "net_value_cr": round(x["net_value_cr"], 1),
+                **odds,
+                "assets_cr_before": round(b["assets_cr"], 1),
+                "assets_cr_after": round(a["assets_cr"], 1),
+                "purse_left_cr_before": round(b["purse_left_cr"], 2),
+                "purse_left_cr_after": round(a["purse_left_cr"], 2),
                 "value_per_cr_before": round(b["value_per_cr"], 4),
                 "value_per_cr_after": round(a["value_per_cr"], 4),
                 "holes_before": ", ".join(b["holes"]),
@@ -68,7 +133,7 @@ def _trade_frame(r: dict) -> pd.DataFrame:
     "recent seasons weighted 4/3/2/1), not on a forecast. For each team it picks the best legal XI plus impact player from the 2027 "
     "squad (max 4 overseas, a reviewed-list keeper, 5+ bowling options, 6+ top-seven batters), then shows XII value before and after "
     "with a range from bootstrapping each player's own matches, salary change, value per crore, and the slots (keeper, openers, ...) "
-    "that become weak or strong. The verdict says 'too close to call' when the ranges overlap. view=squad lists one team's players "
+    "that become weak or strong, plus playoff and title odds from a simulated season (slope fitted on past results, with a range). The verdict says 'too close to call' when the ranges overlap. view=squad lists one team's players "
     "with recent value, range, value per crore and surplus (value in rupees minus salary).",
     params=[
         *std("competition", super_overs=False),
@@ -87,6 +152,12 @@ def _trade_frame(r: dict) -> pd.DataFrame:
             help="Players Team A gets from Team B (must be in Team B's squad)",
         ),
         ParamSpec(
+            "must_play",
+            "player",
+            multi=True,
+            help="Players forced into their team's XII before the search (a captain or star in poor form); any of the two squads",
+        ),
+        ParamSpec(
             "view",
             "choice",
             default="trade",
@@ -102,7 +173,7 @@ def _trade_frame(r: dict) -> pd.DataFrame:
         ),
     ],
     caveats=[
-        "Value is RECENT, not predicted: batters' projections showed no out-of-sample skill (r 0.06) and team win share is mostly luck, so no playoff or title odds are shown.",
+        "Value is RECENT, not predicted: batters' projections showed no out-of-sample skill (r 0.06). Playoff and title odds come from a season simulation whose match-win slope is fitted on IPL 2024-26 (about 215 matches) and is weak and uncertain: the odds are a range, not a forecast, and a trade moves them by a few points at most.",
         "Recent value only weakly carries into the next season (IPL 2025-26 targets: r 0.13, slope 0.17 over 218 player-seasons): most of a season's value is luck, so a gap between two players is rarely skill.",
         "A trade only changes the XII when a player is good enough (by recent value) to be in it or to push someone out; the XII ignores reputation, so a poor-recent-form star can sit outside it and a swap then reads 'no change'.",
         "Ranges (10th-90th percentile) come from resampling each player's own matches; they do not include role changes, injuries, age, or fielding. A 'likely' verdict means most resamples agree, not that the future is known.",
@@ -120,6 +191,7 @@ def trade(
     get=None,
     view: str = "trade",
     baseline: str = "current",
+    must_play=None,
 ) -> pd.DataFrame:
     if f.competition not in (None, "ipl"):
         raise ValueError("The trade tool covers the IPL only (competition=ipl)")
@@ -127,5 +199,9 @@ def trade(
     team, team2 = _one(f.team or team), _one(team2)
     if view == "squad":
         return T.squad_view(team)
-    r = T.evaluate(team, team2, give or [], get or [], baseline)
-    return _trade_frame(r)
+    r = T.evaluate(team, team2, give or [], get or [], baseline, must_play=must_play or [])
+    df = _trade_frame(r)
+    df.attrs["card"] = _card(
+        r
+    )  # for viz.trade.html (the dashboard's trade card); not part of the CSV / JSON
+    return df

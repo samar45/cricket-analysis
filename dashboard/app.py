@@ -107,6 +107,14 @@ def _figure(mod_id: str, result):
     return viz.figure(result)
 
 
+def _card_html(mod_id: str, result) -> str | None:
+    try:
+        viz = importlib.import_module(f"cricket_analytics.viz.{mod_id}")
+    except ModuleNotFoundError:
+        return None
+    return viz.html(result) if hasattr(viz, "html") else None
+
+
 @guarded
 def explore():
     mods = registry.all_modules()
@@ -141,8 +149,13 @@ def explore():
         names = ["Chart", "Table"] + (["Video"] if ui.has_video(mod.id) else [])
         chart_tab, table_tab, *video_tab = st.tabs(names)
         with chart_tab:
-            fig = _figure(mod.id, result)
-            if fig is None:
+            card = _card_html(
+                mod.id, result
+            )  # a module's own HTML card, if its viz module has html()
+            fig = None if card else _figure(mod.id, result)  # the card replaces the plain chart
+            if card:
+                st.html(card)
+            elif fig is None:
                 st.caption("This module has no chart yet.")
             else:
                 st.plotly_chart(

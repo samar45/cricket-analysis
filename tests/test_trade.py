@@ -320,3 +320,119 @@ def test_api_passes_team_through_filters():
         baseline="before_trades",
     )
     assert r.data["team"].iloc[0] == "Lucknow Super Giants"
+
+
+# ── playoff / title odds, must-play, HTML card (DB-free except the last test) ────────────────────────────
+@pytest.fixture(scope="module")
+def mi_rr():
+    return T.evaluate(
+        "Mumbai Indians",
+        "Rajasthan Royals",
+        ["Hardik Pandya"],
+        ["Yashasvi Jaiswal"],
+        must_play=["Hardik Pandya"],
+    )
+
+
+def _synthetic_matches(n=400, true_beta=0.5, seed=3):
+    rng = np.random.default_rng(seed)
+    x1, x2 = rng.normal(0, 1.5, n), rng.normal(0, 1.5, n)
+    y = (rng.random(n) < 1 / (1 + np.exp(-true_beta * (x1 - x2)))).astype(int)
+    return pd.DataFrame({"x1": x1, "x2": x2, "team1_won": y})
+
+
+def test_beta_fit_reproducible_and_recovers_slope():
+    d = _synthetic_matches()
+    a, b = T.fit_beta(d, boot=200, seed=5), T.fit_beta(d, boot=200, seed=5)
+    assert a["beta"] == b["beta"] and np.array_equal(a["draws"], b["draws"])
+    assert a["lo"] < 0.5 < a["hi"] + 0.2 and 0.3 < a["beta"] < 0.7  # true slope 0.5
+    assert T.fit_beta(d, boot=200, seed=6)["draws"].tolist() != a["draws"].tolist()  # seed matters
+
+
+def test_saved_beta_is_weak_and_uncertain():
+    bt = T.beta()
+    assert bt["n"] > 150 and bt["lo"] < bt["beta"] < bt["hi"]
+    assert bt["beta"] < 0.3  # squad value barely predicts match results (VALUE_step3)
+
+
+def test_fixtures_every_team_plays_14():
+    fx = T.fixtures()
+    assert len(fx) == 70
+    assert all(sum(i in p for p in fx) == 14 for i in range(10))
+
+
+def test_simulation_shares_and_strength_order():
+    s = {t: 0.0 for t in T.ORDER}
+    s["MI"] = 4.0
+    out = T.simulate(s, np.array([0.3]), betas=3, seasons=400)
+    assert np.allclose(out["playoff"].sum(1), 4.0) and np.allclose(out["title"].sum(1), 1.0)
+    assert ((out["playoff"] >= 0) & (out["playoff"] <= 1)).all()
+    i = T.ORDER.index("MI")
+    assert out["playoff"][:, i].mean() > 0.8 > out["playoff"][:, 1 - 1 if i else 2].mean()
+    flat = T.simulate({t: 0.0 for t in T.ORDER}, np.array([0.0]), betas=2, seasons=2000)
+    assert abs(flat["playoff"].mean() - 0.4) < 1e-9  # any team: 4 of 10 on average
+
+
+def test_trade_odds_are_probabilities_and_sum(mi_rr):
+    sim = mi_rr["sim"]
+    for kind, total in (("playoff", 4.0), ("title", 1.0)):
+        for tag in ("before", "after"):
+            m = [sim["odds"][(t, kind)][tag] for t in T.ORDER]
+            assert all(
+                0 <= x[0] <= 1 and 0 <= x[1] <= x[0] + 1e-9 and x[2] >= x[0] - 1e-9 and x[2] <= 1
+                for x in m
+            )
+            assert sum(x[0] for x in m) == pytest.approx(total, abs=1e-6)
+    assert sim["seasons"] >= 2000 and sim["beta"]["lo"] <= sim["beta"]["hi"]
+    # a weak slope means a modest trade moves odds by only a few points
+    assert abs(sim["odds"][("MI", "playoff")]["diff"][0]) < 0.10
+
+
+def test_must_play_forces_player_into_xii(mi_rr):
+    assert mi_rr["must_play"] == ["HH Pandya"]  # the squad key is the Cricsheet name
+    # after the trade Hardik is at RR: forced into the XI although his recent value is negative
+    assert "HH Pandya" in mi_rr["teams"]["RR"]["after"]["pick"]["xi"]
+    free = T.evaluate(
+        "Mumbai Indians", "Rajasthan Royals", ["Hardik Pandya"], ["Yashasvi Jaiswal"], odds=False
+    )
+    assert "HH Pandya" not in free["teams"]["RR"]["after"]["pick"]["xi"]
+    d = _fake()
+    p = T.pick_xii(d, force=["p15"])  # the worst player must still play
+    assert "p15" in p["xi"] and len(set(p["xi"])) == 11
+    with pytest.raises(ValueError, match="must_play"):
+        T.pick_xii(d, force=[f"p{i}" for i in range(12)])
+    with pytest.raises(ValueError, match="not in the"):
+        T.evaluate("Mumbai Indians", "Rajasthan Royals", must_play=["Nobody Atall"], odds=False)
+
+
+def test_html_card_escapes_names_and_has_the_pieces(mi_rr):
+    c = atrade._card(mi_rr)
+    c["teams"]["MI"]["receives"][0]["name"] = "<script>alert(1)</script>"
+    df = pd.DataFrame({"x": [1]})
+    df.attrs["card"] = c
+    h = vtrade.html(type("R", (), {"data": df})())
+    assert "<script>" not in h and "&lt;script&gt;" in h
+    for piece in (
+        "MI RECEIVES",
+        "RR RECEIVES",
+        "NET VALUE",
+        "PLAYOFF ODDS",
+        "TITLE ODDS",
+        "PURSE",
+        "ASSETS",
+        "More analysis",
+        "17 Nov",
+    ):
+        assert piece in h
+    assert (
+        vtrade.html(type("R", (), {"data": pd.DataFrame({"x": [1]})})()) is None
+    )  # squad view: no card
+
+
+@requires_real_db
+def test_dashboard_shows_trade_card():
+    from tests.test_dashboard import assert_clean, new_app, open_module
+
+    at = open_module(new_app(), "trade")
+    assert_clean(at, "trade")
+    assert any("BEFORE THE TRADE, AND AFTER" in e.proto.body for e in at.get("html"))
