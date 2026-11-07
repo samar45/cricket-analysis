@@ -41,3 +41,24 @@ def test_v2_fielding_moves_credit_and_default_is_v2():
     v1 = api.run("war", competition="ipl", season=2024, player="JJ Bumrah", version="v1")
     v2 = api.run("war", competition="ipl", season=2024, player="JJ Bumrah", version="v2")
     assert "field_war" not in v1.data.columns and "field_war" in v2.data.columns
+
+
+def test_main_role_thresholds():
+    r = W.main_role([300, 0, 150, 10, 0], [0, 200, 150, 300, 0])
+    assert list(r) == ["batter", "bowler", "all-rounder", "bowler", "batter"]
+
+
+def test_fair_field_centres_groups_and_shrinks(monkeypatch):
+    f = pd.DataFrame(
+        dict(
+            player=["K1", "K2", "A", "B"], sy=2024, role="field", balls=0, runs=0,
+            wkts=[10, 6, 4, 2], sc=[10.0, 6.0, 4.0, 2.0], wk=[1.0, 0.0, 0.0, 0.0],
+        )
+    )
+    apps = pd.DataFrame(dict(player=f.player, sy=2024, team="X", matches=[10, 10, 10, 10]))
+    fair = dict(k_keeper=10.0, k_other=10.0, ro_w=0.5)
+    monkeypatch.setattr(W, "keepers", lambda: frozenset(["K1", "K2"]))  # the reviewed list is not needed here
+    out = W.fair_field(f, apps, fair).set_index("player")
+    # keepers: group mean is 0.8 catches/match -> K1 +2, K2 -2 (x m/(m+k) = 0.5); others: A +1, B -1
+    assert out.sc.round(3).to_dict() == {"K1": 1.0, "K2": -1.0, "A": 0.5, "B": -0.5}
+    assert out.wk["K1"] == pytest.approx(0.5 * (1.0 - 0.025 * 10))  # run-outs: league mean 1/40 per match, then x ro_w

@@ -12,7 +12,7 @@ def figure(result) -> go.Figure:
     if d.empty:
         return empty("No players for these filters")
     proj = "ipl_balls_2023_on" in d.columns
-    val = next(c for c in ("pwar", "bat_pwar", "bowl_pwar", "war") if c in d.columns)
+    val = next(c for c in ("pwar", "bat_pwar", "bowl_pwar", "main_war", "war") if c in d.columns)
     t = d.head(TOP).iloc[::-1]  # horizontal bars fill from the bottom: the best ends up on top
     labels = [
         short(p, 18) if proj else f"{short(p, 18)} {s}"

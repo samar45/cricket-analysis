@@ -253,8 +253,10 @@ def test_famous_seasons_are_top_3(player, year, role):
 @real
 def test_season_view_columns_filters_and_errors():
     d = api.run("war", competition="ipl", season=2025, top=500).data
-    assert d.season.eq(2025).all() and d.war.is_monotonic_decreasing
+    assert d.season.eq(2025).all() and d.main_war.is_monotonic_decreasing
     assert (d.war - (d.bat_war + d.bowl_war + d.field_war)).abs().max() < 0.011
+    b = d[d.main_role == "bowler"]
+    assert len(b) and (b.main_war == b.bowl_war).all() and set(d.main_role) <= {"batter", "bowler", "all-rounder"}
     mi = api.run("war", competition="ipl", season=2025, team="Mumbai Indians", top=5).data
     assert mi.war.max() <= d.war.max() + 1e-9 and len(mi) == 5
     one = api.run("war", competition="ipl", player="V Kohli", role="batting").data

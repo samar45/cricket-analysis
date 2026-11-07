@@ -70,11 +70,11 @@ def _fielding(a: pd.DataFrame, sh: dict, by_phase: bool):
     isr = (wt == "run out") & (a.wk == 1)
     keep = 1.0 - np.where(isc, sh["catch"], 0.0) - np.where(iss, sh["stump"], 0.0)
     nf = a[["fielder", "fielder_2", "fielder_3"]].notna().sum(axis=1).clip(lower=1)
-    parts = [(isc, "fielder", wv * sh["catch"]), (iss, "fielder", wv * sh["stump"])] + [
-        (isr & a[c].notna(), c, wv * sh["runout"] / nf) for c in ("fielder", "fielder_2", "fielder_3")
+    parts = [(isc, "fielder", wv * sh["catch"], 1), (iss, "fielder", wv * sh["stump"], 1)] + [
+        (isr & a[c].notna(), c, wv * sh["runout"] / nf, 0) for c in ("fielder", "fielder_2", "fielder_3")
     ]
     out = []
-    for m, col, val in parts:
+    for m, col, val, is_cs in parts:
         x = a[m]
         out.append(
             pd.DataFrame(
@@ -88,9 +88,9 @@ def _fielding(a: pd.DataFrame, sh: dict, by_phase: bool):
                     role="field",
                     balls=0,
                     runs=0,
-                    wkts=0,
-                    sc=0.0,
-                    wk=val[m],
+                    wkts=is_cs,  # field rows: 1 = a catch / stumping (so catches can be counted), 0 = run-out
+                    sc=val[m] if is_cs else 0.0,  # catch / stumping credit here, run-out credit in wk (sc + wk = credit)
+                    wk=0.0 if is_cs else val[m],
                     comp=x.comp,
                 )
             )
@@ -215,7 +215,7 @@ def centre(rows: pd.DataFrame) -> pd.DataFrame:
     g = rows.groupby(["comp", "sy", "role"])
     tot = g.sc.transform("sum") + g.wk.transform("sum")
     if (rows.role == "field").any():
-        fs = rows[rows.role == "field"].groupby(["comp", "sy"]).wk.sum()
+        fs = (rows.sc + rows.wk)[rows.role == "field"].groupby([rows.comp, rows.sy]).sum()
         add = pd.Series(list(zip(rows.comp, rows.sy)), index=rows.index).map(fs).fillna(0.0)
         tot = tot + np.where(rows.role == "bowl", add, 0.0)
     mu = tot / g.balls.transform("sum").replace(0, np.nan)
@@ -524,11 +524,49 @@ def load_params(version: str = "v2") -> dict:
     return json.loads((PARAMS_V2 if version == "v2" else PARAMS).read_text())
 
 
-def war_table(r: pd.DataFrame, prm: dict) -> pd.DataFrame:
+REF = Path(__file__).parent.parent / "reference"
+ROLE_CUT = 0.2  # bowling share of (bat balls + bowl balls): < 0.2 batter, > 0.8 bowler, between = all-rounder (see docs/VALUE_role_field.md)
+
+
+@lru_cache(maxsize=1)
+def keepers() -> frozenset:
+    """Players marked keeper (yes / sometimes) in the reviewed list reference/player_overrides.csv; nothing else is used."""
+    d = pd.read_csv(REF / "player_overrides.csv", usecols=["name", "keeper"])
+    return frozenset(d.name[d.keeper.notna()])
+
+
+def main_role(bat_balls, bowl_balls):
+    """batter / bowler / all-rounder from the share of a player-season's balls spent bowling."""
+    b = pd.Series(bowl_balls, dtype=float)
+    share = (b / (pd.Series(bat_balls, dtype=float).values + b).replace(0, np.nan)).fillna(0.0)
+    return pd.Series(np.select([share < ROLE_CUT, share > 1 - ROLE_CUT], ["batter", "bowler"], "all-rounder"), index=b.index)
+
+
+def fair_field(f: pd.DataFrame, apps: pd.DataFrame, fair: dict) -> pd.DataFrame:
+    """Fielding credit relative to the fielder's group (WAR v2 'fair fielding'). f = player-year field rows (wkts = catches +
+    stumpings, sc = their credit, wk = run-out credit); apps = appearances (matches). Keepers are compared with keepers
+    (per season), everybody else with everybody else, per match played. Each part is then shrunk toward 0 by its reliability:
+    catches / stumpings w = m / (m + k) (k = matches of noise-equal-to-signal, fitted per group), run-outs a constant ro_w."""
+    m = apps.groupby(["player", "sy"]).matches.sum()
+    f = f.assign(m=pd.MultiIndex.from_frame(f[["player", "sy"]]).map(m).fillna(0.0), keeper=f.player.isin(keepers()))
+    for col, grp in (("sc", ["sy", "keeper"]), ("wk", ["sy"])):
+        g = f.groupby(grp)
+        f[col] = f[col] - g[col].transform("sum") / g.m.transform("sum").replace(0, np.nan) * f.m
+    k = f.keeper.map({True: fair["k_keeper"], False: fair["k_other"]})
+    f["sc"] = (f.sc * f.m / (f.m + k)).fillna(0.0)
+    f["wk"] = (f.wk * fair["ro_w"]).fillna(0.0)
+    return f.drop(columns=["m", "keeper"])
+
+
+def war_table(r: pd.DataFrame, prm: dict, apps: pd.DataFrame | None = None) -> pd.DataFrame:
     """Per player-season (all teams together): batting and bowling runs added and WAR, total WAR.
     WAR = (runs added - replacement per ball x balls) / runs per win of that era.
-    Columns: player, sy, then bat_* / bowl_* for balls, ra, war, repl_runs, runs, wkts, sc, wk; and war (bat + bowl)."""
+    Columns: player, sy, then bat_* / bowl_* for balls, ra, war, repl_runs, runs, wkts, sc, wk; and war (bat + bowl + field).
+    apps (appearances) + prm["field_fair"] switch fielding to the fair version (fair_field); without apps it is the raw credit."""
     ps = player_year(r)
+    if apps is not None and "field_fair" in prm and (ps.role == "field").any():
+        fl = ps.role == "field"
+        ps = pd.concat([ps[~fl], fair_field(ps[fl], apps, prm["field_fair"])], ignore_index=True)
     out = []
     for role in ("bat", "bowl") + (("field",) if (ps.role == "field").any() else ()):
         d = ps[ps.role == role].copy()
@@ -626,13 +664,37 @@ def fit_field_k(wt: pd.DataFrame, targets=(2024, 2025, 2026)) -> float:
     return float(np.clip((x * y).sum() / (x * x).sum(), 0.0, 1.0))
 
 
+def fit_field_fair(rows: pd.DataFrame, apps: pd.DataFrame, min_m: int = 6) -> dict:
+    """Reliability of fielding from season to season (IPL, players with >= min_m matches in both seasons).
+    Catches + stumpings per match are counts, so noise per match is about their mean; signal = covariance between consecutive
+    seasons (weighted by the smaller number of matches); k = mean / signal = matches at which noise equals signal, per group
+    (keepers, others). Run-outs: the same-season-pair correlation of run-out credit per match (clipped at 0) = one season's weight."""
+    f = rows[rows.role == "field"].groupby(["player", "sy"])[["wkts", "sc", "wk"]].sum().reset_index()
+    m = apps.groupby(["player", "sy"]).matches.sum().reset_index()
+    f = f.merge(m, on=["player", "sy"], how="outer").fillna(0.0)
+    f = f[f.matches >= min_m].assign(keeper=lambda d: d.player.isin(keepers()), cpm=lambda d: d.wkts / d.matches, rom=lambda d: d.wk / d.matches)
+    a = f.merge(f.assign(sy=f.sy - 1), on=["player", "sy", "keeper"])
+    out, wt = {}, np.minimum(a.matches_x, a.matches_y)
+    for kp, name in ((True, "k_keeper"), (False, "k_other")):
+        g, w_ = a[a.keeper == kp], wt[a.keeper == kp]
+        x, y = g.cpm_x, g.cpm_y
+        mx = np.average(x, weights=w_)
+        cov = np.average((x - mx) * (y - np.average(y, weights=w_)), weights=w_)
+        out[name] = float(mx / cov)
+        out[f"n_{name[2:]}"] = int(len(g))
+        out[f"r_catch_{name[2:]}"] = float(np.corrcoef(x, y)[0, 1])
+    out["ro_w"] = float(np.clip(np.corrcoef(a.rom_x, a.rom_y)[0, 1], 0.0, 1.0))
+    return out
+
+
 def fit_v2(db_path=None) -> dict:
     """WAR v2 params: era block as shipped in war_params_v2.json (rpw unchanged, replacement -6), projection constants refit on
     fielding-adjusted bat / bowl rates (the bowler's wicket credit loses the fielders' share), fielding shrink k."""
     prm = load_params("v2")
-    rows, _ = all_tables(fielding=prm["fielding"])
+    rows, apps = all_tables(fielding=prm["fielding"])
     prm["proj"] = fit_for(_panel(rows), 2027)
     prm["field_k"] = fit_field_k(war_table(rows["ipl"], prm))
+    prm["field_fair"] = fit_field_fair(rows["ipl"], apps["ipl"])
     return prm
 
 

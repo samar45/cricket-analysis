@@ -8,7 +8,7 @@ def video_figure(result, aspect="9:16", focus=None):
     if df.empty:
         return message_card(aspect, "Wins above replacement", "No players for these filters", note)
     proj = "ipl_balls_2023_on" in df.columns
-    col = next(c for c in ("pwar", "bat_pwar", "bowl_pwar", "war") if c in df.columns)
+    col = next(c for c in ("pwar", "bat_pwar", "bowl_pwar", "main_war", "war") if c in df.columns)
     d = df.sort_values(col, ascending=False).head(5)
     names = (
         short_names(d.player)
