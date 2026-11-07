@@ -1,0 +1,1 @@
+MILESTONE: war_fix 2026-11-07 (worker) team-season fit v1 r 0.784 slope 0.99 MAE 0.98 (run margin 0.80/0.92); v2 opt-in (run-outs, 20% catches to fielders, replacement -6/-6) r 0.803 MAE 0.93 repl team 36%; phase centring rejected; Hardik verified by hand (-2.04 v1, -1.58 v2); defaults unchanged. docs/VALUE_war_fix.md.
