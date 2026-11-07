@@ -31,6 +31,8 @@ New truth options in the backtest tool: `--what share` (matches played / the med
 | balls 5/4/3 (target balls) | **0.58** | 0.50 | 0.37 |
 | balls last season | 0.55 | 0.38 | 0.16 |
 
+Note: the numbers above are `--predictors share_last,share_3,share_price,share_marcel` (the `share_*` predictors fill the share column). `price` and `marcel_ipl` fill the runs columns only, so with `--what share` they print '-'; not a bug, wrong names. Reproduced: all-players pool price 0.44 (n 218), marcel 0.25 (n 489).
+
 Reading: who plays is about four times as predictable as how well he plays (rho 0.5 against 0.12). The 3-season share beats last season only slightly. For overseas buys, **price is the best guide to being used** (a franchise plays what it paid for), better than history. Marcel value says almost nothing about who gets picked.
 
 Rate x opportunity for total runs added (pooled): `ropp_last` (marcel_ipl rate x last-season balls) rho 0.16, MAE 36.3; `ropp_share` (rate x balls per match x shrunk predicted share x 14) rho 0.15, MAE 35.1; marcel_ipl alone 0.15 / 35.8. No gain beyond noise; MAE still above pwar_runs 33.5. Opportunity is predictable but the rate it multiplies is the noisy factor.

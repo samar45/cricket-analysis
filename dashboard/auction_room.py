@@ -9,9 +9,30 @@ import streamlit as st
 import ui
 
 from cricket_analytics.models import auction as A
+from cricket_analytics.models import player_outlook as PO
 from cricket_analytics.models.war import DATA
 
 SMAT_CSV = DATA / "scouting_preview_smat.csv"
+
+
+@st.cache_data
+def _outlook(names: tuple) -> pd.DataFrame:
+    return PO.outlook(names)
+
+
+def _with_outlook(df: pd.DataFrame, key: str) -> pd.DataFrame:
+    """Add expected IPL matches (10-90%), balls in the last 3 seasons and the evidence label, by cricsheet name."""
+    o = _outlook(tuple(df[key].dropna().unique())).set_index("player")
+    o = o.assign(expected_matches=lambda d: d.apply(lambda r: "-" if pd.isna(r.exp_matches) else f"{r.exp_matches:.0f} ({r.m10:.0f}-{r.m90:.0f})", axis=1))
+    return df.join(o[["expected_matches", "balls_3y", "evidence"]], on=key)
+
+
+OUTLOOK_NOTE = (
+    "Expected matches = share of a team's matches he plays next IPL season (3-season history, rho about 0.5 on 499 players, "
+    "docs/VALUE_moneyball_v2.md) times 14; brackets are the 10-90% range of what happened in 2024-26. Players with no IPL "
+    "history show '-'. Evidence = balls faced + bowled in the last 3 seasons across IPL and other leagues: thin under 300, "
+    "some 300-900, solid 900+ (about where a bowler's runs-added rate starts to repeat, docs/VALUE_m2.md; batters need far more)."
+)
 
 
 def _show(df: pd.DataFrame) -> None:
@@ -74,6 +95,11 @@ def _estimator() -> None:
         return
     show = d[["auction", "base_cr", "overseas", "capped", "last_price_cr", "recent_war_2y", "p_sold", "p10_cr", "p50_cr", "p90_cr", "sold", "paid_cr"]]  # fmt: skip
     _show(show)
+    pr = A.load_predictions()
+    cn = pr[pr.player == who].cricsheet_name.dropna()
+    if len(cn):
+        _show(_with_outlook(pd.DataFrame({"cricsheet_name": [cn.iloc[0]]}), "cricsheet_name"))
+        st.caption(OUTLOOK_NOTE)
     with st.expander("Features the model leans on"):
         _show(
             d[
@@ -119,9 +145,12 @@ def _scouting() -> None:
     pool = pool[pool.ipl_balls < 500].assign(
         value=lambda d: d[["bat_val", "bowl_val"]].max(axis=1).round(3)
     )
-    top = pool.sort_values("value", ascending=False).head(15)
+    top = _with_outlook(pool.sort_values("value", ascending=False).head(15), "cricsheet_name")
     st.markdown(
-        "**IPL-light uncapped Indians in the 2026 auction pool** (under 500 IPL balls), shrunk value in wins per standard season"
+        "**IPL-light uncapped Indians in the 2026 auction pool** (under 500 IPL balls), shrunk value in wins per standard season, "
+        "ordered by value only. This is not a bargain list: check the evidence column: thin means little to go on, and a rule that bought the "
+        "best predicted value per crore finished at the 0.1th percentile of 1,000 random buyers in our 2023-26 simulation "
+        "(docs/VALUE_moneyball_v2.md). Value is a single number here; no interval exists for it."
     )
     _show(
         top[
@@ -135,13 +164,15 @@ def _scouting() -> None:
                 "base_price_cr",
                 "price_cr",
                 "team",
+                "expected_matches",
+                "evidence",
             ]
         ]
         .round(3)
         .rename(columns={"price_cr": "paid_cr", "t20_balls": "all_t20_balls"})
     )
     st.caption(
-        "Both lists are translated or shrunk estimates from small samples. The market check below found no sign that "
+        OUTLOOK_NOTE + " Both lists are translated or shrunk estimates from small samples. The market check below found no sign that "
         "uncapped Indians as a type were under-priced; the hope is to find individuals, and one season of data is mostly luck."
     )
 
