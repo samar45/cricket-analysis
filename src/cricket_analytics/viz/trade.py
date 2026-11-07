@@ -186,9 +186,18 @@ def _player(p) -> str:
         if p["pwar_bowl"] is not None
         else ""
     )
+    w = p.get("worth")
+    if w:  # headline worth metrics with percentile among IPL 2023+ peers (display only)
+        bits = [f"{esc(m['label'])} {m['value']:.0f}" if m["value"] >= 20 else f"{esc(m['label'])} {m['value']:.1f}" for m in w["metrics"]]
+        line = " · ".join(f"{b} (p{m['pctile']})" for b, m in zip(bits, w["metrics"]))
+        if w["matches"]:
+            line += f" · ~{w['matches'][0]:.0f} matches ({w['matches'][1]:.0f}-{w['matches'][2]:.0f})"
+        extra = f"<br>{_span(line, MUTED, '11px')}"
+    else:
+        extra = ""
     return (
         f'<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid {LINE}">'
-        f"<div><b>{esc(p['name'])}</b><br>{_span(esc(sub), MUTED, '12px')}</div>"
+        f"<div><b>{esc(p['name'])}</b><br>{_span(esc(sub), MUTED, '12px')}{extra}</div>"
         f'<div style="text-align:right;white-space:nowrap"><b style="color:{_tint(p["value"])}">{_n(p["value"])}</b><br>'
         f"{_span(_n(p['lo']) + ' to ' + _n(p['hi']), MUTED, '11px')}{bowl}</div></div>"
     )

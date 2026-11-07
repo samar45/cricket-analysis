@@ -30,7 +30,7 @@ def test_centre_with_fielding_credit_keeps_bowling_side_zero_sum():
 
 
 @requires_real_db
-def test_v2_fielding_moves_credit_and_keeps_v1_default():
+def test_v2_fielding_moves_credit_and_default_is_v2():
     r1, _ = W.season_table("ipl")
     r2, _ = W.season_table("ipl", fielding=W.FIELD_SHARES)
     assert "field" not in set(r1.role) and "field" in set(r2.role)
@@ -38,6 +38,6 @@ def test_v2_fielding_moves_credit_and_keeps_v1_default():
     k = ["sy", "team", "player"]
     b1, b2 = (x[x.role == "bat"].groupby(k)[["sc", "wk"]].sum() for x in (r1, r2))
     assert (b1 - b2).abs().max().max() < 1e-9
-    v1 = api.run("war", competition="ipl", season=2024, player="JJ Bumrah")
+    v1 = api.run("war", competition="ipl", season=2024, player="JJ Bumrah", version="v1")
     v2 = api.run("war", competition="ipl", season=2024, player="JJ Bumrah", version="v2")
     assert "field_war" not in v1.data.columns and "field_war" in v2.data.columns

@@ -42,10 +42,10 @@
   },
   "bowl": {
    "a": 1.0,
-   "s": 1.0,
+   "s": 0.5,
    "pre_w": 0.0,
    "k": [
-    1600,
+    800,
     1600
    ]
   }
@@ -113,5 +113,6 @@
   "stump": 0.2,
   "runout": 1.0
  },
- "note": "v2: replacement -6 runs/100 balls both roles (replacement-level team wins ~36%; docs/VALUE_war_fix.md), fielding credit. rpw unchanged. proj block is v1 (pWAR not refitted)."
+ "note": "v2: replacement -6 runs/100 balls both roles (replacement-level team wins ~36%; docs/VALUE_war_fix.md), fielding credit. rpw unchanged. proj block is v1 (pWAR not refitted).",
+ "field_k": 0.7502580024170307
 }

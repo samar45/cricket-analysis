@@ -145,3 +145,6 @@
 
 ## 2026-11-07 Does WAR describe a season? (docs/VALUE_war_fix.md)
 - Team-season fit 2023-26 (40): v1 WAR r 0.78, slope 0.99, MAE 0.98 wins (run margin 0.80 / 0.92), so it describes well; Hardik -2.04 reproduced by hand, not a bug. New opt-in version=v2 (run-outs + 20% of catches to fielders, replacement -6): r 0.80, MAE 0.93, replacement team 46% to 36%, bowler repeatability 0.145 to 0.178. Default stays v1.
+
+## 2026-11-07 WAR v2 default + worth in the trade card
+- WAR v2 (fielding, replacement -6) is the default; pWAR/trade value/beta/auction model refit (beta 0.094 -> 0.054; backtest pwar 0.03 -> 0.02, no worse); new backtest predictor `worth` (rho 0.20 total, 0.32 bowlers); trade card shows worth metrics + expected matches. Details docs/VALUE_war_fix.md section 6.

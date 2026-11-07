@@ -1,7 +1,7 @@
 # Does WAR describe a past IPL season? (war_fix, 2026-11-07)
 
 All numbers **measured by us** (Cricsheet DuckDB, read-only). Until now we only tested whether WAR *predicts* (VALUE_step3, VALUE_backtest). This tests whether it *describes*: for each IPL team-season 2023-26 (40 team-seasons, 10 teams x 4), add up the WAR of every player who played for the team and compare with the wins the team actually got.
-Code: `models/war.py` (`season_table(fielding=...)`, `load_params("v2")`), `models/data/war_params_v2.json`, `analysis/war.py` (`version=v1|v2`), `tests/test_war_v2.py`. The default is still **v1**; v2 is opt-in (`cricket run war --version v2`).
+Code: `models/war.py` (`season_table(fielding=...)`, `load_params("v2")`), `models/data/war_params_v2.json`, `analysis/war.py` (`version=v1|v2`), `tests/test_war_v2.py`. **Default is now v2** (2026-11-07, Samar approved; section 6); v1 stays selectable (`--version v1`).
 
 ## 1. Short answer
 - **WAR already describes team seasons well.** Summed over all of a team's players, v1 WAR has r = 0.78 with wins above half (slope 0.99, 95% range 0.78-1.22, so "1 WAR = 1 win" holds) and misses a team's wins by 0.98 on average. The best simple comparison, the team's actual run margin, gets r = 0.80 and a miss of 0.92. A team's wins are 14 coin-flip-ish matches, so this is close to the ceiling.
@@ -73,5 +73,81 @@ He bowled at or above the league economy in all four seasons (11.4 in 2026) and 
 
 ## 5. What changed and what did not
 - New: `version=v2` on the `war` module (season view): fielding credit (`field_war` column), replacement -6 / -6 in both eras, fielding shares in `war_params_v2.json`. v1 output is unchanged (existing WAR tests and golden numbers pass).
-- **Defaults not changed.** The v2 gain is small (r +0.02, MAE -0.05 wins, bowler repeatability +0.03, replacement team 46% to 36%), and v1 feeds the trade tool, the auction models and pWAR, which would need re-deriving. pWAR (projection) stays v1 and is not refitted for v2.
+- **(Superseded by section 6: v2 is now the default.)** At the time defaults were not changed. The v2 gain is small (r +0.02, MAE -0.05 wins, bowler repeatability +0.03, replacement team 46% to 36%), and v1 feeds the trade tool, the auction models and pWAR, which would need re-deriving. pWAR (projection) stays v1 and is not refitted for v2.
 - Ideas, not done: refit pWAR on v2 (S); v2 in `cricket facts` (S); dropped-catch data from a ball-tracking source (L, none free).
+
+## 6. v2 default (2026-11-07)
+v2 is now the default everywhere WAR is used. v1 stays selectable (`war --version v1`, `models/data/war_params.json`, `python -m cricket_analytics.models.war --v1` refits it).
+
+**What changed in the code / data**
+| piece | change |
+|---|---|
+| `models/war.py` | `load_params()` defaults to v2; `all_tables(fielding=...)`; `fit_v2()` refits the projection constants on fielding-adjusted bat / bowl rates and fits the fielding shrink; `write_pwar_csv` adds a `field` column; `python -m cricket_analytics.models.war` writes `war_params_v2.json` and `pwar_ipl_2027.csv` |
+| pWAR | `pwar = bat + bowl + field`. bat / bowl use replacement -6 (was 0 / -3.3). Constants refit on fielding-adjusted rates came out the same (bat a 1.0 s 0.5 k 3000-6000, bowl k 800-1600). Fielding part = fielding WAR of the 3 previous IPL seasons (weights 1/2/3 over 6) x **0.75** (slope through 0 of actual on prior, targets 2024-26 pooled; noisy) |
+| `analysis/war.py` | `version` default v2; `field_pwar` column in `view=projected` |
+| trade tool | `trade_match_ra.csv` rebuilt with fielding rows (run-outs, 20% catch / stumping share; bowlers lose that share) and replacement -6; `field_value` is part of recent value and its bootstrap draws; `trade_beta_matches.csv` rebuilt (prior values use v2) |
+| auction | `models.auction` rerun (features use the v2 replacement); `auction_*.csv`, `auction_model.json` regenerated |
+| components | `controllable_*` columns of the pwar csv re-added (`models.components`); `components_params.json` regenerated |
+
+**Refit results, before -> after** (measured by us)
+| thing | before (v1) | after (v2) |
+|---|---|---|
+| trade beta (XII value gap -> match win, logit slope) | 0.094 (10-90: -0.028 to 0.237), n 215 | **0.054 (-0.055 to 0.182)**, n 215 |
+| MI gives Hardik for RR Jaiswal (must_play Hardik): XII before -> after | 2.30 -> 2.69 | 3.19 -> 3.54 (every XII is about +0.9: lower replacement level) |
+| MI gives Hardik, gets PBKS Priyansh Arya | n/a | MI playoff 42% -> 44% (+2.1 pts, range -1.4 to +5.2) |
+| auction price model (target B) | group S1, test MAE 1.88 cr, rho 0.624, sold-AUC 0.557 | group **F4**, MAE **1.98 cr**, rho 0.637, AUC 0.595 |
+| Hardik / Kohli / Bumrah WAR, IPL 2023-26 | -2.04 / 1.18 / 3.20 | -1.59 / 2.91 / 3.19 |
+
+- The auction rerun flipped the chosen feature group (S1 to F4: the 1% rule picked a different winner); test MAE is 0.09 cr worse, rank correlation and AUC a little better. n = 77 test players, so within noise; flagged, not tuned.
+- The trade beta fell and its range reaches below 0: the odds are even less informative than before (the module caveat already says so).
+
+**Golden numbers / tests that changed (old -> new)**
+- `test_e2e_value.py::test_trade_hardik_must_play_matches_docs`: XII before / after (2.3, 2.69) -> (3.19, 3.54); the playoff band 40-44 still holds (40.8).
+- `test_e2e_value.py::test_war_formula_and_link_to_runs_added`: reads `war_params_v2.json`; `war = bat + bowl + field`. `test_trade_recent_value_is_the_weighted_war_seasons`: trade `war_<year>` now includes fielding (matches the war module).
+- `tests/test_war.py`: pwar csv columns `cricsheet_name, pwar, bat, bowl, field`; `pwar = bat + bowl + field`; players with no IPL balls have `bat + bowl = 0` (a fielding credit can remain); season view `war = bat + bowl + field`.
+- `tests/test_war_v2.py`: the "v1 has no field_war" check passes `version="v1"` explicitly.
+- `tests/test_trade.py`: value = bat + bowl + field (and draws); the match-table check uses the fielding-adjusted season table; squad labels must include `""` and `XI`, `impact` is optional (MI's squad view no longer shows an impact player; not investigated).
+- Unchanged: Kohli IPL 8,661 runs (9,336 incl. 2026), Buttler 863, Bumrah 5/10 and the other raw-stat goldens (WAR does not touch them). `evals/*.jsonl` have no WAR number goldens (only routing to the `war` module).
+
+**Backtest** (`cricket backtest --pool all --what total`; Spearman rho, data up to X -> IPL X+1; n in brackets)
+| predictor | 2024 | 2025 | 2026 | pooled |
+|---|---|---|---|---|
+| pwar v1 (before) | +0.01 (139) | +0.10 (137) | -0.02 (135) | +0.03 (411) |
+| pwar v2 (now) | -0.02 | +0.13 | -0.04 | +0.02 |
+
+Per-ball rates (bat_rate / bowl_rate) do not subtract the replacement level, so v1 and v2 are identical there (bowlers +0.14 pooled, batters 0.00). Verdict: **no worse** (0.01 is far inside the 90% range). The backtest truth is bat + bowl runs added without fielding, so its `pwar` carries the replacement change only, not the fielding part. `recent_value` moved 0.10 -> 0.11 pooled (v2 replacement).
+
+### 6b. Does the new "worth" value forecast, and does anything agree with the auction price?
+New predictor `worth` in `models/backtest.py`: the kept `player_worth` metrics (shrunk, IPL balls up to X, from 2016) -> ridge per role (penalty 10, standardised) -> expected runs added per ball next season; expected runs = rate x the IPL balls per season of the last 3 seasons. Weights are fitted on target seasons 2019..X only (features cut one year before each target), so a forecast of X+1 never sees X+1. Caveat: *which* metrics are kept was chosen on IPL 2023-26 (VALUE_worth.md), a mild selection leak, so worth is a little flattered. Spearman rho (MAE in runs where the predictor is on a runs scale), players with 60+ balls:
+
+| what | predictor | 2024 | 2025 | 2026 | pooled |
+|---|---|---|---|---|---|
+| total runs added | pwar v1 | +0.01 | +0.10 | -0.02 | +0.03 |
+| | pwar v2 | -0.02 | +0.13 | -0.04 | +0.02 |
+| | **worth** | +0.23 (MAE 32.6) | +0.15 (33.6) | +0.24 (34.1) | **+0.20 (33.4)** |
+| | ipl3 | +0.15 (48.4) | +0.12 (38.9) | +0.09 (41.1) | +0.12 (42.6) |
+| | marcel_ipl | +0.27 (33.6) | +0.07 (36.0) | +0.14 (37.7) | +0.15 (35.8) |
+| | price | -0.11 | +0.04 | +0.22 | +0.01 |
+| bat_rate | pwar v1 = v2 | -0.09 | +0.08 | -0.01 | 0.00 |
+| | worth | +0.14 | +0.05 | +0.02 | +0.08 |
+| | ipl3 | +0.06 | +0.13 | -0.03 | +0.05 |
+| | marcel_ipl | +0.14 | +0.18 | -0.04 | +0.09 |
+| bowl_rate | pwar v1 = v2 | +0.13 | +0.19 | +0.12 | +0.14 |
+| | worth | +0.26 | +0.34 | +0.32 | **+0.32** |
+| | ipl3 | +0.23 | +0.08 | +0.14 | +0.13 |
+| | marcel_ipl | +0.30 | +0.17 | +0.13 | +0.19 |
+
+- n for worth: 372 (total), 205 (batters), 201 (bowlers); it is IPL-only, so it covers fewer players than pwar (411). "Everybody average" has MAE 34.2.
+- **Worth is the best forecaster here, mostly through bowlers** (rho 0.32 per ball, about twice the next best) and the only one clearly above 0 for total runs added in all three years. Batters stay near 0 for everybody. Three target years and no bootstrap ranges here; differences of 0.05 are noise (VALUE_backtest.md).
+
+**Does our value agree with the auction price?** Spearman rho between the value we had at auction time (data up to X, total = bat + bowl) and the price paid by players sold at the Dec X auction (auction_year X+1); n in brackets:
+
+| value (column = IPL year the auction was for) | 2024 | 2025 | 2026 |
+|---|---|---|---|
+| pwar v1 | -0.22 (48) | +0.50 (141) | +0.35 (44) |
+| pwar v2 | +0.06 (48) | +0.61 (141) | +0.31 (44) |
+| worth | -0.18 (32) | +0.07 (116) | 0.00 (29) |
+| ipl3 | -0.28 (21) | +0.05 (124) | +0.15 (29) |
+| marcel_ipl | +0.03 (34) | +0.25 (129) | +0.16 (29) |
+
+The Dec 2024 auction (the one before IPL 2025) was the mega auction with 140+ sold players; there pWAR agrees with price (rho 0.5-0.6, partly because both rise with playing time: pWAR counts expected balls). In the small mini auctions nothing agrees. Worth is a per-ball rate with no playing-time part, so it does not track price. Price itself is not a skill signal (rho 0.01 against next-season runs).

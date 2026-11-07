@@ -33,7 +33,7 @@ def row(df, col, val):
 
 @pytest.fixture(scope="module")
 def prm():
-    return json.loads((DATA / "war_params.json").read_text())
+    return json.loads((DATA / "war_params_v2.json").read_text())
 
 
 # ── golden numbers through the new modules ────────────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ def test_war_formula_and_link_to_runs_added(prm, player, year, era):
     bat = (w.bat_runs_added - e["repl"]["bat"] / 100 * w.bat_balls) / e["rpw"]
     bowl = (w.bowl_runs_added - e["repl"]["bowl"] / 100 * w.bowl_balls) / e["rpw"]
     assert w.bat_war == pytest.approx(bat, abs=0.01) and w.bowl_war == pytest.approx(bowl, abs=0.01)
-    assert w.war == pytest.approx(w.bat_war + w.bowl_war, abs=0.011)
+    assert w.war == pytest.approx(w.bat_war + w.bowl_war + w.field_war, abs=0.011)
     # WAR re-centres each league-season, so its runs differ a little from the runs_added module (finding F6)
     ra = run("runs_added", competition="ipl", season=year, player=player, min_balls=1)
     if len(ra):
@@ -122,7 +122,7 @@ def test_trade_hardik_must_play_matches_docs():
         must_play="Hardik Pandya",
     )
     mi = d.iloc[0]
-    assert (mi.xii_before, mi.xii_after) == (2.3, 2.69)
+    assert (mi.xii_before, mi.xii_after) == (3.19, 3.54)
     assert 40 < mi.playoff_pct_before < 44 and mi.playoff_pts_change > 0
 
 

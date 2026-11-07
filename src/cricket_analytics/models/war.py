@@ -79,6 +79,7 @@ def _fielding(a: pd.DataFrame, sh: dict, by_phase: bool):
         out.append(
             pd.DataFrame(
                 dict(
+                    **({"match_id": x.match_id} if "match_id" in x else {}),
                     sy=x.sy,
                     **({"phase": x.phase} if by_phase else {}),
                     season=x.season,
@@ -223,12 +224,16 @@ def centre(rows: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def all_tables(leagues: tuple = tuple(LEAGUES), fielding: dict | None = None):
+    """{comp: centred rows}, {comp: appearances}. About 15 s for all leagues. fielding=FIELD_SHARES adds WAR v2 field rows."""
+    return _all_tables(tuple(leagues), tuple(sorted(fielding.items())) if fielding else None)
+
+
 @lru_cache(maxsize=2)
-def all_tables(leagues: tuple = tuple(LEAGUES)):
-    """{comp: centred rows}, {comp: appearances}. About 15 s for all leagues."""
+def _all_tables(leagues: tuple, fielding: tuple | None):
     rows, apps = {}, {}
     for c in leagues:
-        r, a = season_table(c)
+        r, a = season_table(c, fielding=dict(fielding) if fielding else None)
         rows[c], apps[c] = r, a
     cen = centre(pd.concat(rows.values(), ignore_index=True))
     return {c: g for c, g in cen.groupby("comp")}, apps
@@ -513,8 +518,9 @@ def replacement(r: pd.DataFrame, app: pd.DataFrame, prior_years, cut=11, lag=1) 
     return out
 
 
-def load_params(version: str = "v1") -> dict:
-    """v1 = shipped war_params.json; v2 = war_params_v2.json (replacement level, fielding shares; see docs/VALUE_war_fix.md)."""
+def load_params(version: str = "v2") -> dict:
+    """v2 (default) = war_params_v2.json (replacement -6, fielding shares, projection refit on fielding-adjusted rates);
+    v1 = the original war_params.json. See docs/VALUE_war_fix.md."""
     return json.loads((PARAMS_V2 if version == "v2" else PARAMS).read_text())
 
 
@@ -598,8 +604,40 @@ def fit_all(db_path=None) -> dict:
     )
 
 
+def field_prior(wt: pd.DataFrame, t: int) -> pd.Series:
+    """Fielding WAR expected in season t: IPL 2023+ fielding WAR of seasons t-3..t-1 weighted 1/2/3 over 6 (a missed season counts 0)."""
+    g = wt.set_index(["player", "sy"]).field_war.unstack(fill_value=0.0)
+    wts = {t - 3: 1, t - 2: 2, t - 1: 3}
+    return sum(g[y] * v for y, v in wts.items() if y >= ERA_IPL and y in g) / 6.0 if len(g) else pd.Series(dtype=float)
+
+
+def fit_field_k(wt: pd.DataFrame, targets=(2024, 2025, 2026)) -> float:
+    """Shrink of the fielding projection: slope through 0 of actual fielding WAR in t on field_prior(t), targets pooled
+    (players with a prior or an actual value), clipped to [0, 1]. Fitted on earlier seasons only for each t."""
+    a = wt.set_index(["player", "sy"]).field_war.unstack(fill_value=0.0)
+    xs, ys = [], []
+    for t in targets:
+        x = field_prior(wt, t)
+        y = a[t] if t in a else pd.Series(dtype=float)
+        ix = x.index.union(y.index)
+        xs.append(x.reindex(ix).fillna(0.0).values)
+        ys.append(y.reindex(ix).fillna(0.0).values)
+    x, y = np.concatenate(xs), np.concatenate(ys)
+    return float(np.clip((x * y).sum() / (x * x).sum(), 0.0, 1.0))
+
+
+def fit_v2(db_path=None) -> dict:
+    """WAR v2 params: era block as shipped in war_params_v2.json (rpw unchanged, replacement -6), projection constants refit on
+    fielding-adjusted bat / bowl rates (the bowler's wicket credit loses the fielders' share), fielding shrink k."""
+    prm = load_params("v2")
+    rows, _ = all_tables(fielding=prm["fielding"])
+    prm["proj"] = fit_for(_panel(rows), 2027)
+    prm["field_k"] = fit_field_k(war_table(rows["ipl"], prm))
+    return prm
+
+
 def projections(prm_all: dict, season: int = 2027) -> pd.DataFrame:
-    rows, _ = all_tables()
+    rows, _ = all_tables(fielding=prm_all.get("fielding"))
     return project_table(_panel(rows), season, prm_all["proj"], prm_all["era"])
 
 
@@ -607,11 +645,17 @@ def write_pwar_csv(prm_all: dict, season: int = 2027) -> pd.DataFrame:
     """Players with T20 balls in the last two seasons (any league), ranked by pWAR.
     cricsheet_name, pwar (bat + bowl), bat, bowl, exp_balls_bat / bowl (expected IPL balls), bat_rate / bowl_rate (projected runs
     added per 100 balls), ipl_balls_2023_on (0 = no IPL history in the Impact era: expected balls are then 0 and pwar is 0)."""
-    rows, _ = all_tables()
+    rows, _ = all_tables(fielding=prm_all.get("fielding"))
     P = _panel(rows)
     p = project_table(P, season, prm_all["proj"], prm_all["era"])
+    fp = 0.0
+    if "field_k" in prm_all:  # WAR v2: fielding credit, shrunk past fielding WAR
+        fp = p.player.map(field_prior(war_table(rows["ipl"], prm_all), season) * prm_all["field_k"]).fillna(0.0)
+    p["pwar"] = p.bat_pwar + p.bowl_pwar + fp
+    p["field_pwar"] = fp
     recent = pd.concat(rows.values())
     recent = recent[recent.sy >= season - 2].groupby("player").balls.sum()
+    recent = recent[recent > 0]  # fielding-only rows have no balls
     ib = sum(P.M["I", r, "balls"].loc[:, ERA_IPL : season - 1].sum(1) for r in ("bat", "bowl"))
     p = p[p.player.isin(recent.index)]
     out = pd.DataFrame(
@@ -620,6 +664,7 @@ def write_pwar_csv(prm_all: dict, season: int = 2027) -> pd.DataFrame:
             "pwar": p.pwar.round(3),
             "bat": p.bat_pwar.round(3),
             "bowl": p.bowl_pwar.round(3),
+            "field": p.field_pwar.round(3) if "field_k" in prm_all else 0.0,
             "exp_balls_bat": p.bat_balls.round(0).astype(int),
             "exp_balls_bowl": p.bowl_balls.round(0).astype(int),
             "bat_rate": p.bat_rate.round(2),
@@ -917,9 +962,12 @@ def main() -> None:
         for x in validate_players(rows, prm):
             print(x.round(3).to_string())
         return
-    prm = fit_all()
-    PARAMS.write_text(json.dumps(prm, indent=1))
-    print(json.dumps(prm["era"], indent=1), json.dumps(prm["proj"]))
+    if "--v1" in sys.argv:  # the original fit (replacement from the next-season bench); writes war_params.json only
+        PARAMS.write_text(json.dumps(fit_all(), indent=1))
+        return
+    prm = fit_v2()
+    PARAMS_V2.write_text(json.dumps(prm, indent=1))
+    print(json.dumps(prm["era"]), json.dumps(prm["proj"]), prm["field_k"])
     print(write_pwar_csv(prm).head(25).to_string())
 
 

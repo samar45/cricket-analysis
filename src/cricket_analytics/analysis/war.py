@@ -15,12 +15,12 @@ PROJ_CSV = w.DATA / f"pwar_ipl_{PROJ_SEASON}.csv"
 
 
 @lru_cache(maxsize=2)
-def _ipl_rows(db_path: str, db_mtime: float, version: str = "v1") -> pd.DataFrame:
+def _ipl_rows(db_path: str, db_mtime: float, version: str = "v2") -> pd.DataFrame:
     fld = w.load_params("v2")["fielding"] if version == "v2" else None
     return w.centre(w.season_table("ipl", db_path, fielding=fld)[0])
 
 
-def _scoped(f, version: str = "v1") -> pd.DataFrame:
+def _scoped(f, version: str = "v2") -> pd.DataFrame:
     """IPL player-season-team rows narrowed by season / team (the only filters WAR understands)."""
     if f.competition not in (None, "ipl"):
         raise ValueError("WAR is measured for the IPL only (competition=ipl)")
@@ -51,13 +51,13 @@ def _projected(f, role: str, components: bool, top: int) -> pd.DataFrame:
             "view=projected is the fixed IPL 2027 table: only the player filter applies"
         )
     d = pd.read_csv(PROJ_CSV).rename(
-        columns={"cricsheet_name": "player", "pwar": "pwar", "bat": "bat_pwar", "bowl": "bowl_pwar"}
+        columns={"cricsheet_name": "player", "pwar": "pwar", "bat": "bat_pwar", "bowl": "bowl_pwar", "field": "field_pwar"}
     )
     if f.player:
         d = d[d.player == f.player]
     key = {"all": "pwar", "batting": "bat_pwar", "bowling": "bowl_pwar"}[role]
     keep = {
-        "all": ["player", "pwar", "bat_pwar", "bowl_pwar", "exp_balls_bat", "exp_balls_bowl"]
+        "all": ["player", "pwar", "bat_pwar", "bowl_pwar", "field_pwar", "exp_balls_bat", "exp_balls_bowl"]
         + (["bat_rate", "bowl_rate"] if components else []),
         "batting": ["player", "bat_pwar", "exp_balls_bat", "bat_rate"],
         "bowling": ["player", "bowl_pwar", "exp_balls_bowl", "bowl_rate"],
@@ -103,19 +103,19 @@ def _projected(f, role: str, components: bool, top: int) -> pd.DataFrame:
         ParamSpec(
             "version",
             "choice",
-            default="v1",
+            default="v2",
             choices=("v1", "v2"),
-            help="v1 shipped; v2 adds fielding, replacement -6 (season view)"
+            help="v2 (default) adds fielding credit and replacement -6 runs per 100 balls; v1 is the original (no fielding)"
         ),
     ],
     caveats=[
         "Runs per win and the replacement level are measured from IPL 2023-2026 only (the Impact Player era); older seasons use their own era numbers (about 91 runs per win, from IPL 2008-2022). Runs per win has a wide range: 81 to 125 for 2023+ (40 team-seasons).",
-        "Replacement level is the runs added of players outside their team's usual XI the following season. It comes out close to the league average (within about 0.1 win per season), and it is uncertain: counting the same season instead gives much lower values (up to -1 win for a batter).",
+        "Replacement level is a convention: -6 runs per 100 balls for batters and bowlers (v1 measured it from players outside their team's usual XI the following season, which is biased toward good players; counting the same season gives much lower values).",
         "WAR is only as repeatable as runs added is: a season's runs added is mostly luck (talent explains roughly 5-10% of the spread between players). Do not read a 0.5 difference between two players as skill.",
         "pWAR is a prediction, not a rating. Out of sample (IPL 2024-2026) it ranks bowlers a bit better than last season's WAR and it does not beat the simple baselines for batters or for team win share. No age data is used.",
         "pWAR counts expected balls from the last three IPL seasons. A player with no IPL ball since 2023 has 0 expected balls and pWAR 0 (see the ipl_balls_2023_on column); his projected rate is still shown.",
         "bat_runs_added / bowl_runs_added here are re-centred (each league-season is shifted so an average player is 0 before replacement is subtracted), so they differ from the runs_added module for the same player-season (e.g. Kohli 2016: 162.2 here vs 153.4 there). WAR is exact against its own columns.",
-        "version=v1 leaves fielding out. version=v2 moves 20% of each catch / stumping from the bowler to the fielder and gives run-outs to the fielders (a convention: no drop or chance data), and uses replacement -6 runs per 100 balls (a replacement-level team wins about 36%); see docs/VALUE_war_fix.md. v2 changes season WAR only, not pWAR. Team changes inside a season are added together; only IPL is supported.",
+        "version=v2 (default) moves 20% of each catch / stumping from the bowler to the fielder and gives run-outs to the fielders (a convention: no drop or chance data), and uses replacement -6 runs per 100 balls (a replacement-level team wins about 36%); version=v1 is the original (no fielding, higher replacement level). pWAR uses the same v2 conventions (fielding part = past fielding WAR shrunk by 0.75); see docs/VALUE_war_fix.md. Team changes inside a season are added together; only IPL is supported.",
     ],
 )
 def war(
@@ -125,7 +125,7 @@ def war(
     components: bool = False,
     min_balls: int | None = None,
     top: int = 40,
-    version: str = "v1",
+    version: str = "v2",
 ) -> pd.DataFrame:
     if view == "projected":
         return _projected(f, role, components, top)

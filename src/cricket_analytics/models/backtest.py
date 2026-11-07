@@ -104,11 +104,17 @@ def recent_value(T, X, ctx):
 
 
 @predictor("pwar", "rank")
-def pwar(T, X, ctx):
-    """War.py's projection (fit on seasons before the target, men's leagues + T20I), as pWAR (wins, bat + bowl)."""
+def pwar(T, X, ctx, version: str = "v2"):
+    """War.py's projection (fit on seasons before the target, men's leagues + T20I), as pWAR (wins, bat + bowl). v2 = replacement -6
+    (the fielding part is not in this backtest: the truth is bat + bowl runs added); pwar_v1 = the original replacement levels."""
     t = X + 1
-    pt = _pwar_table(T, t).set_index("player")
+    pt = _pwar_table(T, t, version).set_index("player")
     return pd.DataFrame({"bat": pt.bat_pwar, "bowl": pt.bowl_pwar, "bat_rate": pt.bat_rate / 100, "bowl_rate": pt.bowl_rate / 100})  # fmt: skip
+
+
+@predictor("pwar_v1", "rank")
+def pwar_v1(T, X, ctx):
+    return pwar(T, X, ctx, "v1")
 
 
 @predictor("pwar_runs", "runs")
@@ -121,14 +127,14 @@ def pwar_runs(T, X, ctx):
 _PW: dict = {}
 
 
-def _pwar_table(T, t):
-    if t not in _PW:
+def _pwar_table(T, t, version: str = "v2"):
+    if (t, version) not in _PW:
         d = T[T.sy < t]
         ipl, other = d[d.comp == "ipl"], d[d.comp.isin([c for c in W.LEAGUES if c != "ipl"])]
         P = W.Panel(ipl, other, y1=t)
-        prm_all = W.load_params()
-        _PW[t] = W.project_table(P, t, W.fit_for(P, t), prm_all["era"])
-    return _PW[t]
+        prm_all = W.load_params(version)
+        _PW[t, version] = W.project_table(P, t, W.fit_for(P, t), prm_all["era"])
+    return _PW[t, version]
 
 
 def _league_weighted(T, X, with_ipl: bool, years: int = 3) -> pd.DataFrame:
@@ -163,6 +169,52 @@ def price(T, X, ctx):
     a = ctx["auctions"]
     a = a[(a.auction_year == X + 1) & a.sold]
     return pd.DataFrame({"total": a.groupby("cricsheet_name").price_cr.max()})
+
+
+# ------------------------------------------------------------------------------------------------ worth (player_worth metrics)
+_BF: dict = {}
+WORTH_FIT_FROM, WORTH_LAM, WORTH_FRAME_FROM = 2019, 10.0, 2016  # first target season used to fit weights; ridge penalty; first IPL season in the ball frame
+
+
+def _worth_feats(Xc: int, role: str) -> pd.DataFrame:
+    """Shrunk kept worth metrics per player from IPL balls up to calendar year Xc (wide: one column per kept metric)."""
+    from ..sql.filters import Filters
+    from . import worth
+
+    if "d" not in _BF:
+        _BF["d"] = worth.ball_frame(Filters(competition="ipl", season_from=WORTH_FRAME_FROM))
+        _BF["yr"] = pd.to_datetime(_BF["d"].date).dt.year
+    if (Xc, role) not in _BF:
+        pr = worth.profile(_BF["d"][_BF["yr"] <= Xc], role)
+        _BF[Xc, role] = pr.pivot_table(index="player", columns="id", values="rate")
+    return _BF[Xc, role]
+
+
+@predictor("worth", "runs")
+def worth_pred(T, X, ctx):
+    """Kept player_worth metrics (shrunk, IPL data up to X) -> ridge per role -> expected runs added per ball next season.
+    Weights are fitted on target seasons WORTH_FIT_FROM..X only (features cut at s-1, truth = T season s, 60+ balls): no leakage.
+    Expected runs = rate x the IPL balls per season of the last three seasons (a missed season counts 0)."""
+    p = player_year(T, ["ipl"])
+    out = {}
+    for role in ("bat", "bowl"):
+        xs, ys = [], []
+        for s in range(WORTH_FIT_FROM, X + 1):
+            f = _worth_feats(s - 1, role)
+            y = p[(p.sy == s) & (p.role == role) & (p.balls >= MIN_BALLS)].set_index("player")
+            y = (y.ra / y.balls).reindex(f.index).dropna()
+            xs.append(f.loc[y.index])
+            ys.append(y)
+        Xf, y = pd.concat(xs), pd.concat(ys)
+        mu, sd = Xf.mean(), Xf.std().replace(0, 1)
+        Z = ((Xf - mu) / sd).fillna(0.0)
+        yc = y - y.mean()
+        b = np.linalg.solve(Z.T @ Z + WORTH_LAM * np.eye(Z.shape[1]), Z.T @ yc)
+        f = _worth_feats(X, role)
+        out[f"{role}_rate"] = pd.Series(((f[Xf.columns] - mu) / sd).fillna(0.0).to_numpy() @ b + y.mean(), index=f.index)
+        q = p[(p.sy > X - 3) & (p.role == role)].groupby("player").balls.sum() / 3
+        out[role] = out[f"{role}_rate"] * q.reindex(f.index).fillna(0.0)
+    return pd.DataFrame(out)
 
 
 # ------------------------------------------------------------------------------------------------ truth + pools

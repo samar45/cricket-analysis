@@ -418,3 +418,7 @@ replacement-level shift, and is not measured here. Jadeja, Narine, Dube, Iyer mo
 - T20I tables include associate teams in the centring (the lead's scratch work used full members only).
 - `wpa_table` is IPL only by design. Nationality comes from the auction / contract / retention lists; players missing from them get no shift.
 - A bug found and fixed on the way: an early truth table dropped bowlers who never batted; all numbers here are from the fixed version.
+
+
+## 7. Update 2026-11-07: WAR v2 default, worth predictor
+`pwar` now uses the v2 replacement level (-6 per 100 balls): pooled total rho 0.03 -> 0.02, no meaningful change; `pwar_v1` keeps the old one. New predictor `worth` (player_worth metrics + ridge, weights fitted on earlier targets only) gets pooled rho 0.20 for total runs added and 0.32 for bowlers per ball, the best in the table. Tables: docs/VALUE_war_fix.md section 6.

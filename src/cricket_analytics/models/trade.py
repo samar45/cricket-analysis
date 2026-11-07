@@ -66,14 +66,16 @@ def build_match_table(db_path=None) -> pd.DataFrame:
 
     st, sp = ra_state(Filters(competition="ipl"))
     sql = (
-        f"WITH d AS ({st}) SELECT {BALL_COLS}, d.batting_team, d.bowling_team, d.non_striker, m.date, m.season "
-        f"FROM d JOIN matches m ON d.match_id = m.match_id WHERE {USABLE}"
+        f"WITH d AS ({st}) SELECT {BALL_COLS}, d.batting_team, d.bowling_team, d.non_striker, m.date, m.season, "
+        f"d.wicket_type, d.fielder, d.fielder_2, d.fielder_3 FROM d JOIN matches m ON d.match_id = m.match_id WHERE {USABLE}"
     )
     a = load().annotate(w._int_cols(query(sql, sp, db_path=db_path)))
     a["sy"] = a.season.map(a.groupby("season").date.max().dt.year).astype(int)
     bs = a[(a.faced == 1) | (a.striker_out == 1)]
     ns = a[(a.wk == 1) & (a.striker_out == 0)]
     cols = ["match_id", "sy", "player", "role", "balls", "sc", "wk"]
+    sh = w.load_params()["fielding"]  # WAR v2: fielders get catches / stumpings / run-outs, the bowler loses the catch share
+    keep, fld = w._fielding(a.assign(comp="ipl"), sh, False)
     parts = [
         pd.DataFrame(
             dict(
@@ -105,9 +107,10 @@ def build_match_table(db_path=None) -> pd.DataFrame:
                 role="bowl",
                 balls=a.legal,
                 sc=-a.conceded - a.vf * a.ball_part + a.bowl_k,
-                wk=-a.vf * a.wkt_part * a.bowler_wk,
+                wk=-a.vf * a.wkt_part * a.bowler_wk * keep,
             )
         ),
+        fld.assign(sc=0.0)[cols],
     ]
     m = pd.concat(parts)[cols].groupby(cols[:4], as_index=False)[["balls", "sc", "wk"]].sum()
     m["comp"] = "ipl"
@@ -147,6 +150,7 @@ class Values:
     debut_pool: (
         np.ndarray
     )  # zero-centred first-season WAR of debutants: the spread used for "no IPL evidence" players
+    field_draws: np.ndarray | None = None  # fielding credit (WAR v2), added to the total draws
     index: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -158,7 +162,7 @@ def _per_match(m: pd.DataFrame) -> pd.DataFrame:
         index=["player", "sy", "match_id"], columns="role", values=["balls", "ra"], fill_value=0.0
     )
     p.columns = [f"{r}_{k}" for k, r in p.columns]
-    for c in ("bat_balls", "bat_ra", "bowl_balls", "bowl_ra"):
+    for c in ("bat_balls", "bat_ra", "bowl_balls", "bowl_ra", "field_ra"):
         if c not in p:
             p[c] = 0.0
     return p.reset_index()
@@ -170,13 +174,13 @@ def compute_values(m: pd.DataFrame, prm: dict, draws: int = DRAWS, seed: int = S
     rpw, rb, rw = era["rpw"], era["repl"]["bat"] / 100.0, era["repl"]["bowl"] / 100.0
     pm = _per_match(m)
     rng = np.random.default_rng(seed)
-    rows, bat_d, bowl_d, first_war = [], [], [], {}
+    rows, bat_d, bowl_d, fld_d, first_war = [], [], [], [], {}
     for player, g in pm.groupby("player"):
         first = int(g.sy.min())
         win = [s for s in SEASONS if s >= first]
         wsum = sum(WEIGHTS[s] for s in win)
-        bat_pt = bowl_pt = 0.0
-        bd, wd = np.zeros(draws), np.zeros(draws)
+        bat_pt = bowl_pt = fld_pt = 0.0
+        bd, wd, fd = np.zeros(draws), np.zeros(draws), np.zeros(draws)
         per = {}
         for s, gs in g.groupby("sy"):
             n = len(gs)
@@ -184,26 +188,30 @@ def compute_values(m: pd.DataFrame, prm: dict, draws: int = DRAWS, seed: int = S
             bw = WEIGHTS[s] / wsum
             ba, bb = gs.bat_ra.values, gs.bat_balls.values
             wa, wb = gs.bowl_ra.values, gs.bowl_balls.values
+            fa = gs.field_ra.values
             bat_s = (ba.sum() - rb * bb.sum()) / rpw
             bowl_s = (wa.sum() - rw * wb.sum()) / rpw
             bat_pt += bw * bat_s
             bowl_pt += bw * bowl_s
+            fld_pt += bw * fa.sum() / rpw
+            fd += bw * fa[idx].sum(1) / rpw
             bd += bw * ((ba[idx].sum(1) - rb * bb[idx].sum(1)) / rpw)
             wd += bw * ((wa[idx].sum(1) - rw * wb[idx].sum(1)) / rpw)
-            per[s] = (bat_s, bowl_s, int(bb.sum()), int(wb.sum()), n)
-        first_war[player] = (first, per[first][0] + per[first][1])
-        rec = {"player": player, "first_season": first, "bat_value": bat_pt, "bowl_value": bowl_pt}
+            per[s] = (bat_s, bowl_s, int(bb.sum()), int(wb.sum()), n, fa.sum() / rpw)
+        first_war[player] = (first, per[first][0] + per[first][1] + float(g[g.sy == first].field_ra.sum()) / rpw)
+        rec = {"player": player, "first_season": first, "bat_value": bat_pt, "bowl_value": bowl_pt, "field_value": fld_pt}
         for s in SEASONS:
-            b, o, bbl, obl, n = per.get(s, (0.0, 0.0, 0, 0, 0))
-            rec |= {f"bat_war_{s}": b, f"bowl_war_{s}": o, f"matches_{s}": n}
+            b, o, bbl, obl, n, fl = per.get(s, (0.0, 0.0, 0, 0, 0, 0.0))
+            rec |= {f"bat_war_{s}": b, f"bowl_war_{s}": o, f"field_war_{s}": fl, f"matches_{s}": n}
             rec[f"bat_balls_{s}"], rec[f"bowl_balls_{s}"] = bbl, obl
         rows.append(rec)
         bat_d.append(bd)
         bowl_d.append(wd)
+        fld_d.append(fd)
     t = pd.DataFrame(rows).set_index("player")
-    t["value"] = t.bat_value + t.bowl_value
+    t["value"] = t.bat_value + t.bowl_value + t.field_value
     deb = np.array([v for p, (f, v) in first_war.items() if f > SEASONS[0]])
-    return Values(t, np.array(bat_d), np.array(bowl_d), deb - deb.mean())
+    return Values(t, np.array(bat_d), np.array(bowl_d), deb - deb.mean(), np.array(fld_d))
 
 
 @lru_cache(maxsize=1)
@@ -310,7 +318,7 @@ def player_table(sq: pd.DataFrame, v: Values | None = None) -> pd.DataFrame:
     for c in ("bat_value", "bowl_value", "value"):
         t[c] = vt[c].fillna(0.0).values
     for s in SEASONS:
-        t[f"war_{s}"] = (vt[f"bat_war_{s}"].fillna(0) + vt[f"bowl_war_{s}"].fillna(0)).values
+        t[f"war_{s}"] = (vt[f"bat_war_{s}"].fillna(0) + vt[f"bowl_war_{s}"].fillna(0) + vt[f"field_war_{s}"].fillna(0)).values
     t["matches_ipl_2023_on"] = u.matches.reindex(t.index).fillna(0).astype(int).values
     t["bat_pos"] = u.bat_pos.reindex(t.index).values
     t["overs_when_bowling"] = u.overs_when_bowling.reindex(t.index).fillna(0).values
@@ -361,7 +369,7 @@ def draws_for(pt: pd.DataFrame, v: Values | None = None) -> np.ndarray:
     for i, (k, ev) in enumerate(zip(pt.index, pt.has_evidence)):
         if ev and k in v.index:
             j = v.index[k]
-            out[i] = v.bat_draws[j] + v.bowl_draws[j]
+            out[i] = v.bat_draws[j] + v.bowl_draws[j] + (0 if v.field_draws is None else v.field_draws[j])
         else:
             out[i] = np.random.default_rng(zlib.crc32(str(k).encode())).choice(v.debut_pool, DRAWS)
     return out
@@ -557,7 +565,7 @@ def prior_values(m: pd.DataFrame, season: int, prm: dict) -> pd.Series:
     """Recent value (point estimate) of every player using only seasons BEFORE `season`: weights 4,3,2,1 counted back from
     the season before, from the player's first season in the data (a missed season counts 0). Used only to fit beta."""
     e = prm["era"]["2023"]
-    repl = m.role.map({"bat": e["repl"]["bat"] / 100.0, "bowl": e["repl"]["bowl"] / 100.0})
+    repl = m.role.map({"bat": e["repl"]["bat"] / 100.0, "bowl": e["repl"]["bowl"] / 100.0, "field": 0.0})
     g = m.assign(war=(m.ra - repl * m.balls) / e["rpw"])
     g = g[g.sy < season].groupby(["player", "sy"]).war.sum().unstack()
     out = {}
@@ -885,8 +893,52 @@ def evaluate(
     }
 
 
+WORTH_CSV = w.DATA / "worth_headline.csv"
+WORTH_IDS = {"bat": ("sr|middle|abs", "bnd|all|abs", "dot|all|abs"), "bowl": ("dot|all|abs", "bnd|all|abs", "econ|middle|abs")}
+
+
+def build_worth_headline(db_path=None) -> pd.DataFrame:
+    """Display-only: 3 headline player_worth metrics per role (shrunk value + percentile among IPL 2023+ peers with 100+ balls) and the
+    expected matches next season (player_outlook), one row per player and metric. Does not feed the XII search."""
+    from ..sql.filters import Filters
+    from . import player_outlook as PO
+    from . import worth
+
+    d = worth.ball_frame(Filters(competition="ipl", season_from=SEASONS[0]))
+    parts = []
+    for role in ("bat", "bowl"):
+        p = worth.profile(d, role)
+        parts.append(p[p.id.isin(WORTH_IDS[role])].assign(role=role))
+    t = pd.concat(parts)[["player", "role", "id", "metric", "value", "pctile", "n"]]
+    o = PO.outlook(sorted(t.player.unique())).set_index("player")[["exp_matches", "m10", "m90"]]
+    return t.join(o, on="player").round(2)
+
+
+@lru_cache(maxsize=1)
+def worth_headline() -> pd.DataFrame:
+    return pd.read_csv(WORTH_CSV) if WORTH_CSV.exists() else pd.DataFrame(columns=["player", "role", "id"])
+
+
+def _worth_of(key: str) -> dict | None:
+    """Headline metrics of the role he has most balls in: [{label, value, pctile}], plus expected matches range (or None)."""
+    h = worth_headline()
+    h = h[h.player == key]
+    if h.empty:
+        return None
+    role = h.groupby("role").n.max().idxmax()
+    h = h[h.role == role]
+    r0 = h.iloc[0]
+    m = None if pd.isna(r0.exp_matches) else (float(r0.exp_matches), float(r0.m10), float(r0.m90))
+    return {
+        "role": role,
+        "metrics": [dict(label=r.metric, value=float(r.value), pctile=int(r.pctile)) for r in h.itertuples()],
+        "matches": m,
+    }
+
+
 def player_cards(pt: pd.DataFrame, D: np.ndarray, keys) -> list[dict]:
-    """What a trade card shows for each player: price, recent value with its 10-90 range, bowler pWAR."""
+    """What a trade card shows for each player: price, recent value with its 10-90 range, bowler pWAR, headline worth metrics
+    (display only), expected matches next season."""
     pos = {k: i for i, k in enumerate(pt.index)}
     out = []
     for k in keys:
@@ -900,6 +952,7 @@ def player_cards(pt: pd.DataFrame, D: np.ndarray, keys) -> list[dict]:
                 "hi": float(np.percentile(d, 90)),
                 "pwar_bowl": float(r.pwar_bowl) if r.is_bowler else None,
                 "evidence": bool(r.has_evidence),
+                "worth": _worth_of(k),
             }
         )
     return out
@@ -968,6 +1021,9 @@ def main() -> None:
         return
     m = build()
     print(f"wrote {MATCH_CSV.name}: {len(m)} rows")
+    h = build_worth_headline()
+    h.to_csv(WORTH_CSV, index=False)
+    print(f"wrote {WORTH_CSV.name}: {len(h)} rows")
 
 
 if __name__ == "__main__":
