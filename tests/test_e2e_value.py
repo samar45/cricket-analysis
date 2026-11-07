@@ -312,7 +312,7 @@ def test_dashboard_non_default(mod):
 
 
 def test_dashboard_trade_card_html_and_nondefault():
-    at = _open("trade")
+    at = _open("trade").button(key="run_trade").click().run()
     _clean(at)
     assert at.get("html"), "trade card HTML missing with default params"
     at.selectbox(key="p_team").set_value(MI).run()
@@ -320,8 +320,10 @@ def test_dashboard_trade_card_html_and_nondefault():
     at.multiselect(key="trade_give").set_value(["Hardik Pandya"]).run()
     at.multiselect(key="trade_get").set_value(["Yashasvi Jaiswal"]).run()
     at.multiselect(key="trade_must_play").set_value(["Hardik Pandya"]).run()
+    at = at.button(key="run_trade").click().run()
     _clean(at)
     body = "".join(h.proto.body for h in at.get("html"))
     assert "Hardik" in body and "Jaiswal" in body
     at.selectbox(key="trade_view").set_value("squad").run()
+    at = at.button(key="run_trade").click().run()
     _clean(at)

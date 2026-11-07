@@ -163,7 +163,11 @@ def test_squads_baselines():
     assert "T Natarajan" in set(
         only[only.team == "SRH"].player
     )  # the other announced trade stays in place
-    assert not T.squads().withdrawn_2026.any()
+    # injured-and-replaced: both stay in the squad rows, player_table keeps one of each pair
+    sq = T.squads()
+    assert {"Mitchell Santner", "Keshav Maharaj"} <= set(sq[sq.team == "MI"].player)
+    pt = T.player_table(sq[sq.team == "MI"])
+    assert len({"Mitchell Santner", "Keshav Maharaj"} & set(pt.player)) == 1
     with pytest.raises(ValueError):
         T.squads(baseline="nope")
 
@@ -172,8 +176,8 @@ def test_salaries_sum_correctly():
     c = T.load_contracts()
     r = T.evaluate("Mumbai Indians", "Rajasthan Royals", ["Hardik Pandya"], ["Yashasvi Jaiswal"])
     mi, rr = r["teams"]["MI"], r["teams"]["RR"]
-    sq = T.squads(c)
-    sal = lambda ab: sq[sq.team == ab].price_cr.sum()  # noqa: E731
+    pt = T.player_table(T.squads(c))  # one of each injured/replacement pair
+    sal = lambda ab: pt[pt.team == ab].salary.sum()  # noqa: E731
     assert mi["before"]["squad_salary"] == pytest.approx(sal("MI"))
     assert mi["after"]["squad_salary"] == pytest.approx(sal("MI") - 16.35 + 18.0)
     assert rr["after"]["squad_salary"] == pytest.approx(sal("RR") + 16.35 - 18.0)
@@ -424,9 +428,9 @@ def test_html_card_escapes_names_and_has_the_pieces(mi_rr):
 
 @requires_real_db
 def test_dashboard_shows_trade_card():
-    from tests.test_dashboard import assert_clean, new_app, open_module
+    from tests.test_dashboard import assert_clean, go, new_app, open_module
 
-    at = open_module(new_app(), "trade")
+    at = go(open_module(new_app(), "trade"), "trade")
     assert_clean(at, "trade")
     assert any("PLAYOFF PTS" in e.proto.body for e in at.get("html"))
 

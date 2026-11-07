@@ -221,11 +221,13 @@ def squads(
     """Rows of the squads. current = after the announced 2027 trades (traded_in rows, no traded_out rows).
     before_trades = the announced trades are undone (traded_out rows at their old price instead of traded_in rows), for all of
     them or, with `only` = names, just for those players (so one real trade can be evaluated with the others in place).
-    Withdrawn players are out."""
+    Players withdrawn injured from 2026 stay in (their contract runs on); player_table keeps only one of each
+    injured-player / replacement pair (the rule: a team retains one of the two)."""
     if baseline not in ("current", "before_trades"):
         raise ValueError("baseline must be 'current' or 'before_trades'")
     c = load_contracts() if contracts is None else contracts
-    c = c[~c.withdrawn_2026]
+    rep = c.notes.astype(str).str.extract(r"replaced ([^;]+?)(?: then|;|$)")[0].str.strip()
+    c = c.assign(pair=np.where(rep.notna(), c.team + "|" + rep.fillna(""), c.team + "|" + c.player))
     s = c.status_2027.astype(str)
     cur = c[(s == "in_squad") | (s == "traded_in")]
     if baseline == "current":
@@ -307,6 +309,9 @@ def player_table(sq: pd.DataFrame, v: Values | None = None, basis: str = "recent
         t["value"] = t.bat_value + t.bowl_value
     t["salary"] = t.price_cr.astype(float)
     t["value_per_cr"] = t.value / t.salary
+    if "pair" in t:  # injured player and his replacement: the team retains one, the better by recent value
+        keep = t.sort_values("recent_value", ascending=False).groupby("pair", sort=False).head(1).index  # same pick for every basis
+        t = t[t.index.isin(keep)]
     return t
 
 
