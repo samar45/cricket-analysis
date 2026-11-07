@@ -215,6 +215,85 @@ def evaluate(role: str, d: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     return t, vals
 
 
+# ---------------------------------------------------------------- the module's engine
+def panel(role: str) -> pd.DataFrame:
+    """The kept metrics of a role (rows of worth_selected.csv with kept = True), best score first."""
+    t = pd.read_csv(SELECTED)
+    return t[(t.role == role) & t.kept].reset_index(drop=True)
+
+
+def _display(role: str, metric: str, rate: pd.Series, ratio: float) -> pd.Series:
+    label, scale = SHOW[(role, metric)]
+    if scale is None:
+        return 1.0 / rate.where(rate > 0)
+    return rate * scale * (ratio if metric == "econ" else 1.0)  # bowling rows include wides: econ is per legal ball
+
+
+def _floor(phase: str, variant: str) -> int:
+    return MIN_N_SLICE if variant.startswith("vs_") else MIN_N.get(phase, MIN_N_SLICE)
+
+
+def profile(d: pd.DataFrame, role: str, min_balls: int | None = None) -> pd.DataFrame:
+    """Long table, one row per (player, kept metric) over every player in the frame d (seasons pooled): n, raw rate, shrunk
+    rate, display value, percentile among peers (100 = best, direction applied), k used, share of the value that is his own."""
+    o = role_frame(d, role)
+    legal = float(((d.wides == 0) & (d.noballs == 0)).sum())
+    ratio = len(d) / max(legal, 1.0)
+    out = []
+    for r in panel(role).itertuples():
+        ps = to_phase(cells(o, r.metric, r.variant), r.phase)
+        ok = ps[ps.n >= _floor(r.phase, r.variant)]
+        k, mu = fit_k(ok) if len(ok) >= 40 else (np.inf, np.nan)
+        if not np.isfinite(k):  # too few player-seasons here (small league / one season): reuse the IPL 2023+ constant
+            k, mu = float(r.k), ps.s1.sum() / ps.n.sum()
+        g = ps.groupby("player")[["n", "s1"]].sum()
+        g = g[g.n >= (min_balls or _floor(r.phase, r.variant))]
+        if g.empty:
+            continue
+        g["raw"], g["rate"] = g.s1 / g.n, shrink(g.n, g.s1, k, mu)
+        g["value"] = _display(role, r.metric, g.rate, ratio)
+        pr = g.rate.rank(pct=True)
+        g["pctile"] = ((pr if r.direction > 0 else 1 - pr + 1 / len(g)) * 100).round(0)
+        g["own_share"] = g.n / (g.n + k)
+        lab = SHOW[(role, r.metric)][0] + ("" if r.phase == "all" else f" ({r.phase})") + ("" if r.variant == "abs" else " " + r.variant.replace("vs_", "vs ").replace("lhb", "left-handers").replace("rhb", "right-handers"))
+        out.append(g.reset_index().assign(id=r.id, metric=lab, phase=r.phase, variant=r.variant, k=round(k, 1)))
+    return pd.concat(out, ignore_index=True)
+
+
+def highlights(d: pd.DataFrame, role: str, min_balls: int = 12) -> pd.DataFrame:
+    """Best single-match performances against the match itself: batting = runs above what everyone else in the same match
+    scored per ball in the same phases (both sides); bowling = runs saved vs the same yardstick (+ wickets)."""
+    o = role_frame(d, role)
+    k = "sr" if role == "bat" else "econ"
+    o["res"], o["raw"] = _residual(o, k, "rel_match"), o[f"x_{k}"]
+    o["wk"] = (o["x_wk"] if role == "bowl" else o["x_out"]).astype(int)
+    g = o[o.res.notna()].groupby(["player", "match_id", "innings"]).agg(
+        balls=("res", "size"), runs=("raw", "sum"), gap=("res", "sum"), wickets=("wk", "sum"), date=("date", "first"), team=("team", "first"))
+    g = g[g.balls >= min_balls].reset_index()
+    g["runs_vs_match"] = (g.gap if role == "bat" else -g.gap).round(1)
+    opp = d.drop_duplicates(["match_id", "innings"]).set_index(["match_id", "innings"])["bowling_team" if role == "bat" else "batting_team"]
+    g["opposition"] = opp.reindex(pd.MultiIndex.from_frame(g[["match_id", "innings"]])).to_numpy()
+    g["runs"] = g.runs.astype(int)
+    return g.sort_values("runs_vs_match", ascending=False).drop(columns="gap").reset_index(drop=True)
+
+
+def ridge_check(role: str, d: pd.DataFrame, lam: float = 10.0) -> pd.DataFrame:
+    """Incremental value of the kept metrics: ridge of player-season WPA per ball on the shrunk kept metrics (standardised)."""
+    o = role_frame(d, role)
+    y = o.groupby(["player", "competition", "srank"]).wpa.agg(["sum", "size"])
+    cols = {}
+    for r in panel(role).itertuples():
+        ps = to_phase(cells(o, r.metric, r.variant), r.phase)
+        ps = ps[ps.n >= _floor(r.phase, r.variant)]
+        k, mu = fit_k(ps)
+        cols[r.id] = shrink(ps.n, ps.s1, k, mu).set_axis(pd.MultiIndex.from_frame(ps[["player", "competition", "srank"]]))
+    X = pd.DataFrame(cols).join((y["sum"] / y["size"]).rename("y"), how="inner").dropna()
+    Z = (X - X.mean()) / X.std()
+    A, t = Z.drop(columns="y"), Z.y
+    b = np.linalg.solve(A.T @ A + lam * np.eye(A.shape[1]), A.T @ t)
+    return pd.DataFrame({"id": A.columns, "std_beta": b, "n": len(Z), "r2": 1 - ((t - A @ b) ** 2).sum() / (t**2).sum()})
+
+
 def pool(tabs: dict) -> pd.DataFrame:
     """Merge per-competition tables (first = the home league). pooled reliability = pair-weighted mean season-to-season r,
     pooled relevance = mean |r with WPA| weighted by player-seasons; score = reliability (floored at 0) x relevance."""
