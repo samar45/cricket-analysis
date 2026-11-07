@@ -140,3 +140,4 @@
 
 ## 2026-11-07 Moneyball v2 (docs/VALUE_moneyball_v2.md)
 - M11 Marcel-style predictors: marcel_ipl pooled rho 0.15 vs ipl3 0.12 (inside noise), MAE 35.8 vs pwar_runs 33.5: keep rule not met, optional only. M12 availability: share of team matches is predictable (rho 0.54, price best for overseas buys 0.42), rate x opportunity no gain. M13 buying simulation 2023-26: model buyer at 49th percentile of random, value-per-crore rule 0.1th, actual buys 60th; bowler rule 35th, hot-batter rule n=3. No default changed.
+- M14 demand model (docs/VALUE_demand.md): replay of lots gives n teams with need+money; bidding wars real (+4% per team after controls) but demand features lose on 2026 test (1.96 vs 1.88 cr), not adopted.

@@ -1,0 +1,168 @@
+{
+ "folds": [
+  {
+   "year": 2024,
+   "model": "shipped S1",
+   "MAE_cr": 2.3583,
+   "sold_AUC": 0.5979,
+   "n_sold": 72,
+   "n": 134
+  },
+  {
+   "year": 2024,
+   "model": "S1 + demand (small)",
+   "MAE_cr": 2.2409,
+   "sold_AUC": 0.6337,
+   "n_sold": 72,
+   "n": 134
+  },
+  {
+   "year": 2024,
+   "model": "S1 + demand (all)",
+   "MAE_cr": 2.2468,
+   "sold_AUC": 0.6617,
+   "n_sold": 72,
+   "n": 134
+  },
+  {
+   "year": 2024,
+   "model": "price = base",
+   "MAE_cr": 2.4444,
+   "sold_AUC": NaN,
+   "n_sold": 72,
+   "n": 134
+  },
+  {
+   "year": 2025,
+   "model": "shipped S1",
+   "MAE_cr": 2.0833,
+   "sold_AUC": 0.6105,
+   "n_sold": 182,
+   "n": 258
+  },
+  {
+   "year": 2025,
+   "model": "S1 + demand (small)",
+   "MAE_cr": 1.8465,
+   "sold_AUC": 0.6278,
+   "n_sold": 182,
+   "n": 258
+  },
+  {
+   "year": 2025,
+   "model": "S1 + demand (all)",
+   "MAE_cr": 1.8175,
+   "sold_AUC": 0.6084,
+   "n_sold": 182,
+   "n": 258
+  },
+  {
+   "year": 2025,
+   "model": "price = base",
+   "MAE_cr": 2.5434,
+   "sold_AUC": NaN,
+   "n_sold": 182,
+   "n": 258
+  },
+  {
+   "year": 2026,
+   "model": "shipped S1",
+   "MAE_cr": 1.883,
+   "sold_AUC": 0.5574,
+   "n_sold": 77,
+   "n": 154
+  },
+  {
+   "year": 2026,
+   "model": "S1 + demand (small)",
+   "MAE_cr": 2.0714,
+   "sold_AUC": 0.5866,
+   "n_sold": 77,
+   "n": 154
+  },
+  {
+   "year": 2026,
+   "model": "S1 + demand (all)",
+   "MAE_cr": 1.9619,
+   "sold_AUC": 0.5994,
+   "n_sold": 77,
+   "n": 154
+  },
+  {
+   "year": 2026,
+   "model": "price = base",
+   "MAE_cr": 1.8896,
+   "sold_AUC": NaN,
+   "n_sold": 77,
+   "n": 154
+  }
+ ],
+ "paired": [
+  {
+   "model": "S1 + demand (small)",
+   "n": 331,
+   "mean_gain_cr": 0.1119193417946366,
+   "lo90": 0.015157512629786395,
+   "hi90": 0.21131012791157197
+  },
+  {
+   "model": "S1 + demand (all)",
+   "n": 331,
+   "mean_gain_cr": 0.15207570847099589,
+   "lo90": 0.004715999287017132,
+   "hi90": 0.3051582938921913
+  }
+ ],
+ "war_table": [
+  {
+   "bin": "0",
+   "players": 418,
+   "mean_ratio": 3.458,
+   "median_ratio": 1.0,
+   "above_base": 0.38
+  },
+  {
+   "bin": "1-2",
+   "players": 88,
+   "mean_ratio": 3.883,
+   "median_ratio": 1.96,
+   "above_base": 0.648
+  },
+  {
+   "bin": "3-4",
+   "players": 48,
+   "mean_ratio": 5.264,
+   "median_ratio": 2.962,
+   "above_base": 0.708
+  },
+  {
+   "bin": "5-6",
+   "players": 38,
+   "mean_ratio": 5.885,
+   "median_ratio": 3.625,
+   "above_base": 0.842
+  },
+  {
+   "bin": "7+",
+   "players": 23,
+   "mean_ratio": 4.93,
+   "median_ratio": 4.125,
+   "above_base": 1.0
+  }
+ ],
+ "war_slope": {
+  "n": 615,
+  "slope_base_year_controls": [
+   0.13310681506783326,
+   0.10245832424275168,
+   0.16469696801923403
+  ],
+  "slope_plus_position_overseas_capped": [
+   0.03902365439970312,
+   0.006860292772769205,
+   0.07198445722233261
+  ],
+  "spearman_need_ratio": 0.33570918028275126,
+  "spearman_pos_need": -0.4654709651645172
+ }
+}

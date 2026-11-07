@@ -22,6 +22,7 @@ from the table below (`docs/JOURNEY.md` §6 points here).
 | M11 | Marcel-style stable skill | 5/4/3 seasons, parts shrunk by own k; `marcel*` predictors | S | done: marcel_ipl rho 0.15 vs ipl3 0.12 (noise), MAE not below pwar_runs; optional only (docs/VALUE_moneyball_v2.md) |
 | M12 | Availability | truth `share`/`balls`, share predictors, rate x opportunity | S | done: share rho 0.54 (price 0.42 for overseas buys); rate x opportunity no gain |
 | M13 | Buying-strategy simulation 2023-26 | rule buyers vs actual vs 1000 random, simple rules | M | done: model buyer 49th percentile of random, value-per-crore rule 0.1th, actual 60th; no rule beats random |
+| M14 | Demand model | lot-by-lot replay of purses, slots, role holes; demand features in the price hurdle | M | done: helps 2024/2025 (2025 MAE 2.08 to 1.82), hurts 2026 test (1.88 to 1.96); not adopted; bidding war +4% per interested team after controls |
 | M10 | Phase difficulty + Indian scarcity | fitted phase weights and Indian/overseas replacement, kept only if backtest no worse; Hardik before/after | M | done: both pass keep rule, no gain, optional views only (docs/VALUE_backtest.md section 4) |
 
 Out of scope unless Samar asks: paid data, scraping banned sites, line/length/shot data.
