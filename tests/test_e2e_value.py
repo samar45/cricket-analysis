@@ -76,7 +76,7 @@ def test_war_formula_and_link_to_runs_added(prm, player, year, era):
 
 # ── trade card = weighted WAR seasons ─────────────────────────────────────────────────────────────────────
 def test_trade_recent_value_is_the_weighted_war_seasons():
-    sq = pd.concat([run("trade", team=t, view="squad") for t in (MI, KKR)])
+    sq = pd.concat([run("trade", team=t, view="squad", value_basis="recent") for t in (MI, KKR)])
     wars = {
         y: run("war", competition="ipl", season=y, min_balls=1, top=2000).set_index("player").war
         for y in (2023, 2024, 2025, 2026)
@@ -120,6 +120,7 @@ def test_trade_hardik_must_play_matches_docs():
         give="Hardik Pandya",
         get="Yashasvi Jaiswal",
         must_play="Hardik Pandya",
+        value_basis="recent",
     )
     mi = d.iloc[0]
     assert (mi.xii_before, mi.xii_after) == (3.56, 3.83)
