@@ -11,19 +11,16 @@ from ..sql.filters import Filters, explain_empty
 
 @module(
     id="player_worth",
-    title="Player worth (the metrics that matter, shrunk, with percentiles)",
+    title="Player worth (key metrics, shrunk, with percentiles)",
     category="advanced",
-    description="A short metric set picked by the data (docs/VALUE_worth.md): each candidate was scored by how well it repeats from "
-    "one season to the next and how much of per-ball win probability added it explains, and near-duplicates were dropped. "
-    "mode=profile gives the player's value on each kept metric (pulled toward the league average by how few balls he has), "
-    "his percentile among peers and the balls behind it. mode=highlights lists the best single-match performances measured "
-    "against everyone else in the same match (a 50 off 25 when the rest scored at 7 an over).",
+    description="The few metrics that describe a batter or bowler, chosen by repeatability and link to winning (docs/VALUE_worth.md): "
+    "profile = shrunk value, percentile among peers and balls per metric; highlights = best single matches against the rest of the match.",
     params=[
-        *std("player", "competition", "season", "team", "opposition", "venue", "phase"),
+        *std("player", "competition", "season"),
         ParamSpec("role", "choice", default="batting", choices=("batting", "bowling")),
         ParamSpec("mode", "choice", default="profile", choices=("profile", "highlights")),
-        ParamSpec("min_balls", "int", help="Peers need at least this many balls (default 100; 30 for phase and bowling-type slices)"),
-        ParamSpec("top", "int", default=25, help="Rows to return when no player is given (best average percentile / best match first)"),
+        ParamSpec("min_balls", "int", help="Peers need this many balls (default 100)"),
+        ParamSpec("top", "int", default=25, help="Rows to return"),
     ],
     caveats=[
         "With no competition and no season given the module uses IPL 2023 onwards (the Impact Player era); name a competition or seasons to look elsewhere. Only 6-ball T20 matches with a trusted target and a result are used.",
@@ -33,7 +30,7 @@ from ..sql.filters import Filters, explain_empty
         "Bowling-type and hand splits use only the reviewed list in player_overrides.csv; players facing or bowling to someone without a label are left out of that split.",
         "Wicket-taking and runs added per ball were tested and dropped as season-level skill measures: they barely repeat (see the doc). Wickets are still shown in the highlights.",
         "highlights: runs_vs_match = runs scored above (batting) or saved below (bowling) what everyone else in the same match did per ball in the same phases, both sides. It is a one-match number, not shrunk.",
-        "team / opposition / venue / phase filters narrow the highlights and the peer group is built from the whole scope of competition and seasons.",
+        "Peers are everyone in the competition and seasons chosen; team, venue, phase and opposition filters are not used.",
     ],
 )
 def player_worth(
@@ -49,10 +46,6 @@ def player_worth(
         h = W.highlights(d, r)
         if f.player:
             h = h[h.player == f.player]
-        if f.values("team"):
-            h = h[h.team.isin(f.values("team"))]
-        if f.values("opposition"):
-            h = h[h.opposition.isin(f.values("opposition"))]
         if h.empty:
             raise explain_empty(f, "match highlights")
         return h.head(int(top)).rename(columns={"player": "batter" if r == "bat" else "bowler"})

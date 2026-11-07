@@ -32,7 +32,7 @@ def test_tools_cover_every_module_and_stay_small():
         "properties"
     ]
     assert "t20i_women" in comp["competition"]["enum"] and comp["venue"]["type"] == "string"
-    assert len(str(ts)) < 30_000  # a small model has to read all of it on every question
+    assert len(str(ts)) < 31_000  # a small model has to read all of it on every question (30k -> 31k when player_worth was added)
 
 
 @needs_db
