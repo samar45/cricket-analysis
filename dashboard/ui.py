@@ -157,7 +157,7 @@ def _widget(mod: Module, p: ParamSpec, ctx: dict):
             key, label, choices(k, ctx.get("competition"), None), help=help, placeholder=f"Any {k}"
         )
     if k == "player" and p.multi:  # trade tool: give / get are the players of team / team2
-        pool = {"give": "team", "get": "team2"}.get(p.name)
+        pool = {"give": "team", "get": "team2", "players": "team", "impact": "team"}.get(p.name)
         opts = trade.squad_names(ctx[pool]) if pool in ctx else []
         if p.name == "must_play" and "team" in ctx and "team2" in ctx:  # a star of either squad
             opts = sorted({*trade.squad_names(ctx["team"]), *trade.squad_names(ctx["team2"])})

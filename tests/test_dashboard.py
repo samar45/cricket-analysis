@@ -72,7 +72,7 @@ def test_module_ipl_with_players(module_id):
         if p.name in names:
             at.selectbox(key=f"p_{p.name}").set_value(names[p.name]).run()
     assert_clean(at, module_id)
-    assert bool(at.warning) == (mod.category == "experimental" and module_id != "trade"), (  # trade page is numbers only
+    assert bool(at.warning) == (mod.category == "experimental" and module_id not in ("trade", "xi_odds")), (  # these pages are numbers only
         "only experimental modules show the banner"
     )
     if module_id == "batting":

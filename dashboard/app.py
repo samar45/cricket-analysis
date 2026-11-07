@@ -125,7 +125,7 @@ def explore():
     in_cat = {m.id: m for m in mods if m.category == cat}
     mod = in_cat[ui.select("module", "Module", list(in_cat), format_func=lambda i: in_cat[i].title)]
 
-    lean = mod.id == "trade"  # numbers only: no prose; caveats sit in one "Method" expander at the bottom
+    lean = mod.id in ("trade", "xi_odds")  # numbers only: no prose; caveats sit in one "Method" expander at the bottom
     st.subheader(mod.title)
     if not lean:
         st.write(mod.description)
@@ -161,7 +161,7 @@ def explore():
             if card:
                 st.html(card)
                 if lean:
-                    viz = importlib.import_module("cricket_analytics.viz.trade")
+                    viz = importlib.import_module(f"cricket_analytics.viz.{mod.id}")
                     for title, body in viz.details(result):
                         with st.expander(title):
                             st.html(body)
@@ -185,7 +185,7 @@ def explore():
         )
     with st.expander("Method" if lean else "About this result"):
         if lean:
-            st.caption(importlib.import_module("cricket_analytics.viz.trade").method_note(result))
+            st.caption(importlib.import_module(f"cricket_analytics.viz.{mod.id}").method_note(result))
         else:
             st.json({k: meta[k] for k in ("params", "data_through", "source", "db_modified")})
         for c in meta["caveats"]:
