@@ -157,3 +157,14 @@ def test_real_db_numbers_on_the_chart():
     d = api.run("bowling", db_path=REAL, competition="ipl", player="JJ Bumrah")
     pie = video.video_figure("bowling", d, "9:16").data[0]
     assert sum(pie.values) == 187
+
+
+@requires_real_db
+def test_player_card_renders():
+    """Bumrah's value card: both aspects draw, and the table has the sections the card needs."""
+
+    r = api.run("player_card", player="JJ Bumrah")
+    assert {"header", "war", "worth", "outlook", "highlight"} <= set(r.data.section)
+    assert r.data.query("section == 'war' and label == 'total'").value.iloc[0] == pytest.approx(3.53, abs=0.05)  # 2.03 + 1.32 + 0.18 (WAR v3, IPL 2024-26)
+    for aspect in ("9:16", "1:1"):
+        assert video.video_figure("player_card", r, aspect).layout.width == 1080
