@@ -15,11 +15,12 @@ PROJ_CSV = w.DATA / f"pwar_ipl_{PROJ_SEASON}.csv"
 
 
 @lru_cache(maxsize=2)
-def _ipl_rows(db_path: str, db_mtime: float) -> pd.DataFrame:
-    return w.centre(w.season_table("ipl", db_path)[0])
+def _ipl_rows(db_path: str, db_mtime: float, version: str = "v1") -> pd.DataFrame:
+    fld = w.load_params("v2")["fielding"] if version == "v2" else None
+    return w.centre(w.season_table("ipl", db_path, fielding=fld)[0])
 
 
-def _scoped(f) -> pd.DataFrame:
+def _scoped(f, version: str = "v1") -> pd.DataFrame:
     """IPL player-season-team rows narrowed by season / team (the only filters WAR understands)."""
     if f.competition not in (None, "ipl"):
         raise ValueError("WAR is measured for the IPL only (competition=ipl)")
@@ -27,7 +28,7 @@ def _scoped(f) -> pd.DataFrame:
         if f.values(name):
             raise ValueError(f"WAR is a season total: the {name} filter is not supported")
     path = current_db_path()
-    r = _ipl_rows(str(path), path.stat().st_mtime)
+    r = _ipl_rows(str(path), path.stat().st_mtime, version)
     items = [str(x).strip() for x in f.values("season")]
     if items:
         years = [int(x) for x in items if len(x) == 4 and x.isdigit()]
@@ -99,6 +100,13 @@ def _projected(f, role: str, components: bool, top: int) -> pd.DataFrame:
             help="Hide player-seasons with fewer balls than this (default 100; 1 when you pick one player)",
         ),
         ParamSpec("top", "int", default=40, help="Rows to return"),
+        ParamSpec(
+            "version",
+            "choice",
+            default="v1",
+            choices=("v1", "v2"),
+            help="v1 shipped; v2 adds fielding, replacement -6 (season view)"
+        ),
     ],
     caveats=[
         "Runs per win and the replacement level are measured from IPL 2023-2026 only (the Impact Player era); older seasons use their own era numbers (about 91 runs per win, from IPL 2008-2022). Runs per win has a wide range: 81 to 125 for 2023+ (40 team-seasons).",
@@ -107,7 +115,7 @@ def _projected(f, role: str, components: bool, top: int) -> pd.DataFrame:
         "pWAR is a prediction, not a rating. Out of sample (IPL 2024-2026) it ranks bowlers a bit better than last season's WAR and it does not beat the simple baselines for batters or for team win share. No age data is used.",
         "pWAR counts expected balls from the last three IPL seasons. A player with no IPL ball since 2023 has 0 expected balls and pWAR 0 (see the ipl_balls_2023_on column); his projected rate is still shown.",
         "bat_runs_added / bowl_runs_added here are re-centred (each league-season is shifted so an average player is 0 before replacement is subtracted), so they differ from the runs_added module for the same player-season (e.g. Kohli 2016: 162.2 here vs 153.4 there). WAR is exact against its own columns.",
-        "Fielding is not included. Team changes inside a season are added together; only IPL is supported.",
+        "version=v1 leaves fielding out. version=v2 moves 20% of each catch / stumping from the bowler to the fielder and gives run-outs to the fielders (a convention: no drop or chance data), and uses replacement -6 runs per 100 balls (a replacement-level team wins about 36%); see docs/VALUE_war_fix.md. v2 changes season WAR only, not pWAR. Team changes inside a season are added together; only IPL is supported.",
     ],
 )
 def war(
@@ -117,16 +125,18 @@ def war(
     components: bool = False,
     min_balls: int | None = None,
     top: int = 40,
+    version: str = "v1",
 ) -> pd.DataFrame:
     if view == "projected":
         return _projected(f, role, components, top)
     if min_balls is None:
         min_balls = 1 if f.player else MIN_BALLS
-    r = _scoped(f)
+    r = _scoped(f, version)
     if r.empty:
         raise explain_empty(f, "WAR (IPL seasons 2008-2026)")
-    prm = w.load_params()
+    prm = w.load_params(version)
     t = w.war_table(r, prm)
+    fld = version == "v2"
     if f.player:
         t = t[t.player == f.player]
         if t.empty:
@@ -178,6 +188,7 @@ def war(
                 "bowl_runs_added": t.bowl_ra.round(1),
                 "bat_war": t.bat_war.round(2),
                 "bowl_war": t.bowl_war.round(2),
+                **({"field_war": t.field_war.round(2)} if fld else {}),
                 "war": t.war.round(2),
             }
         )

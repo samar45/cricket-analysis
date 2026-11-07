@@ -21,6 +21,11 @@ from .run_expectancy import BALL_COLS, USABLE, load, ra_state
 
 DATA = Path(__file__).parent / "data"
 PARAMS = DATA / "war_params.json"
+PARAMS_V2 = DATA / "war_params_v2.json"
+# WAR v2 fielding (docs/VALUE_war_fix.md): share of a catch / stumping wicket value moved from the bowler to the fielder (a
+# convention: no drop or chance data exists; the bowler's year-to-year repeatability rises with the share), and the share of a
+# run-out's wicket value given to the fielders named on it (split equally; v1 charged the batter and credited nobody).
+FIELD_SHARES = dict(catch=0.2, stump=0.2, runout=1.0)
 # men's leagues + men's T20Is feed the projection (a league's own average is 0 by construction)
 ERA_IPL = 2023  # Impact Player era: IPL numbers for the current game use these seasons only
 LEAGUES = ["ipl", "bbl", "psl", "cpl", "sa20", "hundred", "blast", "t20i"]
@@ -54,17 +59,60 @@ def _int_cols(df):
     return df
 
 
-def season_table(comp: str, db_path=None, by_phase: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _fielding(a: pd.DataFrame, sh: dict, by_phase: bool):
+    """(multiplier on the bowler's wicket credit, fielder rows) for WAR v2. A catch by a named fielder (not the bowler) and a
+    stumping move share `catch` / `stump` of the wicket value from the bowler to the fielder; a run-out gives share `runout` of
+    its value to the fielders named (equal split). Wicket value = -vf * wkt_part (positive)."""
+    wv = -a.vf * a.wkt_part
+    wt = a.wicket_type
+    isc = (wt == "caught") & a.fielder.notna() & (a.bowler_wk == 1)
+    iss = (wt == "stumped") & a.fielder.notna() & (a.bowler_wk == 1)
+    isr = (wt == "run out") & (a.wk == 1)
+    keep = 1.0 - np.where(isc, sh["catch"], 0.0) - np.where(iss, sh["stump"], 0.0)
+    nf = a[["fielder", "fielder_2", "fielder_3"]].notna().sum(axis=1).clip(lower=1)
+    parts = [(isc, "fielder", wv * sh["catch"]), (iss, "fielder", wv * sh["stump"])] + [
+        (isr & a[c].notna(), c, wv * sh["runout"] / nf) for c in ("fielder", "fielder_2", "fielder_3")
+    ]
+    out = []
+    for m, col, val in parts:
+        x = a[m]
+        out.append(
+            pd.DataFrame(
+                dict(
+                    sy=x.sy,
+                    **({"phase": x.phase} if by_phase else {}),
+                    season=x.season,
+                    team=x.bowling_team,
+                    player=x[col],
+                    role="field",
+                    balls=0,
+                    runs=0,
+                    wkts=0,
+                    sc=0.0,
+                    wk=val[m],
+                    comp=x.comp,
+                )
+            )
+        )
+    return keep, pd.concat(out)
+
+
+def season_table(
+    comp: str, db_path=None, by_phase: bool = False, fielding: dict | None = None
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """(player-season-team rows, appearances) for one competition key.
 
     Rows: comp, sy (calendar year the season ended), season (label), team, player, role (bat/bowl), balls (faced / legal
     bowled), runs (off the bat / conceded), sc (scoring part of runs added), wk (wicket part), with sc + wk = runs added.
     Appearances: comp, sy, team, player, matches (matches in which he batted, was non-striker, or bowled).
-    by_phase=True adds a `phase` column (powerplay / middle / death) to the rows; summing over it gives the default table."""
+    by_phase=True adds a `phase` column (powerplay / middle / death) to the rows; summing over it gives the default table.
+    fielding=FIELD_SHARES (WAR v2) moves part of each catch / stumping from the bowler to the fielder, gives run-outs to the
+    fielders, and adds rows with role "field" (balls 0, wk = credit, team = fielding side). Default None = v1, unchanged."""
     f = Filters(competition=comp)
     st, sp = ra_state(f)
     sql = (
         f"WITH d AS ({st}) SELECT {BALL_COLS}, d.batting_team, d.bowling_team, d.non_striker, m.date, m.season"
+        f"{', d.wicket_type, d.fielder, d.fielder_2, d.fielder_3' if fielding else ''}"
         f"{', ' + phase_sql() + ' AS phase' if by_phase else ''} "
         f"FROM d JOIN matches m ON d.match_id = m.match_id WHERE {USABLE}"
     )
@@ -78,6 +126,7 @@ def season_table(comp: str, db_path=None, by_phase: bool = False) -> tuple[pd.Da
     a["sy"] = a.season.map(sy).astype(int)
     key = ["comp", "sy", "season", "team", "player", "role"] + (["phase"] if by_phase else [])
     a["comp"] = comp
+    keep, fld = _fielding(a, fielding, by_phase) if fielding else (1.0, None)
     s = (a.faced == 1) | (a.striker_out == 1)
     bs = a[s]
     bat_s = pd.DataFrame(
@@ -126,11 +175,11 @@ def season_table(comp: str, db_path=None, by_phase: bool = False) -> tuple[pd.Da
             runs=a.conceded,
             wkts=a.bowler_wk,
             sc=-a.conceded - a.vf * a.ball_part + a.bowl_k,
-            wk=-a.vf * a.wkt_part * a.bowler_wk,
+            wk=-a.vf * a.wkt_part * a.bowler_wk * keep,
         )
     )
     out = (
-        pd.concat([bat_s, bat_n, bow])
+        pd.concat([bat_s, bat_n, bow] + ([] if fld is None else [fld]))
         .groupby(key, as_index=False)[["balls", "runs", "wkts", "sc", "wk"]]
         .sum()
     )
@@ -159,11 +208,18 @@ def season_table(comp: str, db_path=None, by_phase: bool = False) -> tuple[pd.Da
 # --------------------------------------------------------------------------- tables
 def centre(rows: pd.DataFrame) -> pd.DataFrame:
     """Make the league-season average player exactly 0 per ball (batting and bowling separately): the shipped offsets are fitted
-    on first innings; chases, short matches and other leagues leave a small drift (up to 3 runs per 100 balls in T20Is)."""
+    on first innings; chases, short matches and other leagues leave a small drift (up to 3 runs per 100 balls in T20Is).
+    With fielding rows (WAR v2) the bowling side is centred together with its fielding credit, so the credit created by
+    run-outs is not extra."""
     g = rows.groupby(["comp", "sy", "role"])
-    mu = (g.sc.transform("sum") + g.wk.transform("sum")) / g.balls.transform("sum")
+    tot = g.sc.transform("sum") + g.wk.transform("sum")
+    if (rows.role == "field").any():
+        fs = rows[rows.role == "field"].groupby(["comp", "sy"]).wk.sum()
+        add = pd.Series(list(zip(rows.comp, rows.sy)), index=rows.index).map(fs).fillna(0.0)
+        tot = tot + np.where(rows.role == "bowl", add, 0.0)
+    mu = tot / g.balls.transform("sum").replace(0, np.nan)
     out = rows.copy()
-    out["sc"] = out.sc - mu * out.balls
+    out["sc"] = out.sc - (mu * out.balls).fillna(0.0)
     return out
 
 
@@ -457,8 +513,9 @@ def replacement(r: pd.DataFrame, app: pd.DataFrame, prior_years, cut=11, lag=1) 
     return out
 
 
-def load_params() -> dict:
-    return json.loads(PARAMS.read_text())
+def load_params(version: str = "v1") -> dict:
+    """v1 = shipped war_params.json; v2 = war_params_v2.json (replacement level, fielding shares; see docs/VALUE_war_fix.md)."""
+    return json.loads((PARAMS_V2 if version == "v2" else PARAMS).read_text())
 
 
 def war_table(r: pd.DataFrame, prm: dict) -> pd.DataFrame:
@@ -467,10 +524,10 @@ def war_table(r: pd.DataFrame, prm: dict) -> pd.DataFrame:
     Columns: player, sy, then bat_* / bowl_* for balls, ra, war, repl_runs, runs, wkts, sc, wk; and war (bat + bowl)."""
     ps = player_year(r)
     out = []
-    for role in ("bat", "bowl"):
+    for role in ("bat", "bowl") + (("field",) if (ps.role == "field").any() else ()):
         d = ps[ps.role == role].copy()
         e = d.sy.map(era_key)
-        repl = e.map({k: v["repl"][role] for k, v in prm["era"].items()}) / 100.0
+        repl = e.map({k: v["repl"].get(role, 0.0) for k, v in prm["era"].items()}) / 100.0
         rpw = e.map({k: v["rpw"] for k, v in prm["era"].items()})
         d["ra"] = d.sc + d.wk
         d["war"] = (d.ra - repl * d.balls) / rpw
@@ -485,7 +542,7 @@ def war_table(r: pd.DataFrame, prm: dict) -> pd.DataFrame:
     )
     w.columns = [f"{c[1]}_{c[0]}" for c in w.columns]
     w = w.reset_index()
-    w["war"] = w.bat_war + w.bowl_war
+    w["war"] = w.bat_war + w.bowl_war + (w.field_war if "field_war" in w else 0.0)
     return w
 
 
