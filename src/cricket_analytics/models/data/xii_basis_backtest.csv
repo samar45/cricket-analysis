@@ -1,0 +1,7 @@
+basis,what,n,pearson,spearman,blend_a
+recent,value,30,-0.114,-0.121,0.1
+recent,actual,30,0.487,0.408,0.1
+worth,value,30,0.236,0.254,0.1
+worth,actual,30,0.704,0.677,0.1
+blend,value,30,0.182,0.147,0.1
+blend,actual,30,0.69,0.664,0.1

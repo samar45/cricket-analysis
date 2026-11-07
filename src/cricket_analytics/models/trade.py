@@ -27,6 +27,10 @@ from . import war as w
 MATCH_CSV = w.DATA / "trade_match_ra.csv"
 CONTRACTS_CSV = REFERENCE_DIR / "ipl_contracts.csv"
 PWAR_CSV = w.DATA / "pwar_ipl_2027.csv"
+WORTHVAL_CSV = w.DATA / "worth_value_2027.csv"  # expected next-season WAR per player (models/xii_basis.py)
+BASES = ("recent", "worth", "blend")  # what the XII is picked on: see docs/VALUE_xii_basis.md
+BLEND_A = 0.1  # weight on recent value in "blend" (the pooled-rho maximum of the backtest in xii_basis.pick_blend)
+DEFAULT_BASIS = "worth"  # beat "recent" in the XII-level test (IPL 2024-26, n=30 team-seasons)
 
 SEASONS = (
     2023,
@@ -252,9 +256,25 @@ def team_abbr(team: str) -> str:
     raise ValueError(f"Unknown IPL team {team!r}. Valid: {', '.join(TEAMS.values())}")
 
 
-def player_table(sq: pd.DataFrame, v: Values | None = None) -> pd.DataFrame:
-    """One row per squad player: contract + value + role information. Index = team + key."""
+@lru_cache(maxsize=1)
+def worth_values() -> pd.DataFrame:
+    if not WORTHVAL_CSV.exists():
+        raise FileNotFoundError(f"{WORTHVAL_CSV.name} missing: run  python -m cricket_analytics.models.xii_basis")
+    return pd.read_csv(WORTHVAL_CSV).set_index("player")
+
+
+def _check_basis(basis: str) -> str:
+    if basis not in BASES:
+        raise ValueError(f"value_basis must be one of {BASES}, got {basis!r}")
+    return basis
+
+
+def player_table(sq: pd.DataFrame, v: Values | None = None, basis: str = "recent") -> pd.DataFrame:
+    """One row per squad player: contract + value + role information. Index = team + key.
+    basis: recent = WAR 2023-26 weighted 4/3/2/1; worth = expected next-season WAR (player_worth ridge); blend = BLEND_A x recent +
+    (1 - BLEND_A) x worth. `recent_value` always keeps the recent number (the bootstrap draws are centred on it, see draws_for)."""
     v = values() if v is None else v
+    _check_basis(basis)
     u = usage()
     at = attributes()
     pw = pd.read_csv(PWAR_CSV).set_index("cricsheet_name")
@@ -278,6 +298,13 @@ def player_table(sq: pd.DataFrame, v: Values | None = None) -> pd.DataFrame:
     # (a bowler who averages 3.2 overs can bowl 4), at most 4
     t["is_bowler"] = (t.overs_when_bowling >= 1.0) & (t.bowl_share >= 0.3)
     t["overs"] = np.where(t.is_bowler, np.minimum(4.0, np.ceil(t.overs_when_bowling)), 0.0)
+    t["recent_value"] = t.value
+    if basis != "recent":
+        wv = worth_values().reindex(t.index).fillna(0.0)
+        a = 0.0 if basis == "worth" else BLEND_A
+        t["bat_value"] = a * t.bat_value + (1 - a) * wv.bat_war.values
+        t["bowl_value"] = a * t.bowl_value + (1 - a) * wv.bowl_war.values
+        t["value"] = t.bat_value + t.bowl_value
     t["salary"] = t.price_cr.astype(float)
     t["value_per_cr"] = t.value / t.salary
     return t
@@ -318,6 +345,8 @@ def draws_for(pt: pd.DataFrame, v: Values | None = None) -> np.ndarray:
             out[i] = v.bat_draws[j] + v.bowl_draws[j]
         else:
             out[i] = np.random.default_rng(zlib.crc32(str(k).encode())).choice(v.debut_pool, DRAWS)
+    if "recent_value" in pt:  # another basis: the same spread (own-match bootstrap), centred on that basis's value
+        out = out + (pt.value.values - pt.recent_value.values)[:, None]
     return out
 
 
@@ -525,7 +554,10 @@ def prior_values(m: pd.DataFrame, season: int, prm: dict) -> pd.Series:
 
 
 def build_beta_matches(db_path=None) -> pd.DataFrame:
-    """One row per IPL 2024-26 match with a winner: both teams' most-used XI (that season) valued from PRIOR seasons only."""
+    """One row per IPL 2024-26 match with a winner: both teams' most-used XI (that season) valued from PRIOR seasons only.
+    x1 / x2 = recent value; x1w / x2w = worth basis; x1b / x2b = blend (columns the basis fits use)."""
+    from . import xii_basis as XB
+
     from ..db import query
 
     m, prm = pd.read_csv(MATCH_CSV), w.load_params()
@@ -547,34 +579,31 @@ def build_beta_matches(db_path=None) -> pd.DataFrame:
     rows = []
     for sy, g in lu.groupby("sy"):
         pv = prior_values(m, int(sy), prm)
+        pw = XB.prior_worth(int(sy))
+        pvs = {"": pv, "w": pw, "b": (BLEND_A * pv.reindex(pv.index.union(pw.index)).fillna(0) + (1 - BLEND_A) * pw.reindex(pv.index.union(pw.index)).fillna(0))}
         cnt = g.groupby(["team", "player"]).size().reset_index(name="n")
         xi = (
             cnt.sort_values(["team", "n", "player"], ascending=[True, False, True])
             .groupby("team")
             .head(11)
         )
-        x = xi.assign(v=xi.player.map(pv).fillna(0.0)).groupby("team").v.sum()
+        xs = {k: xi.assign(v=xi.player.map(q).fillna(0.0)).groupby("team").v.sum() for k, q in pvs.items()}
+        x = xs[""]
         for r in mt[mt.sy == sy].itertuples():
             if r.team1 in x.index and r.team2 in x.index:
                 rows.append(
-                    (
-                        r.match_id,
-                        sy,
-                        r.team1,
-                        r.team2,
-                        int(r.winner == r.team1),
-                        x[r.team1],
-                        x[r.team2],
-                    )
+                    (r.match_id, sy, r.team1, r.team2, int(r.winner == r.team1))
+                    + tuple(c for k in ("", "w", "b") for c in (xs[k][r.team1], xs[k][r.team2]))
                 )
-    out = pd.DataFrame(rows, columns=["match_id", "sy", "team1", "team2", "team1_won", "x1", "x2"])
+    out = pd.DataFrame(rows, columns=["match_id", "sy", "team1", "team2", "team1_won", "x1", "x2", "x1w", "x2w", "x1b", "x2b"])
     return out.round(5)
 
 
-def fit_beta(d: pd.DataFrame, boot: int = BETA_BOOT, seed: int = BETA_SEED) -> dict:
+def fit_beta(d: pd.DataFrame, boot: int = BETA_BOOT, seed: int = BETA_SEED, basis: str = "recent") -> dict:
     """Logistic slope (no intercept: team1 is not a home side) of the match result on the difference in XI value
     (wins a season). Newton steps; the bootstrap resamples matches. Returns beta, its draws, 10-90 range and n."""
-    x, y = (d.x1 - d.x2).values.astype(float), d.team1_won.values.astype(float)
+    sfx = {"recent": "", "worth": "w", "blend": "b"}[_check_basis(basis)]
+    x, y = (d[f"x1{sfx}"] - d[f"x2{sfx}"]).values.astype(float), d.team1_won.values.astype(float)
 
     def one(x, y):
         b = 0.0
@@ -601,13 +630,13 @@ def fit_beta(d: pd.DataFrame, boot: int = BETA_BOOT, seed: int = BETA_SEED) -> d
     }
 
 
-@lru_cache(maxsize=1)
-def beta() -> dict:
+@lru_cache(maxsize=3)
+def beta(basis: str = "recent") -> dict:
     if not BETA_CSV.exists():
         raise FileNotFoundError(
             f"{BETA_CSV.name} missing: run  python -m cricket_analytics.models.trade beta"
         )
-    return fit_beta(pd.read_csv(BETA_CSV))
+    return fit_beta(pd.read_csv(BETA_CSV), basis=basis)
 
 
 def simulate(
@@ -740,6 +769,7 @@ def evaluate(
     v: Values | None = None,
     must_play=(),
     odds: bool = True,
+    value_basis: str = DEFAULT_BASIS,
 ) -> dict:
     """Trade evaluation. `give` leaves `team` for `team2`, `get` arrives from `team2`. `must_play` = names forced into their
     team's XI (before and after). odds=True adds a season simulation (playoff and title odds, see simulate()).
@@ -759,7 +789,7 @@ def evaluate(
         raise ValueError(
             f"{sorted(both)[0]!r} is on both sides of the trade: a player can only leave one team"
         )
-    tab = player_table(squads(c, baseline, only=list(give or []) + list(get or [])), v)
+    tab = player_table(squads(c, baseline, only=list(give or []) + list(get or [])), v, value_basis)
     A, B = tab[tab.team == a], tab[tab.team == b]
     gk, tk = resolve(A, give, a), resolve(B, get, b)
     ref = league_slot_means(tab)
@@ -813,7 +843,7 @@ def evaluate(
         out[ab] = res
     sim = None
     if odds:
-        bt = beta()
+        bt = beta(value_basis)
         strength = {}
         for t in TEAMS:
             strength[t] = (
@@ -836,6 +866,7 @@ def evaluate(
         "get": tk,
         "league": ref,
         "baseline": baseline,
+        "value_basis": value_basis,
         "order": (a, b),
     }
 
@@ -924,10 +955,10 @@ def roles(pt: pd.DataFrame):
     )
 
 
-def squad_view(team: str) -> pd.DataFrame:
+def squad_view(team: str, basis: str = DEFAULT_BASIS) -> pd.DataFrame:
     """One team's squad: salary, recent WAR by season, recent value with range, value per crore, surplus, XII membership."""
     v = values()
-    tab = player_table(squads(), v)
+    tab = player_table(squads(), v, basis)
     a = team_abbr(team)
     cpw = market_fit(tab)["cr_per_win_ratio"]
     pt = tab[tab.team == a]

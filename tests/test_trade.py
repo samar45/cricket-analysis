@@ -393,7 +393,7 @@ def test_must_play_forces_player_into_xii(mi_rr):
     # after the trade Hardik is at RR: forced into the XI although his recent value is negative
     assert "HH Pandya" in mi_rr["teams"]["RR"]["after"]["pick"]["xi"]
     free = T.evaluate(
-        "Mumbai Indians", "Rajasthan Royals", ["Hardik Pandya"], ["Yashasvi Jaiswal"], odds=False
+        "Mumbai Indians", "Rajasthan Royals", ["Hardik Pandya"], ["Yashasvi Jaiswal"], odds=False, value_basis="recent"
     )
     assert "HH Pandya" not in free["teams"]["RR"]["after"]["pick"]["xi"]
     d = _fake()
@@ -429,3 +429,41 @@ def test_dashboard_shows_trade_card():
     at = open_module(new_app(), "trade")
     assert_clean(at, "trade")
     assert any("PLAYOFF PTS" in e.proto.body for e in at.get("html"))
+
+
+# ── value basis (recent / worth / blend) ───────────────────────────────────────────────────────────────
+def test_value_bases_change_values_not_the_recent_column():
+    sq = T.squads()
+    base = T.player_table(sq, T.values(), "recent")
+    for b in ("worth", "blend"):
+        t = T.player_table(sq, T.values(), b)
+        assert np.allclose(t.recent_value, base.value)  # recent number kept for the bootstrap centre
+        assert np.allclose(t.value, t.bat_value + t.bowl_value) and not np.allclose(t.value, base.value)
+    wv = T.worth_values().bat_war.reindex(base.index).fillna(0) + T.worth_values().bowl_war.reindex(base.index).fillna(0)
+    w = T.player_table(sq, T.values(), "worth")
+    assert np.allclose(w.value, wv)
+    assert np.allclose(T.player_table(sq, T.values(), "blend").value, T.BLEND_A * base.value + (1 - T.BLEND_A) * wv)
+    with pytest.raises(ValueError, match="value_basis"):
+        T.player_table(sq, T.values(), "nope")
+
+
+def test_draws_centre_on_the_basis_value():
+    t = T.player_table(T.squads(), T.values(), "worth")
+    D = T.draws_for(t, T.values())
+    r = T.draws_for(T.player_table(T.squads(), T.values(), "recent"), T.values())
+    assert np.allclose(D - r, (t.value - t.recent_value).values[:, None])  # same spread, moved centre
+
+
+def test_default_basis_beats_recent_in_the_saved_xii_test():
+    s = pd.read_csv(T.w.DATA / "xii_basis_backtest.csv")
+    r = s[s.what == "value"].set_index("basis").pearson
+    assert T.DEFAULT_BASIS == "worth" and r["worth"] > r["recent"]
+    assert s.blend_a.iloc[0] == T.BLEND_A
+
+
+def test_evaluate_runs_on_each_basis_with_its_own_beta():
+    for b in T.BASES:
+        r = T.evaluate("MI", "RR", ["Hardik Pandya"], ["Yashasvi Jaiswal"], value_basis=b)
+        x = r["teams"]["MI"]
+        assert r["value_basis"] == b and x["after"]["lo"] < x["after"]["hi"]
+        assert r["sim"]["beta"]["beta"] == pytest.approx(T.beta(b)["beta"])

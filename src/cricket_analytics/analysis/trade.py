@@ -73,6 +73,7 @@ def _card(r: dict) -> dict:
         "beta": None if sim is None else sim["beta"],
         "seasons": None if sim is None else sim["seasons"],
         "cr_per_win": r["cr_per_win"],
+        "value_basis": r["value_basis"],
         "must_play": [names.get(k, k) for k in r["must_play"]],
         "purse_cap": T.PURSE_CAP,
     }
@@ -178,6 +179,13 @@ def _trade_frame(r: dict) -> pd.DataFrame:
             help="trade = before/after for both teams; squad = Team A's players",
         ),
         ParamSpec(
+            "value_basis",
+            "choice",
+            default=T.DEFAULT_BASIS,
+            choices=T.BASES,
+            help="What the XII is picked on: worth = expected next-season WAR (default), recent = WAR 2023-26 weighted 4/3/2/1, blend = mostly worth",
+        ),
+        ParamSpec(
             "baseline",
             "choice",
             default="current",
@@ -206,14 +214,15 @@ def trade(
     view: str = "trade",
     baseline: str = "current",
     must_play=None,
+    value_basis: str = T.DEFAULT_BASIS,
 ) -> pd.DataFrame:
     if f.competition not in (None, "ipl"):
         raise ValueError("The trade tool covers the IPL only (competition=ipl)")
     # "team" is also a Filters field, so api.run routes it into f, not into this kwarg.
     team, team2 = _one(f.team or team), _one(team2)
     if view == "squad":
-        return T.squad_view(team)
-    r = T.evaluate(team, team2, give or [], get or [], baseline, must_play=must_play or [])
+        return T.squad_view(team, value_basis)
+    r = T.evaluate(team, team2, give or [], get or [], baseline, must_play=must_play or [], value_basis=value_basis)
     df = _trade_frame(r)
     df.attrs["card"] = _card(
         r

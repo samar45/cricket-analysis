@@ -214,7 +214,8 @@ def worth_pred(T, X, ctx):
         f = _worth_feats(X, role)
         out[f"{role}_rate"] = pd.Series(((f[Xf.columns] - mu) / sd).fillna(0.0).to_numpy() @ b + y.mean(), index=f.index)
         q = p[(p.sy > X - 3) & (p.role == role)].groupby("player").balls.sum() / 3
-        out[role] = out[f"{role}_rate"] * q.reindex(f.index).fillna(0.0)
+        out[f"{role}_q"] = q.reindex(f.index).fillna(0.0)  # expected balls next season
+        out[role] = out[f"{role}_rate"] * out[f"{role}_q"]
     return pd.DataFrame(out)
 
 
