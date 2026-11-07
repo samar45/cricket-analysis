@@ -65,11 +65,13 @@ def test_no_reviewed_keeper_drops_the_rule_and_says_so():
 
 def test_impact_player_counts_half_and_only_if_positive():
     d = _fake(value=-0.1)
-    assert T.pick_xii(d)["impact"] is None
+    p = T.pick_xii(d)
+    assert p["impact"] is not None and not p["impact_counted"]  # always named, adds 0 when below replacement
+    assert abs(p["value"] - d.loc[p["xi"], "value"].sum()) < 1e-9
     d = _fake()
     p = T.pick_xii(d)
     got = d.loc[p["xi"], "value"].sum() + (
-        T.IMPACT_WEIGHT * d.loc[p["impact"], "value"] if p["impact"] else 0
+        T.IMPACT_WEIGHT * max(d.loc[p["impact"], "value"], 0) if p["impact"] else 0
     )
     assert p["value"] == pytest.approx(got)
 

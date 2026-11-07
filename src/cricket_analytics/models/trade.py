@@ -425,8 +425,8 @@ def pick_xii(pt: pd.DataFrame, force=()) -> dict:
     Rules enforced (as penalties in a swap search that starts from the top-valued 11 and 30 random starts, so no ILP library):
     at most 4 overseas in the XI; a keeper from the REVIEWED list (a 'yes', else a 'sometimes'; if the squad has none the rule is
     dropped and flagged, never guessed); at least 5 bowling options with 20+ expected overs between them; at least 6 usual
-    top-seven batters. The impact player is the best remaining player (an Indian if the XI already has 4 overseas), counted at
-    IMPACT_WEIGHT, and only if his value is above 0. `force` = labels of players who must be in the XI (a captain or star in poor form).
+    top-seven batters. The impact player is the best remaining player (an Indian if the XI already has 4 overseas), always named, counted at
+    IMPACT_WEIGHT only if his value is above 0 (a below-replacement impact player adds 0). `force` = labels of players who must be in the XI (a captain or star in poor form).
     Returns {'xi': [index labels], 'impact': label or None, 'value': float, 'flags': [str], 'penalty': float}."""
     n = 11
     if len(pt) < n:
@@ -458,15 +458,16 @@ def pick_xii(pt: pd.DataFrame, force=()) -> dict:
         flags.append("squad cannot meet every rule (not enough bowlers / batters / keepers)")
     rest = np.flatnonzero(~sel)
     os_xi = a["os"][sel].sum()
-    cand = [i for i in rest if (os_xi < MAX_OS_XI or not a["os"][i]) and a["val"][i] > 0]
+    cand = [i for i in rest if os_xi < MAX_OS_XI or not a["os"][i]]
     imp = max(cand, key=lambda i: a["val"][i]) if cand else None
     idx = pt.index
     return {
         "xi": [idx[i] for i in np.flatnonzero(sel)],
         "impact": None if imp is None else idx[imp],
         "value": float(
-            a["val"][sel].sum() + (IMPACT_WEIGHT * a["val"][imp] if imp is not None else 0.0)
+            a["val"][sel].sum() + (IMPACT_WEIGHT * a["val"][imp] if imp is not None and a["val"][imp] > 0 else 0.0)
         ),
+        "impact_counted": imp is not None and a["val"][imp] > 0,
         "flags": flags,
         "penalty": pen,
     }
@@ -475,7 +476,7 @@ def pick_xii(pt: pd.DataFrame, force=()) -> dict:
 def xii_draws(pick: dict, pt: pd.DataFrame, D: np.ndarray) -> np.ndarray:
     pos = {k: i for i, k in enumerate(pt.index)}
     t = D[[pos[k] for k in pick["xi"]]].sum(0)
-    return t + (IMPACT_WEIGHT * D[pos[pick["impact"]]] if pick["impact"] is not None else 0.0)
+    return t + (IMPACT_WEIGHT * D[pos[pick["impact"]]] if pick.get("impact_counted") else 0.0)
 
 
 def rng_text(d: np.ndarray) -> tuple[float, float]:
