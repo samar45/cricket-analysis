@@ -8,6 +8,7 @@ import importlib
 
 import auction_room
 import health
+import player_page
 import streamlit as st
 import ui
 
@@ -319,7 +320,7 @@ with st.sidebar:
     st.header("🏏 Cricket analytics")
     page = st.radio(
         "Page",
-        ["Overview", "Explore", "Ask", "Auction room", "Data health"],
+        ["Overview", "Explore", "Ask", "Player", "Auction room", "Data health"],
         key="page",
         label_visibility="collapsed",
     )
@@ -327,6 +328,7 @@ with st.sidebar:
     "Overview": overview,
     "Explore": explore,
     "Ask": guarded(ask_page),
+    "Player": guarded(player_page.page),
     "Auction room": guarded(auction_room.page),
     "Data health": guarded(health.page),
 }[page]()

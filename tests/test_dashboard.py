@@ -127,3 +127,17 @@ def test_video_tab(module_id):
     assert at.radio(key="video_aspect").value == "1:1"
     assert at.text_input(key=f"video_focus_{module_id}").value == ""
     at.radio(key="video_aspect").set_value("9:16").run()
+
+
+def test_player_page():
+    """Player page: default IPL 2023-26 for three different roles (bowler, keeper-batter, all-rounder), no errors, sections present."""
+    at = new_app()
+    at.sidebar.radio(key="page").set_value("Player").run()
+    assert_clean(at)
+    for name, role_word in (("JJ Bumrah", "bowler"), ("H Klaasen", "batter"), ("HH Pandya", "all-rounder")):
+        at.text_input(key="pl_q").set_value(name.split()[-1]).run()
+        at.selectbox(key="pl_who").set_value(name).run()
+        assert_clean(at)
+        page = " ".join(m.value for m in at.markdown)
+        assert name in page and role_word in page and "WAR v3 by season" in page and "Player worth" in page and "Phases" in page, name
+    assert at.selectbox(key="pl_comp").value == "ipl"
