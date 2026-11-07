@@ -124,9 +124,11 @@ def explore():
     in_cat = {m.id: m for m in mods if m.category == cat}
     mod = in_cat[ui.select("module", "Module", list(in_cat), format_func=lambda i: in_cat[i].title)]
 
+    lean = mod.id == "trade"  # numbers only: no prose; caveats sit in one "Method" expander at the bottom
     st.subheader(mod.title)
-    st.write(mod.description)
-    if mod.category == "experimental":
+    if not lean:
+        st.write(mod.description)
+    if mod.category == "experimental" and not lean:
         st.warning(
             "Experimental module: treat the numbers as rough. "
             + (mod.caveats[0] if mod.caveats else "")
@@ -135,9 +137,10 @@ def explore():
 
     result = ui.run(mod.id, params)
     meta = result.meta
-    st.caption(
-        f"{meta['row_count']:,} rows | data through {meta['data_through']} | source: {meta['source']}"
-    )
+    if not lean:
+        st.caption(
+            f"{meta['row_count']:,} rows | data through {meta['data_through']} | source: {meta['source']}"
+        )
     if result.data.empty:
         chosen = ", ".join(
             f"{k} = {v}" for k, v in meta["params"].items() if v not in (None, [], False, 0, "")
@@ -174,8 +177,9 @@ def explore():
         c2.download_button(
             "Download JSON", result.to_json(indent=2), f"{mod.id}.json", "application/json"
         )
-    with st.expander("About this result"):
-        st.json({k: meta[k] for k in ("params", "data_through", "source", "db_modified")})
+    with st.expander("Method" if lean else "About this result"):
+        if not lean:
+            st.json({k: meta[k] for k in ("params", "data_through", "source", "db_modified")})
         for c in meta["caveats"]:
             st.markdown(f"- {c}")
 

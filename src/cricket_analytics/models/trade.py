@@ -915,6 +915,15 @@ def squad_names(team: str) -> list[str]:
     return sorted(out)
 
 
+def roles(pt: pd.DataFrame):
+    bats = (pt.bat_matches >= 5) & (pt.bat_pos <= 7.5)
+    return np.select(
+        [~pt.has_evidence, pt.keeper, bats & pt.is_bowler, pt.is_bowler],
+        ["no IPL evidence", "wicketkeeper", "all-rounder", "bowler"],
+        "batter",
+    )
+
+
 def squad_view(team: str) -> pd.DataFrame:
     """One team's squad: salary, recent WAR by season, recent value with range, value per crore, surplus, XII membership."""
     v = values()
@@ -925,12 +934,7 @@ def squad_view(team: str) -> pd.DataFrame:
     pick = pick_xii(pt)
     D = draws_for(pt, v)
     lo, hi = np.percentile(D, 10, axis=1), np.percentile(D, 90, axis=1)
-    bats = (pt.bat_matches >= 5) & (pt.bat_pos <= 7.5)
-    role = np.select(
-        [~pt.has_evidence, pt.keeper, bats & pt.is_bowler, pt.is_bowler],
-        ["no IPL evidence", "wicketkeeper", "all-rounder", "bowler"],
-        "batter",
-    )
+    role = roles(pt)
     out = pd.DataFrame(
         {
             "player": pt.player.values,

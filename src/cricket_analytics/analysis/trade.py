@@ -30,9 +30,22 @@ def _card(r: dict) -> dict:
     for ab in r["order"]:
         x = r["teams"][ab]
         b, a = x["before"], x["after"]
+        pt = a["table"]
+        role = dict(zip(pt.index, T.roles(pt)))
+        pick = a["pick"]
+        keys = [(k, "XI") for k in pick["xi"]] + ([(pick["impact"], "IMP")] if pick["impact"] else [])
         teams[ab] = {
+            "xii_rows": sorted(
+                (
+                    {"name": pt.loc[k, "player"], "role": role[k], "os": bool(pt.loc[k, "overseas"]),
+                     "war": float(pt.loc[k, "value"]), "slot": s, "new": k in x["got"]}
+                    for k, s in keys
+                ),
+                key=lambda r: (r["slot"] != "XI", -r["war"]),
+            ),
+            "salary": (b["squad_salary"], a["squad_salary"]),
             "name": T.TEAMS[ab],
-            "receives": x["got_detail"],
+            "receives": [{**p, "role": role[k]} for p, k in zip(x["got_detail"], x["got"])],
             "gives": x["lost"],
             "net_cr": x["net_value_cr"],
             "xii": {
