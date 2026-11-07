@@ -61,61 +61,12 @@ FULL_TO_ABBR = {v: k for k, v in TEAMS.items()}
 def build_match_table(db_path=None) -> pd.DataFrame:
     """Per player and match (IPL 2023+): runs added (league-centred, as in WAR), balls, batting position."""
     from ..db import query
-    from ..sql.filters import Filters
-    from .run_expectancy import BALL_COLS, USABLE, load, ra_state
+    from .match_adjust import adjusted, match_rows
 
-    st, sp = ra_state(Filters(competition="ipl"))
-    sql = (
-        f"WITH d AS ({st}) SELECT {BALL_COLS}, d.batting_team, d.bowling_team, d.non_striker, m.date, m.season, "
-        f"d.wicket_type, d.fielder, d.fielder_2, d.fielder_3 FROM d JOIN matches m ON d.match_id = m.match_id WHERE {USABLE}"
-    )
-    a = load().annotate(w._int_cols(query(sql, sp, db_path=db_path)))
-    a["sy"] = a.season.map(a.groupby("season").date.max().dt.year).astype(int)
-    bs = a[(a.faced == 1) | (a.striker_out == 1)]
-    ns = a[(a.wk == 1) & (a.striker_out == 0)]
-    cols = ["match_id", "sy", "player", "role", "balls", "sc", "wk"]
-    sh = w.load_params()["fielding"]  # WAR v2: fielders get catches / stumpings / run-outs, the bowler loses the catch share
-    keep, fld = w._fielding(a.assign(comp="ipl"), sh, False)
-    parts = [
-        pd.DataFrame(
-            dict(
-                match_id=bs.match_id,
-                sy=bs.sy,
-                player=bs.batter,
-                role="bat",
-                balls=bs.faced,
-                sc=bs.runs_batter + bs.vf * bs.ball_part + bs.bat_k,
-                wk=bs.vf * bs.wkt_part * bs.striker_out,
-            )
-        ),
-        pd.DataFrame(
-            dict(
-                match_id=ns.match_id,
-                sy=ns.sy,
-                player=ns.player_out,
-                role="bat",
-                balls=0,
-                sc=0.0,
-                wk=ns.vf * ns.wkt_part,
-            )
-        ),
-        pd.DataFrame(
-            dict(
-                match_id=a.match_id,
-                sy=a.sy,
-                player=a.bowler,
-                role="bowl",
-                balls=a.legal,
-                sc=-a.conceded - a.vf * a.ball_part + a.bowl_k,
-                wk=-a.vf * a.wkt_part * a.bowler_wk * keep,
-            )
-        ),
-        fld.assign(sc=0.0)[cols],
-    ]
-    m = pd.concat(parts)[cols].groupby(cols[:4], as_index=False)[["balls", "sc", "wk"]].sum()
-    m["comp"] = "ipl"
-    m = w.centre(m)  # league-season average player = 0 per ball (same step as WAR)
-    m["ra"] = m.sc + m.wk
+    # WAR v3: batting + bowling runs added (v1 definition: no fielding credit), adjusted for match conditions at w = war.MATCH_W
+    r = adjusted(match_rows("ipl"), w.load_params()["match_w"])
+    m = r.groupby(["match_id", "sy", "player", "role"], as_index=False)[["balls", "ra_adj"]].sum().rename(columns={"ra_adj": "ra"})
+
     m = m[m.sy >= SEASONS[0]]
     pos = query(
         """WITH x AS (SELECT d.match_id, d.innings, d.ball_seq, 0 AS src, d.batter AS p FROM deliveries d
@@ -150,7 +101,6 @@ class Values:
     debut_pool: (
         np.ndarray
     )  # zero-centred first-season WAR of debutants: the spread used for "no IPL evidence" players
-    field_draws: np.ndarray | None = None  # fielding credit (WAR v2), added to the total draws
     index: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -162,7 +112,7 @@ def _per_match(m: pd.DataFrame) -> pd.DataFrame:
         index=["player", "sy", "match_id"], columns="role", values=["balls", "ra"], fill_value=0.0
     )
     p.columns = [f"{r}_{k}" for k, r in p.columns]
-    for c in ("bat_balls", "bat_ra", "bowl_balls", "bowl_ra", "field_ra"):
+    for c in ("bat_balls", "bat_ra", "bowl_balls", "bowl_ra"):
         if c not in p:
             p[c] = 0.0
     return p.reset_index()
@@ -174,13 +124,13 @@ def compute_values(m: pd.DataFrame, prm: dict, draws: int = DRAWS, seed: int = S
     rpw, rb, rw = era["rpw"], era["repl"]["bat"] / 100.0, era["repl"]["bowl"] / 100.0
     pm = _per_match(m)
     rng = np.random.default_rng(seed)
-    rows, bat_d, bowl_d, fld_d, first_war = [], [], [], [], {}
+    rows, bat_d, bowl_d, first_war = [], [], [], {}
     for player, g in pm.groupby("player"):
         first = int(g.sy.min())
         win = [s for s in SEASONS if s >= first]
         wsum = sum(WEIGHTS[s] for s in win)
-        bat_pt = bowl_pt = fld_pt = 0.0
-        bd, wd, fd = np.zeros(draws), np.zeros(draws), np.zeros(draws)
+        bat_pt = bowl_pt = 0.0
+        bd, wd = np.zeros(draws), np.zeros(draws)
         per = {}
         for s, gs in g.groupby("sy"):
             n = len(gs)
@@ -188,30 +138,26 @@ def compute_values(m: pd.DataFrame, prm: dict, draws: int = DRAWS, seed: int = S
             bw = WEIGHTS[s] / wsum
             ba, bb = gs.bat_ra.values, gs.bat_balls.values
             wa, wb = gs.bowl_ra.values, gs.bowl_balls.values
-            fa = gs.field_ra.values
             bat_s = (ba.sum() - rb * bb.sum()) / rpw
             bowl_s = (wa.sum() - rw * wb.sum()) / rpw
             bat_pt += bw * bat_s
             bowl_pt += bw * bowl_s
-            fld_pt += bw * fa.sum() / rpw
-            fd += bw * fa[idx].sum(1) / rpw
             bd += bw * ((ba[idx].sum(1) - rb * bb[idx].sum(1)) / rpw)
             wd += bw * ((wa[idx].sum(1) - rw * wb[idx].sum(1)) / rpw)
-            per[s] = (bat_s, bowl_s, int(bb.sum()), int(wb.sum()), n, fa.sum() / rpw)
-        first_war[player] = (first, per[first][0] + per[first][1] + float(g[g.sy == first].field_ra.sum()) / rpw)
-        rec = {"player": player, "first_season": first, "bat_value": bat_pt, "bowl_value": bowl_pt, "field_value": fld_pt}
+            per[s] = (bat_s, bowl_s, int(bb.sum()), int(wb.sum()), n)
+        first_war[player] = (first, per[first][0] + per[first][1])
+        rec = {"player": player, "first_season": first, "bat_value": bat_pt, "bowl_value": bowl_pt}
         for s in SEASONS:
-            b, o, bbl, obl, n, fl = per.get(s, (0.0, 0.0, 0, 0, 0, 0.0))
-            rec |= {f"bat_war_{s}": b, f"bowl_war_{s}": o, f"field_war_{s}": fl, f"matches_{s}": n}
+            b, o, bbl, obl, n = per.get(s, (0.0, 0.0, 0, 0, 0))
+            rec |= {f"bat_war_{s}": b, f"bowl_war_{s}": o, f"matches_{s}": n}
             rec[f"bat_balls_{s}"], rec[f"bowl_balls_{s}"] = bbl, obl
         rows.append(rec)
         bat_d.append(bd)
         bowl_d.append(wd)
-        fld_d.append(fd)
     t = pd.DataFrame(rows).set_index("player")
-    t["value"] = t.bat_value + t.bowl_value + t.field_value
+    t["value"] = t.bat_value + t.bowl_value
     deb = np.array([v for p, (f, v) in first_war.items() if f > SEASONS[0]])
-    return Values(t, np.array(bat_d), np.array(bowl_d), deb - deb.mean(), np.array(fld_d))
+    return Values(t, np.array(bat_d), np.array(bowl_d), deb - deb.mean())
 
 
 @lru_cache(maxsize=1)
@@ -318,7 +264,7 @@ def player_table(sq: pd.DataFrame, v: Values | None = None) -> pd.DataFrame:
     for c in ("bat_value", "bowl_value", "value"):
         t[c] = vt[c].fillna(0.0).values
     for s in SEASONS:
-        t[f"war_{s}"] = (vt[f"bat_war_{s}"].fillna(0) + vt[f"bowl_war_{s}"].fillna(0) + vt[f"field_war_{s}"].fillna(0)).values
+        t[f"war_{s}"] = (vt[f"bat_war_{s}"].fillna(0) + vt[f"bowl_war_{s}"].fillna(0)).values
     t["matches_ipl_2023_on"] = u.matches.reindex(t.index).fillna(0).astype(int).values
     t["bat_pos"] = u.bat_pos.reindex(t.index).values
     t["overs_when_bowling"] = u.overs_when_bowling.reindex(t.index).fillna(0).values
@@ -369,7 +315,7 @@ def draws_for(pt: pd.DataFrame, v: Values | None = None) -> np.ndarray:
     for i, (k, ev) in enumerate(zip(pt.index, pt.has_evidence)):
         if ev and k in v.index:
             j = v.index[k]
-            out[i] = v.bat_draws[j] + v.bowl_draws[j] + (0 if v.field_draws is None else v.field_draws[j])
+            out[i] = v.bat_draws[j] + v.bowl_draws[j]
         else:
             out[i] = np.random.default_rng(zlib.crc32(str(k).encode())).choice(v.debut_pool, DRAWS)
     return out
@@ -566,7 +512,7 @@ def prior_values(m: pd.DataFrame, season: int, prm: dict) -> pd.Series:
     """Recent value (point estimate) of every player using only seasons BEFORE `season`: weights 4,3,2,1 counted back from
     the season before, from the player's first season in the data (a missed season counts 0). Used only to fit beta."""
     e = prm["era"]["2023"]
-    repl = m.role.map({"bat": e["repl"]["bat"] / 100.0, "bowl": e["repl"]["bowl"] / 100.0, "field": 0.0})
+    repl = m.role.map({"bat": e["repl"]["bat"] / 100.0, "bowl": e["repl"]["bowl"] / 100.0})
     g = m.assign(war=(m.ra - repl * m.balls) / e["rpw"])
     g = g[g.sy < season].groupby(["player", "sy"]).war.sum().unstack()
     out = {}

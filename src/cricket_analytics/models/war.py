@@ -22,6 +22,9 @@ from .run_expectancy import BALL_COLS, USABLE, load, ra_state
 DATA = Path(__file__).parent / "data"
 PARAMS = DATA / "war_params.json"
 PARAMS_V2 = DATA / "war_params_v2.json"
+PARAMS_V3 = DATA / "war_params_v3.json"
+DEFAULT_VERSION = "v3"  # v3 = batting + bowling only (no fielding), runs added adjusted 25% for match conditions (docs/VALUE_war_v3.md)
+MATCH_W = 0.25  # share of the match-condition adjustment (models/match_adjust.py) applied to runs added in v3
 # WAR v2 fielding (docs/VALUE_war_fix.md): share of a catch / stumping wicket value moved from the bowler to the fielder (a
 # convention: no drop or chance data exists; the bowler's year-to-year repeatability rises with the share), and the share of a
 # run-out's wicket value given to the fielders named on it (split equally; v1 charged the batter and credited nobody).
@@ -224,18 +227,42 @@ def centre(rows: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def all_tables(leagues: tuple = tuple(LEAGUES), fielding: dict | None = None):
-    """{comp: centred rows}, {comp: appearances}. About 15 s for all leagues. fielding=FIELD_SHARES adds WAR v2 field rows."""
-    return _all_tables(tuple(leagues), tuple(sorted(fielding.items())) if fielding else None)
+def match_adjust_rows(rows: pd.DataFrame, w: float) -> pd.DataFrame:
+    """WAR v3: add w x (match-condition adjustment) to the scoring part `sc` of centred rows (batting and bowling rows only).
+    The adjustment per (season, team, player, role[, phase]) is ra_adj - ra from models/match_adjust.py (leave-one-player-out
+    mean of the other players in the same match, phase and role; re-centred so the league-season average player stays 0).
+    A league whose match rows cannot be built keeps its raw values."""
+    from .match_adjust import adjusted, match_rows
+
+    key = ["comp", "sy", "season", "team", "player", "role"] + (["phase"] if "phase" in rows else [])
+    parts = []
+    for comp, d in rows.groupby("comp", sort=False):
+        try:
+            r = adjusted(match_rows(comp), w)
+        except Exception:  # ponytail: a league that fails to load keeps its raw values
+            parts.append(d)
+            continue
+        g = r.assign(delta=r.ra_adj - r.ra).groupby(key, as_index=False).delta.sum()
+        m = d.merge(g, on=key, how="left")
+        parts.append(m.assign(sc=m.sc + m.delta.fillna(0.0)).drop(columns="delta"))
+    return pd.concat(parts, ignore_index=True)
+
+
+def all_tables(leagues: tuple = tuple(LEAGUES), fielding: dict | None = None, match_w: float = MATCH_W):
+    """{comp: centred rows}, {comp: appearances}. About 15 s for all leagues (plus the match rows when match_w > 0).
+    fielding=FIELD_SHARES adds WAR v2 field rows; match_w = share of the match-condition adjustment (v3 = MATCH_W, 0 = off)."""
+    return _all_tables(tuple(leagues), tuple(sorted(fielding.items())) if fielding else None, float(match_w))
 
 
 @lru_cache(maxsize=2)
-def _all_tables(leagues: tuple, fielding: tuple | None):
+def _all_tables(leagues: tuple, fielding: tuple | None, match_w: float):
     rows, apps = {}, {}
     for c in leagues:
         r, a = season_table(c, fielding=dict(fielding) if fielding else None)
         rows[c], apps[c] = r, a
     cen = centre(pd.concat(rows.values(), ignore_index=True))
+    if match_w:
+        cen = match_adjust_rows(cen, match_w)
     return {c: g for c, g in cen.groupby("comp")}, apps
 
 
@@ -518,10 +545,10 @@ def replacement(r: pd.DataFrame, app: pd.DataFrame, prior_years, cut=11, lag=1) 
     return out
 
 
-def load_params(version: str = "v2") -> dict:
-    """v2 (default) = war_params_v2.json (replacement -6, fielding shares, projection refit on fielding-adjusted rates);
-    v1 = the original war_params.json. See docs/VALUE_war_fix.md."""
-    return json.loads((PARAMS_V2 if version == "v2" else PARAMS).read_text())
+def load_params(version: str = DEFAULT_VERSION) -> dict:
+    """v3 (default) = war_params_v3.json (bat + bowl only, match_w 0.25, replacement -6); v2 = war_params_v2.json (fielding
+    shares, replacement -6); v1 = the original war_params.json. See docs/VALUE_war_v3.md and docs/VALUE_war_fix.md."""
+    return json.loads({"v1": PARAMS, "v2": PARAMS_V2, "v3": PARAMS_V3}[version].read_text())
 
 
 REF = Path(__file__).parent.parent / "reference"
@@ -698,8 +725,29 @@ def fit_v2(db_path=None) -> dict:
     return prm
 
 
+def fit_v3(db_path=None) -> dict:
+    """WAR v3 params: no fielding; runs added adjusted for match conditions at MATCH_W; replacement -6 and runs per win as v2
+    unless the refit (on the adjusted team runs added, 40 IPL 2023-26 team-seasons) is reported to change them (docs/VALUE_war_v3.md).
+    Projection constants are refit on the adjusted bat / bowl rates; the refit runs-per-win goes into `detail`."""
+    prm = load_params("v2")
+    for k in ("fielding", "field_k", "field_fair"):
+        prm.pop(k, None)
+    rows, apps = all_tables(match_w=MATCH_W)
+    ts, ra = team_seasons(db_path), team_ra(rows["ipl"])
+    prm["detail"]["rpw_now"] = runs_per_win(ts, ra, range(ERA_IPL, 2027))
+    prm["detail"]["rpw_pre"] = runs_per_win(ts, ra, range(2008, ERA_IPL))
+    prm["proj"] = fit_for(_panel(rows), 2027)
+    prm["version"], prm["match_w"] = "v3", MATCH_W
+    prm["note"] = (
+        "v3: batting + bowling only (no fielding; bowler keeps full credit for catches and stumpings, run-outs credit nobody), "
+        "runs added adjusted 25% for match conditions (models/match_adjust.py), replacement -6 runs/100 balls both roles. "
+        "proj refit on the adjusted rates."
+    )
+    return prm
+
+
 def projections(prm_all: dict, season: int = 2027) -> pd.DataFrame:
-    rows, _ = all_tables(fielding=prm_all.get("fielding"))
+    rows, _ = all_tables(fielding=prm_all.get("fielding"), match_w=prm_all.get("match_w", 0.0))
     return project_table(_panel(rows), season, prm_all["proj"], prm_all["era"])
 
 
@@ -707,7 +755,7 @@ def write_pwar_csv(prm_all: dict, season: int = 2027) -> pd.DataFrame:
     """Players with T20 balls in the last two seasons (any league), ranked by pWAR.
     cricsheet_name, pwar (bat + bowl), bat, bowl, exp_balls_bat / bowl (expected IPL balls), bat_rate / bowl_rate (projected runs
     added per 100 balls), ipl_balls_2023_on (0 = no IPL history in the Impact era: expected balls are then 0 and pwar is 0)."""
-    rows, _ = all_tables(fielding=prm_all.get("fielding"))
+    rows, _ = all_tables(fielding=prm_all.get("fielding"), match_w=prm_all.get("match_w", 0.0))
     P = _panel(rows)
     p = project_table(P, season, prm_all["proj"], prm_all["era"])
     fp = 0.0
@@ -726,7 +774,6 @@ def write_pwar_csv(prm_all: dict, season: int = 2027) -> pd.DataFrame:
             "pwar": p.pwar.round(3),
             "bat": p.bat_pwar.round(3),
             "bowl": p.bowl_pwar.round(3),
-            "field": p.field_pwar.round(3) if "field_k" in prm_all else 0.0,
             "exp_balls_bat": p.bat_balls.round(0).astype(int),
             "exp_balls_bowl": p.bowl_balls.round(0).astype(int),
             "bat_rate": p.bat_rate.round(2),
@@ -734,6 +781,8 @@ def write_pwar_csv(prm_all: dict, season: int = 2027) -> pd.DataFrame:
             "ipl_balls_2023_on": ib.reindex(p.player).values.astype(int),
         }
     )
+    if "field_k" in prm_all:  # v2 only
+        out.insert(4, "field", p.field_pwar.round(3).values)
     out = out.sort_values(["pwar", "cricsheet_name"], ascending=[False, True])
     out.to_csv(DATA / f"pwar_ipl_{season}.csv", index=False)
     return out
@@ -1010,8 +1059,8 @@ def main() -> None:
     import sys
 
     if "--validate" in sys.argv:
-        rows, apps = all_tables()
         prm = load_params()
+        rows, apps = all_tables(match_w=prm.get("match_w", 0.0))
         pd.set_option("display.width", 250, "display.max_columns", 30)
         ts = team_seasons()
         print(sensitivity(rows, apps, prm).round(3).to_string())
@@ -1027,9 +1076,13 @@ def main() -> None:
     if "--v1" in sys.argv:  # the original fit (replacement from the next-season bench); writes war_params.json only
         PARAMS.write_text(json.dumps(fit_all(), indent=1))
         return
-    prm = fit_v2()
-    PARAMS_V2.write_text(json.dumps(prm, indent=1))
-    print(json.dumps(prm["era"]), json.dumps(prm["proj"]), prm["field_k"])
+    if "--v2" in sys.argv:
+        prm = fit_v2()
+        PARAMS_V2.write_text(json.dumps(prm, indent=1))
+        return
+    prm = fit_v3()
+    PARAMS_V3.write_text(json.dumps(prm, indent=1))
+    print(json.dumps(prm["era"]), json.dumps(prm["proj"]), json.dumps(prm["detail"]["rpw_now"]))
     print(write_pwar_csv(prm).head(25).to_string())
 
 

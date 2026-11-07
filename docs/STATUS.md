@@ -148,3 +148,6 @@
 
 ## 2026-11-07 WAR v2 default + worth in the trade card
 - WAR v2 (fielding, replacement -6) is the default; pWAR/trade value/beta/auction model refit (beta 0.094 -> 0.054; backtest pwar 0.03 -> 0.02, no worse); new backtest predictor `worth` (rho 0.20 total, 0.32 bowlers); trade card shows worth metrics + expected matches. Details docs/VALUE_war_fix.md section 6.
+
+## 2026-11-07 WAR v3 default (docs/VALUE_war_v3.md)
+- WAR = batting + bowling only (fielding removed), runs added 25% match-adjusted; team-season fit r 0.798, MAE 0.95 (v2 0.803 / 0.93). pWAR csv, trade values/beta (0.054 -> 0.085), auction model, backtest tables refit. Backtest pooled: pwar +0.02 -> +0.01, recent_value +0.13 -> +0.12. Hardik/Jaiswal MI XII 3.19/3.54 -> 3.56/3.83.

@@ -40,10 +40,11 @@ def predictor(name: str, scale: str = "rank"):
 
 @lru_cache(maxsize=1)
 def tables() -> pd.DataFrame:
-    """Every league-season-player-role-phase row (war.season_table by_phase, league-season averages centred to 0).
+    """Every league-season-player-role-phase row (war.season_table by_phase, league-season averages centred to 0, match-condition adjusted at W.MATCH_W).
     Columns: comp, sy, season, team, player, role (bat/bowl), balls, runs, wkts, sc, wk, phase; runs added = sc + wk."""
     rows = [W.season_table(c, by_phase=True)[0] for c in W.LEAGUES + EXTRA_LEAGUES]
     T = W.centre(pd.concat([r for r in rows if len(r)], ignore_index=True))
+    T = W.match_adjust_rows(T, W.MATCH_W)  # WAR v3: runs added adjusted 25% for match conditions
     T["ra"] = T.sc + T.wk
     return T
 
@@ -104,9 +105,9 @@ def recent_value(T, X, ctx):
 
 
 @predictor("pwar", "rank")
-def pwar(T, X, ctx, version: str = "v2"):
-    """War.py's projection (fit on seasons before the target, men's leagues + T20I), as pWAR (wins, bat + bowl). v2 = replacement -6
-    (the fielding part is not in this backtest: the truth is bat + bowl runs added); pwar_v1 = the original replacement levels."""
+def pwar(T, X, ctx, version: str = W.DEFAULT_VERSION):
+    """War.py's projection (fit on seasons before the target, men's leagues + T20I), as pWAR (wins, bat + bowl). v3 = replacement -6, no fielding
+    (the truth is bat + bowl runs added, match-adjusted); pwar_v1 = the original replacement levels."""
     t = X + 1
     pt = _pwar_table(T, t, version).set_index("player")
     return pd.DataFrame({"bat": pt.bat_pwar, "bowl": pt.bowl_pwar, "bat_rate": pt.bat_rate / 100, "bowl_rate": pt.bowl_rate / 100})  # fmt: skip
@@ -127,7 +128,7 @@ def pwar_runs(T, X, ctx):
 _PW: dict = {}
 
 
-def _pwar_table(T, t, version: str = "v2"):
+def _pwar_table(T, t, version: str = W.DEFAULT_VERSION):
     if (t, version) not in _PW:
         d = T[T.sy < t]
         ipl, other = d[d.comp == "ipl"], d[d.comp.isin([c for c in W.LEAGUES if c != "ipl"])]

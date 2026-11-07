@@ -111,8 +111,8 @@ def test_values_are_weighted_recent_war_and_ranges_bracket_them():
     v = T.values()
     t = v.table
     assert set(T.SEASONS) == {2023, 2024, 2025, 2026} and sum(T.WEIGHTS.values()) == 10
-    assert (t.value - (t.bat_value + t.bowl_value + t.field_value)).abs().max() < 1e-9
-    d = v.bat_draws + v.bowl_draws + v.field_draws
+    assert (t.value - (t.bat_value + t.bowl_value)).abs().max() < 1e-9
+    d = v.bat_draws + v.bowl_draws
     lo, hi = np.percentile(d, 10, axis=1), np.percentile(d, 90, axis=1)
     inside = ((t.value.values >= lo - 0.05) & (t.value.values <= hi + 0.05)).mean()
     assert inside > 0.95  # the point value sits inside its own bootstrap range
@@ -278,13 +278,13 @@ def test_trade_frame_and_charts_build_without_the_db():
 @requires_real_db
 def test_match_table_reproduces_season_war():
     prm = W.load_params()
-    r = W.centre(W.season_table("ipl", fielding=prm["fielding"])[0])
+    r = W.match_adjust_rows(W.centre(W.season_table("ipl")[0]), prm["match_w"])
     wt = W.war_table(r, prm)
     m = pd.read_csv(T.MATCH_CSV)
     e = prm["era"]["2023"]
     g = m.groupby(["player", "role", "sy"])[["balls", "ra"]].sum().reset_index()
     g["war"] = (
-        g.ra - g.role.map({"bat": e["repl"]["bat"], "bowl": e["repl"]["bowl"], "field": 0.0}) / 100 * g.balls
+        g.ra - g.role.map({"bat": e["repl"]["bat"], "bowl": e["repl"]["bowl"]}) / 100 * g.balls
     ) / e["rpw"]
     k = g[(g.player == "JJ Bumrah") & (g.sy == 2024) & (g.role == "bowl")].war.iloc[0]
     ref = wt[(wt.player == "JJ Bumrah") & (wt.sy == 2024)].bowl_war.iloc[0]

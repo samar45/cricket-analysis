@@ -42,9 +42,9 @@ def test_saved_params_are_sane():
 
 def test_pwar_file_is_consistent():
     d = pd.read_csv(W.DATA / "pwar_ipl_2027.csv")
-    assert list(d.columns)[:5] == ["cricsheet_name", "pwar", "bat", "bowl", "field"]
+    assert list(d.columns)[:4] == ["cricsheet_name", "pwar", "bat", "bowl"]
     assert len(d) > 300 and d.cricsheet_name.is_unique and d.notna().all().all()
-    assert (d.pwar - (d.bat + d.bowl + d.field)).abs().max() < 0.0021  # rounding only
+    assert (d.pwar - (d.bat + d.bowl)).abs().max() < 0.0021  # rounding only
     assert d.pwar.is_monotonic_decreasing
     assert (d[["exp_balls_bat", "exp_balls_bowl", "ipl_balls_2023_on"]] >= 0).all().all()
     assert (
@@ -52,7 +52,7 @@ def test_pwar_file_is_consistent():
     )  # a projection regressed to the mean never looks like a 2-win season
     assert (
         (d.bat + d.bowl)[d.ipl_balls_2023_on == 0] == 0
-    ).all()  # no Impact-era IPL history -> no expected balls -> 0 (only a fielding credit can remain)
+    ).all()  # no Impact-era IPL history -> no expected balls -> 0 
 
 
 # ── projection logic on a synthetic panel ──────────────────────────────────────────────────────────────────
@@ -254,7 +254,7 @@ def test_famous_seasons_are_top_3(player, year, role):
 def test_season_view_columns_filters_and_errors():
     d = api.run("war", competition="ipl", season=2025, top=500).data
     assert d.season.eq(2025).all() and d.main_war.is_monotonic_decreasing
-    assert (d.war - (d.bat_war + d.bowl_war + d.field_war)).abs().max() < 0.011
+    assert (d.war - (d.bat_war + d.bowl_war)).abs().max() < 0.011
     b = d[d.main_role == "bowler"]
     assert len(b) and (b.main_war == b.bowl_war).all() and set(d.main_role) <= {"batter", "bowler", "all-rounder"}
     mi = api.run("war", competition="ipl", season=2025, team="Mumbai Indians", top=5).data
