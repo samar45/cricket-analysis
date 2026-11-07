@@ -412,10 +412,11 @@ def test_html_card_escapes_names_and_has_the_pieces(mi_rr):
     df.attrs["card"] = c
     h = vtrade.html(type("R", (), {"data": df})())
     assert "<script>" not in h and "&lt;script&gt;" in h
-    for piece in ("Mumbai Indians", "Playoff %", "Title %", "Purse left", "Squad salary", "XII after", "Arriving"):
+    for piece in ("MI gives", "RR gives", "WAR diff", "PLAYOFF PTS", "XII RANGE"):
         assert piece in h
-    for gone in ("More analysis", "came out ahead", "odds come from"):
-        assert gone not in h
+    d = "".join(x[1] for x in vtrade.details(type("R", (), {"data": df})()))
+    for piece in ("Playoff %", "Squad salary", "XII after", "Arriving", "Weak now"):
+        assert piece in d
     assert (
         vtrade.html(type("R", (), {"data": pd.DataFrame({"x": [1]})})()) is None
     )  # squad view: no card
@@ -427,4 +428,4 @@ def test_dashboard_shows_trade_card():
 
     at = open_module(new_app(), "trade")
     assert_clean(at, "trade")
-    assert any("Squad salary" in e.proto.body for e in at.get("html"))
+    assert any("PLAYOFF PTS" in e.proto.body for e in at.get("html"))

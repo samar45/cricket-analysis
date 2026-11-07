@@ -159,6 +159,11 @@ def explore():
             fig = None if card else _figure(mod.id, result)  # the card replaces the plain chart
             if card:
                 st.html(card)
+                if lean:
+                    viz = importlib.import_module("cricket_analytics.viz.trade")
+                    for title, body in viz.details(result):
+                        with st.expander(title):
+                            st.html(body)
             elif fig is None:
                 st.caption("This module has no chart yet.")
             else:
@@ -178,7 +183,9 @@ def explore():
             "Download JSON", result.to_json(indent=2), f"{mod.id}.json", "application/json"
         )
     with st.expander("Method" if lean else "About this result"):
-        if not lean:
+        if lean:
+            st.caption(importlib.import_module("cricket_analytics.viz.trade").method_note(result))
+        else:
             st.json({k: meta[k] for k in ("params", "data_through", "source", "db_modified")})
         for c in meta["caveats"]:
             st.markdown(f"- {c}")

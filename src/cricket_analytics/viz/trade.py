@@ -140,6 +140,14 @@ CSS = """<style>
 .tp th:first-child,.tp td:first-child{text-align:left}
 .tp small{opacity:.6;font-size:10.5px;margin-left:3px}
 .tp .up{color:#2e9e5b}.tp .dn{color:#e5534b}
+.tp.v{gap:28px;margin:18px 0 8px}
+.tp .tag{display:inline-block;margin-left:8px;padding:1px 6px;border-radius:4px;background:#e5534b;color:#fff;font-size:10.5px;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+.tp .big{font-size:30px;font-weight:700;line-height:1.1}
+.tp .rs{flex:1 1 300px;border-top:3px solid rgba(128,128,128,.4);padding:10px 2px 0}
+.tp .rs.up{border-color:#2e9e5b}.tp .rs.dn{border-color:#e5534b}
+.tp .rs .g{display:flex;gap:22px;margin-top:8px;flex-wrap:wrap}
+.tp .rs .g div{font-size:15px;font-weight:600}.tp .rs .g span{display:block;font-size:10.5px;font-weight:600;opacity:.6;letter-spacing:.06em}
+.tp .diff{width:100%;font-size:15px;font-weight:600;margin-top:4px}
 </style>"""
 
 
@@ -222,16 +230,133 @@ def _xii(t) -> str:
     )
 
 
+def _gives(c, ab):
+    """Players leaving team `ab` = what the other team receives."""
+    other = c["order"][1] if ab == c["order"][0] else c["order"][0]
+    return c["teams"][other]["receives"]
+
+
+def _tot(ps):
+    return {
+        "price": sum(p["price"] for p in ps),
+        "value": sum(p["value"] for p in ps),
+        "m": sum(((p.get("worth") or {}).get("matches") or (0,))[0] for p in ps),
+    }
+
+
+def _compare_side(c, ab) -> str:
+    ps = _gives(c, ab)
+    rows = ""
+    for p in ps:
+        w = p.get("worth") or {}
+        em = w.get("matches")
+        ms = " · ".join(
+            f"{m['value']:.0f} {esc(m['label'])}<small>p{m['pctile']}</small>" if m["value"] >= 20
+            else f"{m['value']:.1f} {esc(m['label'])}<small>p{m['pctile']}</small>"
+            for m in w.get("metrics", [])[:3]
+        )
+        mt = "" if not em else f"{em[0]:.0f}<small>{em[1]:.0f} / {em[2]:.0f}</small>"
+        rows += (
+            f"<tr><td>{esc(p['name'])}</td><td>{ROLE.get(p['role'], '')}</td><td>{_n(p['price'])}</td>"
+            f"<td>{_n(p['value'])}<small>{_rng(p['lo'], p['hi'])}</small></td>"
+            f"<td>{_n(p['value'] / p['price'], 3) if p['price'] else ''}</td>"
+            f"<td>{mt}</td><td class=w style='text-align:left'>{ms}</td></tr>"
+        )
+    if len(ps) > 1:
+        t = _tot(ps)
+        rows += (
+            f"<tr><td><b>Total</b></td><td></td><td><b>{_n(t['price'])}</b></td><td><b>{_n(t['value'])}</b></td>"
+            f"<td><b>{_n(t['value'] / t['price'], 3) if t['price'] else ''}</b></td><td><b>{t['m']:.0f}</b></td><td></td></tr>"
+        )
+    return (
+        f"<div class=t><h4>{esc(ab)} gives</h4><div class=s><table><tr><th>Player</th><th>Role</th><th>Cr</th><th>WAR</th>"
+        f"<th>WAR/cr</th><th>Matches</th><th style='text-align:left'>Worth metrics</th></tr>"
+        f"{rows or '<tr><td>–</td></tr>'}</table></div></div>"
+    )
+
+
+def _result(c, ab) -> str:
+    t = c["teams"][ab]
+    ch, cl, chh = t["xii"]["change"]
+    cls = "up" if ch > 0.005 else "dn" if ch < -0.005 else ""
+    tag = f'<span class="tag">PURSE {_n(t["purse"][1], 2, True)} cr</span>' if t["purse"][1] < 0 else ""
+    o = t["odds"]
+    cells = [("XII RANGE", _rng(cl, chh, 1, True))]
+    for k, lab in (("playoff", "PLAYOFF PTS"), ("title", "TITLE PTS")):
+        cells.append((lab, _d(o[k]["diff"][0], 1) if o else "–"))
+    cells.append(("PURSE CR", _d(t["purse"][1] - t["purse"][0])))
+    g = "".join(f"<div><span>{a}</span>{b}</div>" for a, b in cells)
+    return (
+        f'<div class="rs {cls}"><h3>{esc(ab)}{tag}</h3><div class="big {cls}">{_n(ch, 2, True)}</div>'
+        f"<div class=g>{g}</div></div>"
+    )
+
+
 def html(result) -> str | None:
-    """The trade page for the dashboard (None for the squad view or when the card data is missing)."""
+    """Top of the trade page: players swapped side by side, value difference, result strip (None for the squad view)."""
     c = getattr(result.data, "attrs", {}).get("card")
     if not c:
         return None
-    cols = ""
-    for ab in c["order"]:
-        t = c["teams"][ab]
-        cols += (
-            f'<div class=t><h3>{esc(t["name"])}</h3><div class=s><table>{_metrics(t)}</table></div>'
-            f"{_moving(t)}{_xii(t)}</div>"
+    a, b = c["order"]
+    sides = f"<div class='tp v'>{_compare_side(c, a)}{_compare_side(c, b)}</div>"
+    ta, tb = _tot(_gives(c, b)), _tot(_gives(c, a))  # what A gets, what A gives
+    diff = (
+        f"<div class=tp><div class=diff>{esc(a)} WAR diff {_d(ta['value'] - tb['value'])} | "
+        f"salary diff {_d(ta['price'] - tb['price'], inv=True)} cr</div></div>"
+        if _gives(c, a) or _gives(c, b)
+        else ""
+    )
+    strip = f"<div class='tp v'>{_result(c, a)}{_result(c, b)}</div>"
+    return f"{CSS}{sides}{diff}{strip}"
+
+
+def _wrap(body) -> str:
+    return f"{CSS}<div class=tp>{body}</div>"
+
+
+def details(result) -> list[tuple[str, str]]:
+    """Collapsed sections for the dashboard: [(expander title, html)]."""
+    c = getattr(result.data, "attrs", {}).get("card")
+    if not c:
+        return []
+    T = c["teams"]
+    out = [
+        (
+            f"Team detail — {ab}",
+            _wrap(f"<div class=t><h3>{esc(T[ab]['name'])}</h3><div class=s><table>{_metrics(T[ab])}</table></div>{_moving(T[ab])}</div>"),
         )
-    return f"{CSS}<div class=tp>{cols}</div>"
+        for ab in c["order"]
+    ]
+    out.append(("Best XII after", _wrap("".join(f"<div class=t><h3>{esc(T[ab]['name'])}</h3>{_xii(T[ab])}</div>" for ab in c["order"]))))
+    L = "style='text-align:left'"
+    rows = "".join(
+        f"<tr><td>{esc(T[ab]['name'])}</td>"
+        + "".join(f"<td {L}>{esc(', '.join(T[ab][k]) or 'none')}</td>" for k in ("holes_after", "holes_created", "holes_filled"))
+        + "</tr>"
+        for ab in c["order"]
+    )
+    out.append(
+        (
+            "Slots",
+            _wrap(
+                f"<div class=t style='flex-basis:100%'><div class=s><table><tr><th>Team</th><th {L}>Weak now</th>"
+                f"<th {L}>Created</th><th {L}>Filled</th></tr>{rows}</table></div></div>"
+            ),
+        )
+    )
+    return out
+
+
+def method_note(result) -> str:
+    c = getattr(result.data, "attrs", {}).get("card")
+    if not c:
+        return ""
+    bt = c["beta"]
+    note = (
+        "No odds: simulation off."
+        if bt is None
+        else f"Odds from {c['seasons']:,} simulated IPL seasons. Win chance per game = logistic(slope x gap in XII value), slope {bt['beta']:.2f} per win a season "
+        f"(10th to 90th percentile {_n(bt['lo'], 2)} to {_n(bt['hi'], 2)}, fitted on {bt['n']} IPL 2024-26 matches). Ranges are 10th to 90th percentile over that slope uncertainty. "
+        f"Purse = {c['purse_cap']:g} cr cap (guess) minus squad salaries; {c['cr_per_win']:.1f} cr per win."
+    )
+    return note + (f" Must play: {', '.join(c['must_play'])}." if c["must_play"] else "")
