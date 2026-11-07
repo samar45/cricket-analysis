@@ -45,6 +45,8 @@ def _needs() -> None:
         "PROVISIONAL until the retentions (17 Nov 2026): squads are full today and nothing is released yet. "
         "Supply is assumed from the earlier mini auctions."
     )
+    if ui.gate("ar_needs", {}) is None:
+        return
     t = ui.run("scarcity", {"view": "team_needs", "year": 2027}).data
     _show(
         t[
@@ -72,6 +74,10 @@ def _scarce() -> None:
     year = st.radio(
         "Auction", [2027, 2026, 2025, 2024, 2023, 2022], horizontal=True, key="ar_scarce"
     )
+    sel = ui.gate("ar_scarce", {"year": year})
+    if sel is None:
+        return
+    year = sel["year"]
     d = ui.run("scarcity", {"view": "auction", "year": year}).data
     _show(d)
     st.info(
@@ -88,6 +94,10 @@ def _estimator() -> None:
     who = st.selectbox(
         "Player who has been on the block (2022-2026)", names, index=default, key="ar_player"
     )
+    sel = ui.gate("ar_est", {"player": who})
+    if sel is None:
+        return
+    who = sel["player"]
     try:
         d = ui.run("auction", {"view": "player", "player": who}).data
     except ValueError as e:
@@ -128,6 +138,8 @@ def _scouting() -> None:
         "price paid than by our league-weighted score (rank correlation +0.24 vs -0.18, n=20); over 2024-26 no score "
         "ranked buys with a range clear of zero, and next-season batting value is close to unpredictable (bowling a little less so)."
     )
+    if ui.gate("ar_scout", {}) is None:
+        return
     smat = pd.read_csv(SMAT_CSV)
     smat = smat.assign(
         ipl_squad_2027=smat.ipl_squad_2027.fillna("-"), value_per_100=smat.value_per_100.round(1)
@@ -182,6 +194,8 @@ def _market() -> None:
     st.markdown(
         "**WAR per 10 crore by buy type, auctions 2022-25** (95% range from resampling players)"
     )
+    if ui.gate("ar_market", {}) is None:
+        return
     t = ui.run("auction", {"view": "market", "group_by": "type"}).data
     _show(
         t[["type", "players", "crore_spent", "war_total", "war_per_10cr", "lo", "hi", "played_%"]]

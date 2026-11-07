@@ -81,6 +81,14 @@ def overview():
             "ov_season", "Season", ui.choices("season", comp, None), none_label="All seasons"
         )
     params = {"competition": comp, "season": season}
+    params = ui.gate("overview", params, "Show leaders")
+    if params is None:
+        return
+    with st.container(key="res_overview"):
+        _leaders(params)
+
+
+def _leaders(params):
     bat, bowl = ui.run("batting", params), ui.run("bowling", params)
     st.caption(f"Data through {bat.meta['data_through']}")
     left, right = st.columns(2)
@@ -136,6 +144,14 @@ def explore():
         )
     params = ui.param_form(mod)
 
+    params = ui.gate(mod.id, params)
+    if params is None:
+        return
+    with st.container(key=f"res_{mod.id}"):
+        _explore_result(mod, params, lean)
+
+
+def _explore_result(mod, params, lean):
     result = ui.run(mod.id, params)
     meta = result.meta
     if not lean:

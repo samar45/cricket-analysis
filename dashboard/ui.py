@@ -39,6 +39,22 @@ def run(module_id: str, params: dict) -> api.Result:
     return api.run(module_id, **params)
 
 
+def gate(scope: str, params, label: str = "Run"):
+    """Run button for a page/section. Nothing heavy may run until it is clicked. Returns the params of the last run
+    (None before the first click), so callers compute from those, not from the live widgets. If the widgets differ from
+    the last run, a tag is shown and the caller's `st.container(key=f"res_{scope}")` is greyed."""
+    runs = st.session_state.setdefault("_runs", {})
+    if st.button(label, type="primary", key=f"run_{scope}"):
+        runs[scope] = params
+    if scope not in runs:
+        st.caption("Set the filters, then click Run. Nothing is computed until then.")
+        return None
+    if runs[scope] != params:
+        st.caption(":orange[params changed — click Run to update]")
+        st.html(f"<style>.st-key-res_{scope}{{opacity:.4}}</style>")
+    return runs[scope]
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def choices(kind: str, competition: str | None, season: list | None) -> list[str]:
     return api.choices(kind, competition, season)

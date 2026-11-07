@@ -129,6 +129,14 @@ def page() -> None:
     who = b.selectbox("Player", names, key="pl_who", index=0)
     years = sorted({int(str(s)[:4]) for s in ui.choices("season", comp, None)})
     y0, y1 = st.select_slider("Seasons", years, value=(max(min(years), 2023) if comp == "ipl" else years[max(len(years) - 4, 0)], years[-1]), key="pl_years")
+    sel = ui.gate("player", [who, comp, y0, y1])
+    if sel is None:
+        return
+    with st.container(key="res_player"):
+        _body(*sel)
+
+
+def _body(who, comp, y0, y1) -> None:
     try:
         c = card(who, comp, y0, y1)
     except ValueError as e:

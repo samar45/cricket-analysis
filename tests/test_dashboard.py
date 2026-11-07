@@ -30,6 +30,11 @@ def open_module(at: AppTest, module_id: str) -> AppTest:
     return at.selectbox(key="module").set_value(module_id).run()
 
 
+def go(at: AppTest, scope: str) -> AppTest:
+    """Click the Run button of a module / page (nothing computes before this)."""
+    return at.button(key=f"run_{scope}").click().run()
+
+
 def assert_clean(at: AppTest, module_id: str = ""):
     assert not at.exception, [e.message for e in at.exception]
     assert not at.error, [e.value for e in at.error]
@@ -41,12 +46,12 @@ def assert_clean(at: AppTest, module_id: str = ""):
 def test_overview_loads():
     at = new_app()
     assert_clean(at)
-    assert (
-        len(at.markdown) >= 16 and len(at.dataframe) == 2
-    )  # one card per competition, two leader tables
-    at.selectbox(key="ov_comp").set_value(
-        "t20i_women"
-    ).run()  # leaders follow the chosen competition
+    assert len(at.markdown) >= 16 and len(at.dataframe) == 0  # cards only; leaders wait for the button
+    go(at, "overview")
+    assert_clean(at)
+    assert len(at.dataframe) == 2  # two leader tables
+    at.selectbox(key="ov_comp").set_value("t20i_women").run()  # leaders follow the chosen competition once re-run
+    go(at, "overview")
     assert_clean(at)
 
 
@@ -58,6 +63,7 @@ def test_module_defaults(module_id):
     ).params:  # required players have no "Any" option; matchup needs one of two
         if p.required or (module_id == "matchup" and p.name in PLAYERS):
             at.selectbox(key=f"p_{p.name}").set_value(PLAYERS[p.name]).run()
+    go(at, module_id)
     assert_clean(at, module_id)
     assert at.selectbox(key="module").value == module_id
 
@@ -71,12 +77,14 @@ def test_module_ipl_with_players(module_id):
     for p in mod.params:
         if p.name in names:
             at.selectbox(key=f"p_{p.name}").set_value(names[p.name]).run()
+    go(at, module_id)
     assert_clean(at, module_id)
     assert bool(at.warning) == (mod.category == "experimental" and module_id not in ("trade", "xi_odds")), (  # these pages are numbers only
         "only experimental modules show the banner"
     )
     if module_id == "batting":
         at.toggle(key="batting_include_super_overs").set_value(True).run()
+        go(at, "batting")
         assert_clean(at, module_id)
         assert any(r.get("total_runs") == 9346 for r in at.dataframe[0].value.to_dict("records")), (
             "Kohli IPL runs with super overs"
@@ -88,19 +96,23 @@ def test_multi_and_season_controls():
     at.selectbox(key="p_competition").set_value("ipl").run()
     at.selectbox(key="p_player").set_value("V Kohli").run()
     at.multiselect(key="p_venue").set_value(["M Chinnaswamy Stadium", "Wankhede Stadium"]).run()
+    go(at, "batting")
     assert_clean(at, "batting")
     assert at.dataframe[0].value.total_runs.iloc[0] == 4139  # two venues, summed
     at.radio(key="p_season_mode").set_value("Last N seasons").run()
     at.number_input(key="p_last_n_years").set_value(5).run()
     at.multiselect(key="p_venue").set_value([]).run()
+    go(at, "batting")
     assert_clean(at, "batting")
     assert at.dataframe[0].value.total_runs.iloc[0] == 3053  # IPL 2022..2026
     at.radio(key="p_season_mode").set_value("Year range").run()
     at.selectbox(key="p_season_from").set_value(2024).run()
+    go(at, "batting")
     assert_clean(at, "batting")
     assert at.dataframe[0].value.total_runs.iloc[0] == 741 + 657 + 675
     at.selectbox(key="p_season_from").set_value(None).run()
     at.selectbox(key="batting_group_by").set_value("venue").run()
+    go(at, "batting")
     assert_clean(at, "batting")
 
 
@@ -113,6 +125,7 @@ def test_video_tab(module_id):
     for p in registry.get(module_id).params:
         if p.name in names:
             at.selectbox(key=f"p_{p.name}").set_value(names[p.name]).run()
+    go(at, module_id)
     assert_clean(at, module_id)
     assert at.tabs, (
         f"{module_id} returned no rows for Kohli in the IPL, so its tabs cannot be checked"
@@ -129,14 +142,35 @@ def test_video_tab(module_id):
     at.radio(key="video_aspect").set_value("9:16").run()
 
 
+def test_nothing_runs_before_run(monkeypatch):
+    """Opening a module shows no result and never calls api.run; changing params afterwards shows the stale tag."""
+    import streamlit as st
+    from cricket_analytics import api
+
+    st.cache_data.clear()
+
+    calls = []
+    real = api.run
+    monkeypatch.setattr(api, "run", lambda *a, **k: calls.append(a) or real(*a, **k))
+    at = open_module(new_app(), "batting")
+    assert not calls and not at.dataframe and not at.tabs
+    go(at, "batting")
+    assert calls and at.dataframe
+    n = len(calls)
+    at.selectbox(key="p_competition").set_value("ipl").run()  # param change alone: no recompute, stale tag
+    assert len(calls) == n and any("params changed" in c.value for c in at.caption)
+
+
 def test_player_page():
     """Player page: default IPL 2023-26 for three different roles (bowler, keeper-batter, all-rounder), no errors, sections present."""
     at = new_app()
     at.sidebar.radio(key="page").set_value("Player").run()
     assert_clean(at)
+    assert "WAR v3 by season" not in " ".join(m.value for m in at.markdown)  # waits for Run
     for name, role_word in (("JJ Bumrah", "bowler"), ("H Klaasen", "batter"), ("HH Pandya", "all-rounder")):
         at.text_input(key="pl_q").set_value(name.split()[-1]).run()
         at.selectbox(key="pl_who").set_value(name).run()
+        go(at, "player")
         assert_clean(at)
         page = " ".join(m.value for m in at.markdown)
         assert name in page and role_word in page and "WAR v3 by season" in page and "Player worth" in page and "Phases" in page, name
