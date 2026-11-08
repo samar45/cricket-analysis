@@ -7,6 +7,14 @@ from . import PALETTE, bars_height, empty, short, style
 TOP = 15
 
 
+def _err(t, val) -> dict:
+    """10-90% range as error bars (war module, v3: war_lo / war_hi, main_war_lo / main_war_hi)."""
+    lo, hi = f"{val}_lo", f"{val}_hi"
+    if lo not in t or t[lo].isna().any():
+        return {}
+    return dict(error_x=dict(type="data", symmetric=False, array=(t[hi] - t[val]).clip(lower=0), arrayminus=(t[val] - t[lo]).clip(lower=0), thickness=1.5, width=3))
+
+
 def figure(result) -> go.Figure:
     d = result.data
     if d.empty:
@@ -24,10 +32,11 @@ def figure(result) -> go.Figure:
             y=labels,
             orientation="h",
             marker_color=[PALETTE["good"] if v >= 0 else PALETTE["bad"] for v in t[val]],
-            text=[f"{v:+.2f}" for v in t[val]],
+            text=[f"{v:+.2f}" for v in t[val]],  # the text sits right of the bar end; the range is in the error bar
             textposition="outside",
             cliponaxis=False,
             hovertemplate="%{y}: %{x:+.2f} wins<extra></extra>",
+            **_err(t, val),
         )
     )
     fig.update_xaxes(
@@ -42,6 +51,6 @@ def figure(result) -> go.Figure:
         result,
         note="a prediction from earlier seasons, pulled toward the average"
         if proj
-        else "about 100 runs added = one win in the 2023+ IPL",
+        else "bars: 10-90% range over his own matches; about 100 runs added = one win in 2023+",
         height=bars_height(len(t)),
     )

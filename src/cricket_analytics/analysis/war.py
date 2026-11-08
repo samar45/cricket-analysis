@@ -79,12 +79,21 @@ def _projected(f, role: str, components: bool, top: int) -> pd.DataFrame:
     )
 
 
+def _ranges(t: pd.DataFrame, parts: list, version: str):
+    """10-90% range per row from the match bootstrap (WAR v3 only; other versions have no range)."""
+    if version != "v3":
+        return [None] * len(t), [None] * len(t)
+    r = [w.war_range([(p, s)], part) for p, s, part in zip(t.player, t.sy, parts)]
+    return [round(a, 2) for a, _ in r], [round(b, 2) for _, b in r]
+
+
 @module(
     id="war",
     title="Wins above replacement (WAR) and projected WAR for IPL 2027",
     category="advanced",
     description="WAR turns a player's runs added (see the runs_added module) into wins: runs added minus what a replacement-level "
     "player would have added in the same balls, divided by the runs one win costs in that IPL era (about 100 runs in 2023+). "
+    "war_lo / war_hi (and main_war_lo / main_war_hi) are the 10-90% range from a bootstrap over the player's own matches (v3 only). "
     "view=season lists player-seasons ranked by main_war: the part of WAR from the player's main job (batting for batters, bowling for bowlers, both for all-rounders; main_role from the share of his balls spent bowling); war is batting + bowling (v3 has no fielding). "
     "view=projected lists pWAR for IPL 2027: a prediction made only from earlier seasons (IPL 2023+, plus other T20 leagues at a "
     "lower weight), pulled hard toward the average because single-season runs added is mostly noise. 1.0 = one win.",
@@ -125,6 +134,7 @@ def _projected(f, role: str, components: bool, top: int) -> pd.DataFrame:
         ),
     ],
     caveats=[
+        "Range columns (v3): 400 resamples of the player's own matches in that season, widened to a floor for players with few matches (per-ball spread shrunk toward the league's). It covers luck in which matches he played, not model error (runs per win, replacement level). A range that excludes 0 is real evidence the season was above / below replacement.",
         "WAR v3 (default) is batting + bowling only: the bowler keeps full credit for catches and stumpings and a run-out credits nobody (see the fielding module for fielding). Runs added is adjusted 25% for match conditions: each ball is also compared with what the other players did in the same match, phase and role (a weak or strong opponent, a flat pitch), at weight 0.25 because one match tells little about the opposition. The scoring part below includes this adjustment.",
         "Runs per win and the replacement level are measured from IPL 2023-2026 only (the Impact Player era); older seasons use their own era numbers (about 91 runs per win, from IPL 2008-2022). Runs per win has a wide range: 81 to 125 for 2023+ (40 team-seasons).",
         "Replacement level is a convention: -6 runs per 100 balls for batters and bowlers (v1 measured it from players outside their team's usual XI the following season, which is biased toward good players; counting the same season gives much lower values).",
@@ -181,6 +191,7 @@ def war(
         if components:
             out["scoring_part"], out["wicket_part"] = t.bat_sc.round(1), t.bat_wk.round(1)
         key = "war"
+        out["war_lo"], out["war_hi"] = _ranges(t, ["bat"] * len(t), version)
     elif role == "bowling":
         t = t[wb >= min_balls]
         out = pd.DataFrame(
@@ -198,6 +209,7 @@ def war(
         if components:
             out["scoring_part"], out["wicket_part"] = t.bowl_sc.round(1), t.bowl_wk.round(1)
         key = "war"
+        out["war_lo"], out["war_hi"] = _ranges(t, ["bowl"] * len(t), version)
     else:
         t = t[(bb >= min_balls) | (wb >= min_balls)]
         role_ = w.main_role(t.bat_balls, t.bowl_balls)
@@ -227,6 +239,8 @@ def war(
             ):
                 out[a] = t[b].round(1)
         key = "main_war"
+        out["war_lo"], out["war_hi"] = _ranges(t, ["war"] * len(t), version)
+        out["main_war_lo"], out["main_war_hi"] = _ranges(t, list(role_.map({"batter": "bat", "bowler": "bowl"}).fillna("war")), version)
     return (
         out.sort_values([key, "player", "season"], ascending=[False, True, True])
         .head(int(top))

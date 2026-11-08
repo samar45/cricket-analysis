@@ -1056,8 +1056,84 @@ def sensitivity(rows, apps, prm_all):
     return pd.DataFrame(out)
 
 
+# --------------------------------------------------------------------------- 10-90% ranges (bootstrap over a player's own matches)
+MATCH_CSV = DATA / "war_match_ra.csv"  # one row per IPL player-match-role: balls, runs added (v3: match-adjusted); python -m cricket_analytics.models.war --match
+BOOT_DRAWS, BOOT_SEED, SHRINK_K = 400, 20261108, 3
+
+
+def build_match_table(db_path=None) -> pd.DataFrame:
+    """Every IPL match of every player: balls and runs added (the numbers WAR v3 sums; checked equal to war_table to 1e-13)."""
+    from .match_adjust import adjusted, match_rows
+
+    r = adjusted(match_rows("ipl"), load_params()["match_w"])
+    m = r.groupby(["match_id", "sy", "player", "role"], as_index=False)[["balls", "ra_adj"]].sum()
+    return m.rename(columns={"ra_adj": "ra"}).round(5)
+
+
+def boot_draws(m: pd.DataFrame, prm: dict, draws: int = BOOT_DRAWS, seed: int = BOOT_SEED) -> dict:
+    """{(player, sy): (bat_war_draws, bowl_war_draws)}: resample the player's matches of that season with replacement (the same
+    matches feed batting and bowling, as in trade.compute_values). A plain bootstrap is zero-wide for 1 match and too narrow for a
+    few, so the spread is lifted to a floor: per-ball variance of a match's WAR, shrunk toward the pooled value (SHRINK_K matches)."""
+    import zlib
+
+    pm = m.pivot_table(index=["player", "sy", "match_id"], columns="role", values=["balls", "ra"], fill_value=0.0)
+    pm.columns = [f"{r}_{k}" for k, r in pm.columns]
+    pm = pm.reset_index()
+    for c in ("bat_balls", "bat_ra", "bowl_balls", "bowl_ra"):
+        if c not in pm:
+            pm[c] = 0.0
+    e = pm.sy.map(era_key)
+    rpw = e.map({k: v["rpw"] for k, v in prm["era"].items()}).values
+    rb = e.map({k: v["repl"]["bat"] for k, v in prm["era"].items()}).values / 100.0
+    rw = e.map({k: v["repl"]["bowl"] for k, v in prm["era"].items()}).values / 100.0
+    pm["xb"] = (pm.bat_ra - rb * pm.bat_balls) / rpw  # a match's batting WAR; bowling likewise
+    pm["xw"] = (pm.bowl_ra - rw * pm.bowl_balls) / rpw
+    pm["tb"] = pm.bat_balls + pm.bowl_balls
+    pool = ((pm.xb + pm.xw) ** 2).sum() / pm.tb.sum()  # WAR variance per ball, pooled
+    out = {}
+    for (player, sy), g in pm.groupby(["player", "sy"]):
+        rng = np.random.default_rng([seed, zlib.crc32(player.encode()), int(sy)])
+        n, xb, xw = len(g), g.xb.values, g.xw.values
+        x, balls = xb + xw, g.tb.sum()
+        idx = rng.integers(0, n, (draws, n))
+        db, dw = xb[idx].sum(1) - xb.sum(), xw[idx].sum(1) - xw.sum()  # deviations from the point estimate
+        own = ((x - x.mean()) ** 2).sum() / max(n - 1, 1) / max(balls / n, 1)  # per-ball variance of one match
+        per_ball = ((n - 1) * own + SHRINK_K * pool) / (n - 1 + SHRINK_K)
+        target = np.sqrt(per_ball * balls)
+        sd = (db + dw).std()
+        if sd > 0:
+            k = max(1.0, target / sd)
+            db, dw = db * k, dw * k
+        else:  # one match: the bootstrap has no spread at all
+            z = rng.standard_normal(draws) * target
+            db, dw = z * 0.5, z * 0.5
+        out[(player, int(sy))] = (xb.sum() + db, xw.sum() + dw)
+    return out
+
+
+@lru_cache(maxsize=1)
+def draws_v3() -> dict:
+    if not MATCH_CSV.exists():
+        raise FileNotFoundError(f"{MATCH_CSV.name} missing: run  python -m cricket_analytics.models.war --match")
+    return boot_draws(pd.read_csv(MATCH_CSV), load_params("v3"))
+
+
+def war_range(pairs, part: str = "war", draws: dict | None = None) -> tuple[float, float]:
+    """10-90% range of the summed WAR over (player, sy[, part]) items; part = war | bat | bowl (default `part`). Seasons use independent draws."""
+    d = draws_v3() if draws is None else draws
+    tot = 0.0
+    for pl, sy, *pt in pairs:
+        b, o = d[(pl, int(sy))]
+        tot = tot + {"war": b + o, "bat": b, "bowl": o}[pt[0] if pt else part]
+    return float(np.percentile(tot, 10)), float(np.percentile(tot, 90))
+
+
 def main() -> None:
     import sys
+
+    if "--match" in sys.argv:
+        build_match_table().to_csv(MATCH_CSV, index=False)
+        return
 
     if "--validate" in sys.argv:
         prm = load_params()

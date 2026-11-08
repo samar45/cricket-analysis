@@ -280,3 +280,47 @@ def test_league_average_player_is_zero_each_season():
     c = W.centre(rows)
     s = c.assign(ra=c.sc + c.wk).groupby(["sy", "role"]).ra.sum()
     assert s.abs().max() < 1e-6
+
+
+# ── 10-90% ranges (bootstrap over a player's own matches) ───────────────────────────────────────────────────
+def _synthetic(n_matches, seed=1):
+    """One player-season of n matches (rows like war_match_ra.csv) plus a pool of other players for the pooled variance."""
+    rng = np.random.default_rng(seed)
+    rows = [("p", 2025, i, "bat", 12, rng.normal(2, 8)) for i in range(n_matches)]
+    rows += [(f"q{j}", 2025, 1000 + i, "bat", 12, rng.normal(0, 8)) for j in range(20) for i in range(10)]
+    return pd.DataFrame(rows, columns=["player", "sy", "match_id", "role", "balls", "ra"])
+
+
+def _draws(m):
+    return W.boot_draws(m, W.load_params("v3"))
+
+
+def test_range_contains_point_and_is_reproducible():
+    m = _synthetic(14)
+    d1, d2 = _draws(m), _draws(m)
+    lo, hi = W.war_range([("p", 2025)], draws=d1)
+    prm = W.load_params("v3")["era"]["2023"]
+    point = (m[m.player == "p"].ra.sum() - prm["repl"]["bat"] / 100 * m[m.player == "p"].balls.sum()) / prm["rpw"]
+    assert lo < point < hi
+    assert (lo, hi) == W.war_range([("p", 2025)], draws=d2)  # fixed seed per player-season
+
+
+def test_range_shrinks_with_more_matches_and_exists_for_one_match():
+    w = {n: np.subtract(*W.war_range([("p", 2025)], draws=_draws(_synthetic(n)))[::-1]) for n in (1, 4, 30)}
+    assert w[1] > 0  # one match: a plain bootstrap would be zero-wide
+    assert w[30] > w[4]  # absolute width grows with sqrt(balls)...
+    assert w[30] / np.sqrt(30) < w[4] / np.sqrt(4) * 1.5  # ...but per match the range is no wider: more matches = tighter relative to the sum
+
+
+def test_war_range_sums_seasons():
+    d = {("p", 2024): (np.arange(400.0), np.zeros(400)), ("p", 2025): (np.arange(400.0), np.ones(400))}
+    lo, hi = W.war_range([("p", 2024), ("p", 2025, "war")], draws=d)
+    assert lo == pytest.approx(2 * 39.9 + 1) and hi == pytest.approx(2 * 359.1 + 1)
+
+
+@real
+def test_war_module_ranges_bracket_the_estimate():
+    d = api.run("war", player="HH Pandya", season_from=2023, min_balls=1).data
+    assert {"war_lo", "war_hi", "main_war_lo", "main_war_hi"} <= set(d.columns)
+    assert ((d.war_lo <= d.war) & (d.war <= d.war_hi)).all() and ((d.main_war_lo <= d.main_war) & (d.main_war <= d.main_war_hi)).all()
+    assert api.run("war", player="HH Pandya", season_from=2023, version="v2", min_balls=1).data.war_lo.isna().all()

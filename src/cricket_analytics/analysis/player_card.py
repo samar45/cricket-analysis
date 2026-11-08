@@ -18,7 +18,7 @@ COLS = ["section", "label", "value", "lo", "hi", "pctile", "n", "text"]
     params=[ParamSpec("player", "player", required=True, help="Exact player name (use resolve first)"), *std("competition", "season", super_overs=False)],
     caveats=[
         "Needs one player. Competition defaults to the IPL and seasons to 2023 onwards; WAR is measured for the IPL only (no war rows elsewhere).",
-        "war rows: label = season year or 'total' (all seasons in scope); value = batting + bowling WAR v3. worth rows: the kept metrics of his main job with percentile among peers (100 = best) and balls.",
+        "war rows: label = season year or 'total' (all seasons in scope); value = batting + bowling WAR v3, lo / hi = its 10-90% range (bootstrap over his own matches). worth rows: the kept metrics of his main job with percentile among peers (100 = best) and balls.",
         "outlook: expected matches next IPL season with the 10-90% range of 2024-26 outcomes (lo, hi). highlight: his best single match against the rest of the match (value = runs above / saved).",
     ],
 )
@@ -36,9 +36,9 @@ def player_card(f: Filters) -> pd.DataFrame:
             rows.append(dict(section="header", label="tag", text=f"{role}: {v['tag']}"))
     rows.append(dict(section="header", label="team", text=(c["value"] or {}).get("team") or (h["teams"][0] if h["teams"] else "-")))
     for r in c["war"].sort_values("season").itertuples():
-        rows.append(dict(section="war", label=str(int(r.season)), value=r.war))
+        rows.append(dict(section="war", label=str(int(r.season)), value=r.war, lo=r.war_lo, hi=r.war_hi))
     if len(c["war"]):
-        rows.append(dict(section="war", label="total", value=c["war"].war.sum(), n=len(c["war"])))
+        rows.append(dict(section="war", label="total", value=c["war"].war.sum(), lo=c["war_total"]["lo"], hi=c["war_total"]["hi"], n=len(c["war"])))
     for role, w in c["worth"].items():
         for r in w.itertuples():
             rows.append(dict(section="worth", label=r.metric, value=r.value, pctile=r.pctile, n=r.n, text=role))

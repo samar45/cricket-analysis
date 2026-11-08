@@ -133,7 +133,7 @@ def build(player: str, competition: str | None = "ipl", y0: int = 2023, y1: int 
         player=player, competition=competition, y0=y0, y1=y1,
         header=dict(teams=_teams(f), role=role, bat_hand=rev("bat_hand"), bowl_type=rev("bowl_type"), keeper=rev("keeper"), dob=dob,
                     age=None if dob is None else round((date.today() - date.fromisoformat(dob)).days / 365.25, 1)),
-        war=war, value=_recent_value(player), outlook=o,
+        war=war, war_total=_war_total(player, war), value=_recent_value(player), outlook=o,
         worth={r: _run("player_worth", role=r, **sc) for r in roles},
         highlights={r: _run("player_worth", role=r, mode="highlights", top=5, **sc) for r in roles},
         phase_profile=_phase_profile(player, competition, y0, y1, bat_on, bowl_on),
@@ -141,6 +141,19 @@ def build(player: str, competition: str | None = "ipl", y0: int = 2023, y1: int 
         splits=({"Batting against bowling type": _vs_kind(f)} if bat_on else {}) | ({"Bowling against batting hand": _vs_hand(f)} if bowl_on else {}),
         dismissals=_run("dismissal_profile", **sc) if bat_on else pd.DataFrame(),
     )  # fmt: skip
+
+
+def _war_total(player: str, war: pd.DataFrame) -> dict | None:
+    """Sum of WAR / main-job WAR over the shown seasons with the 10-90% range of the summed bootstrap draws."""
+    if not len(war) or "war_lo" not in war:
+        return None
+    from . import war as W
+
+    parts = war.main_role.map({"batter": "bat", "bowler": "bowl"}).fillna("war")
+    ps = [(player, int(s)) for s in war.season]
+    lo, hi = W.war_range(ps)
+    mlo, mhi = W.war_range([(*p, q) for p, q in zip(ps, parts)])
+    return dict(war=float(war.war.sum()), lo=lo, hi=hi, main=float(war.main_war.sum()), main_lo=mlo, main_hi=mhi)
 
 
 def _outlook(player: str) -> dict | None:

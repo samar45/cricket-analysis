@@ -32,13 +32,15 @@ def video_figure(result, aspect="9:16", focus=None):
 
     # WAR row: last 3 seasons + total
     head("WINS ABOVE REPLACEMENT (WAR v3)", y)
-    cells = [(r.label, r.value) for r in seasons.itertuples()] + ([("TOTAL", total.value.iloc[0])] if len(total) else [])
-    for i, (lab, v) in enumerate(cells):
+    cells = [(r.label, r.value, r.lo, r.hi) for r in seasons.itertuples()] + ([("TOTAL", *total[["value", "lo", "hi"]].iloc[0])] if len(total) else [])
+    for i, (lab, v, lo, hi) in enumerate(cells):
         cx = x0 + (i + 0.5) * w / max(len(cells), 1)
         big = i == len(cells) - 1 and len(total) > 0
         _text(fig, _signed(v), fr.px(cx), fr.py(y + 85), 84 if tall else 64, AMBER if big else INK)
         _text(fig, lab, fr.px(cx), fr.py(y + 160), 34, MUTE)
-    y += 215
+        if lo == lo and hi == hi:  # NaN when the range is missing
+            _text(fig, f"{_signed(lo, 1)} to {_signed(hi, 1)}", fr.px(cx), fr.py(y + 196), 26, MUTE)
+    y += 235
     rule(y)
     # worth metrics with percentile bars
     y += 22

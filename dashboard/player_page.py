@@ -42,6 +42,10 @@ def tint(x, d=2) -> str:
     return f'<span class="{"up" if x > 0.004 else "dn" if x < -0.004 else ""}">{n(x, d, True)}</span>'
 
 
+def rng(lo, hi, d=1) -> str:
+    return "" if lo is None or pd.isna(lo) or pd.isna(hi) else f"<small>{n(lo, d)} to {n(hi, d)}</small>"
+
+
 def table(df: pd.DataFrame, fmt: dict | None = None) -> str:
     fmt = fmt or {}
     head = "".join(f"<th>{esc(str(c).replace('_', ' '))}</th>" for c in df.columns)
@@ -81,8 +85,9 @@ def _war(c: dict) -> None:
     w, v, o = c["war"], c["value"], c["outlook"]
     cells = []
     if len(w):
-        cells.append(("WAR v3 total", f"<b class=big>{tint(w.war.sum())}</b>"))
-        cells.append(("Main-job WAR", tint(w.main_war.sum())))
+        wt = c.get("war_total") or {}
+        cells.append(("WAR v3 total", f"<b class=big>{tint(w.war.sum())}</b>" + rng(wt.get("lo"), wt.get("hi"))))
+        cells.append(("Main-job WAR", tint(w.main_war.sum()) + rng(wt.get("main_lo"), wt.get("main_hi"))))
     if v:
         cells.append((f"Recent value, {v['team']} 2027", f"{tint(v['value'])}<small>{n(v['lo'], 1)} / {n(v['hi'], 1)}</small>"))
         cells.append(("Salary, cr", n(v["salary"])))
@@ -91,10 +96,11 @@ def _war(c: dict) -> None:
     if cells:
         show("<div class=pp><div class=hd>" + "".join(f"<div><span class=l>{a.upper()}</span>{b}</div>" for a, b in cells) + "</div></div>")
     if len(w):
-        t = w.sort_values("season")[["season", "bat_balls", "bowl_balls", "bat_war", "bowl_war", "war", "main_war"]]
-        t = t.rename(columns={"bat_war": "bat", "bowl_war": "bowl", "war": "total", "main_war": "main"})
+        t = w.sort_values("season")
+        t = t.assign(rng_total=[rng(a, b) for a, b in zip(t.war_lo, t.war_hi)]).rename(columns={"bat_war": "bat", "bowl_war": "bowl", "war": "total", "main_war": "main", "rng_total": "10-90%"})
+        t = t[["season", "bat_balls", "bowl_balls", "bat", "bowl", "total", "10-90%", "main"]]
         show("<div class=pp><h4>WAR v3 by season</h4></div>" + table(t, {"season": lambda v: str(int(v)), "bat_balls": lambda v: f"{v:.0f}", "bowl_balls": lambda v: f"{v:.0f}",
-                                                                          "bat": tint, "bowl": tint, "total": tint, "main": tint}))
+                                                                          "bat": tint, "bowl": tint, "total": tint, "10-90%": lambda v: v.replace("<small>", "").replace("</small>", ""), "main": tint}))
     elif c["competition"] == "ipl":
         st.caption("No IPL WAR in these seasons.")
     else:
