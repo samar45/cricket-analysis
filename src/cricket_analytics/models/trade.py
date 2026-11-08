@@ -28,7 +28,8 @@ MATCH_CSV = w.DATA / "trade_match_ra.csv"
 CONTRACTS_CSV = REFERENCE_DIR / "ipl_contracts.csv"
 PWAR_CSV = w.DATA / "pwar_ipl_2027.csv"
 WORTHVAL_CSV = w.DATA / "worth_value_2027.csv"  # expected next-season WAR per player (models/xii_basis.py)
-BASES = ("recent", "worth", "blend")  # what the XII is picked on: see docs/VALUE_xii_basis.md
+WORTH2VAL_CSV = w.DATA / "worth2_value_2027.csv"  # the same from the phase-aware worth v2 (docs/VALUE_worth.md)
+BASES = ("recent", "worth", "worth2", "blend")  # what the XII is picked on: see docs/VALUE_xii_basis.md
 BLEND_A = 0.1  # weight on recent value in "blend" (the pooled-rho maximum of the backtest in xii_basis.pick_blend)
 DEFAULT_BASIS = "recent"  # worth beat recent in the XII-level test but rates phase specialists too low (Arshdeep -0.07 vs recent +0.28): see docs/VALUE_worth.md "worth v2"
 
@@ -258,11 +259,12 @@ def team_abbr(team: str) -> str:
     raise ValueError(f"Unknown IPL team {team!r}. Valid: {', '.join(TEAMS.values())}")
 
 
-@lru_cache(maxsize=1)
-def worth_values() -> pd.DataFrame:
-    if not WORTHVAL_CSV.exists():
-        raise FileNotFoundError(f"{WORTHVAL_CSV.name} missing: run  python -m cricket_analytics.models.xii_basis")
-    return pd.read_csv(WORTHVAL_CSV).set_index("player")
+@lru_cache(maxsize=2)
+def worth_values(which: str = "worth") -> pd.DataFrame:
+    f = WORTH2VAL_CSV if which == "worth2" else WORTHVAL_CSV
+    if not f.exists():
+        raise FileNotFoundError(f"{f.name} missing: run  python -m cricket_analytics.models.xii_basis")
+    return pd.read_csv(f).set_index("player")
 
 
 def _check_basis(basis: str) -> str:
@@ -302,8 +304,8 @@ def player_table(sq: pd.DataFrame, v: Values | None = None, basis: str = "recent
     t["overs"] = np.where(t.is_bowler, np.minimum(4.0, np.ceil(t.overs_when_bowling)), 0.0)
     t["recent_value"] = t.value
     if basis != "recent":
-        wv = worth_values().reindex(t.index).fillna(0.0)
-        a = 0.0 if basis == "worth" else BLEND_A
+        wv = worth_values("worth2" if basis == "worth2" else "worth").reindex(t.index).fillna(0.0)
+        a = BLEND_A if basis == "blend" else 0.0
         t["bat_value"] = a * t.bat_value + (1 - a) * wv.bat_war.values
         t["bowl_value"] = a * t.bowl_value + (1 - a) * wv.bowl_war.values
         t["value"] = t.bat_value + t.bowl_value
@@ -585,7 +587,7 @@ def build_beta_matches(db_path=None) -> pd.DataFrame:
     for sy, g in lu.groupby("sy"):
         pv = prior_values(m, int(sy), prm)
         pw = XB.prior_worth(int(sy))
-        pvs = {"": pv, "w": pw, "b": (BLEND_A * pv.reindex(pv.index.union(pw.index)).fillna(0) + (1 - BLEND_A) * pw.reindex(pv.index.union(pw.index)).fillna(0))}
+        pvs = {"": pv, "w": pw, "w2": XB.prior_worth(int(sy), "worth2"), "b": (BLEND_A * pv.reindex(pv.index.union(pw.index)).fillna(0) + (1 - BLEND_A) * pw.reindex(pv.index.union(pw.index)).fillna(0))}
         cnt = g.groupby(["team", "player"]).size().reset_index(name="n")
         xi = (
             cnt.sort_values(["team", "n", "player"], ascending=[True, False, True])
@@ -598,16 +600,16 @@ def build_beta_matches(db_path=None) -> pd.DataFrame:
             if r.team1 in x.index and r.team2 in x.index:
                 rows.append(
                     (r.match_id, sy, r.team1, r.team2, int(r.winner == r.team1))
-                    + tuple(c for k in ("", "w", "b") for c in (xs[k][r.team1], xs[k][r.team2]))
+                    + tuple(c for k in ("", "w", "b", "w2") for c in (xs[k][r.team1], xs[k][r.team2]))
                 )
-    out = pd.DataFrame(rows, columns=["match_id", "sy", "team1", "team2", "team1_won", "x1", "x2", "x1w", "x2w", "x1b", "x2b"])
+    out = pd.DataFrame(rows, columns=["match_id", "sy", "team1", "team2", "team1_won", "x1", "x2", "x1w", "x2w", "x1b", "x2b", "x1w2", "x2w2"])
     return out.round(5)
 
 
 def fit_beta(d: pd.DataFrame, boot: int = BETA_BOOT, seed: int = BETA_SEED, basis: str = "recent") -> dict:
     """Logistic slope (no intercept: team1 is not a home side) of the match result on the difference in XI value
     (wins a season). Newton steps; the bootstrap resamples matches. Returns beta, its draws, 10-90 range and n."""
-    sfx = {"recent": "", "worth": "w", "blend": "b"}[_check_basis(basis)]
+    sfx = {"recent": "", "worth": "w", "blend": "b", "worth2": "w2"}[_check_basis(basis)]
     x, y = (d[f"x1{sfx}"] - d[f"x2{sfx}"]).values.astype(float), d.team1_won.values.astype(float)
 
     def one(x, y):

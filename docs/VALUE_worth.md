@@ -95,3 +95,27 @@ Does it match cricket sense? Yes on the large calls: Bumrah and Narine as elite 
 - Win probability added uses our win-probability model, so relevance inherits its errors; both batters and bowlers are credited the same balls from opposite sides.
 - Non-striker run outs are not in a batter's dismissal rate; the bowling economy is per delivery (wides included) and converted to per legal ball for display.
 - Percentiles are against all batters / bowlers in scope with enough balls, not split by batting slot or bowler type (the roles in the data are guesses, and Samar's rule keeps guesses internal).
+
+## worth v2 (2026-11-09): phase-aware, wickets back
+
+Problem: the trade tool's old default basis "worth" rated Arshdeep Singh -0.07 WAR (recent +0.28) and Hardik Pandya +0.13 (recent -0.31). The kept bowling metrics had no wicket-taking and used middle-over economy for every bowler. The default is back to `recent`; `worth` and `worth2` stay selectable.
+
+Method (`backtest.worth2_pred`, basis name `worth2`): from the league-season-phase table (IPL rows, 2016 to the cut year), per player and phase: runs per ball (SR / economy), wicket rate, runs added per ball. Each is shrunk toward the league rate IN THAT PHASE (runs k = 150 balls, set not fitted; wicket k fitted per phase by method of moments with binomial variance, clamped 400-3000; runs-added k = the backtest's K_SHRINK / 3). Then a mean over phases weighted by the player's OWN share of balls in the phase (expected usage), so a powerplay + death bowler is judged against powerplay and death norms. Same for batters. Three features per role go to the same ridge (lambda 10), refitted on target years 2019..X only, with the same expected-balls rule as `worth`. First attempt (raw phase rates, not minus the phase rate) was wrong: it still penalised death bowlers; fixed before the numbers below.
+
+Limits: no dot% / boundary% (the phase table has only runs, wickets, runs added), so v2 has fewer features than v1. The ridge gives the wicket rate almost no weight: wicket rate does not predict next-season runs added per ball in this sample (r -0.05 on 517 bowler-seasons). Economy relative to phase carries the signal (r -0.24).
+
+Results (IPL 2024-26 targets, pooled):
+
+| Test | recent | worth | worth2 |
+|---|---|---|---|
+| backtest Spearman, total (n 355 common) | 0.135 (ipl3) | 0.202 | 0.170 |
+| bat_rate | 0.116 (ipl3) | 0.100 | 0.107 |
+| bowl_rate | 0.164 (ipl3) | 0.305 | 0.285 |
+| XII test, r(XII value, wins), 30 team-seasons | -0.114 | 0.236 | 0.224 |
+| XII test, r(XII actual WAR, wins) | 0.487 | 0.704 | 0.754 |
+
+(`recent_value` is only scored on total: 0.135 on the common pool, 0.116 on all.) Rule set before the run: worth2 becomes the default only if it beats recent on the XII test AND is not worse than worth on the backtest AND the sanity table has no glaring failures. It beats recent on the XII test and is better than worth on XII actual WAR, but is worse than worth on the backtest (total, bowl_rate), so the default stays `recent`.
+
+Sanity (WAR, next season value; recent / worth / worth2): Arshdeep Singh 0.28 / -0.07 / 0.04, Bumrah 0.97 / 0.37 / 0.70, Hardik Pandya -0.31 / 0.13 / 0.07, Deepak Chahar 0.01 / 0.06 / 0.08, Varun Chakravarthy 0.61 / 0.21 / 0.25, Rashid Khan 0.49 / 0.39 / 0.52, Klaasen 1.07 / 0.59 / 0.38. Arshdeep is no longer below replacement but is still far under recent: his 2026 economy was poor in all three phases, and wickets carry no weight.
+
+Trade MI gives Hardik for PBKS Arshdeep (delta WAR, 10-90 range): recent MI +0.21 (-0.25 to 0.63), PBKS -0.37 (-0.76 to 0.09); worth MI -0.16 (-0.79 to 0.32), PBKS +0.13 (-0.17 to 0.49); worth2 MI -0.03 (-0.63 to 0.45), PBKS +0.03 (-0.45 to 0.63). Every range spans zero.

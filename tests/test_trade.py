@@ -439,7 +439,7 @@ def test_dashboard_shows_trade_card():
 def test_value_bases_change_values_not_the_recent_column():
     sq = T.squads()
     base = T.player_table(sq, T.values(), "recent")
-    for b in ("worth", "blend"):
+    for b in ("worth", "worth2", "blend"):
         t = T.player_table(sq, T.values(), b)
         assert np.allclose(t.recent_value, base.value)  # recent number kept for the bootstrap centre
         assert np.allclose(t.value, t.bat_value + t.bowl_value) and not np.allclose(t.value, base.value)
@@ -469,3 +469,12 @@ def test_evaluate_runs_on_each_basis_with_its_own_beta():
         x = r["teams"]["MI"]
         assert r["value_basis"] == b and x["after"]["lo"] < x["after"]["hi"]
         assert r["sim"]["beta"]["beta"] == pytest.approx(T.beta(b)["beta"])
+
+
+def test_worth2_rates_the_phase_specialist_above_worth_and_is_not_the_default():
+    sq = T.squads()
+    w, w2 = (T.player_table(sq, T.values(), b).reset_index(drop=True).set_index("key").value for b in ("worth", "worth2"))
+    assert w2["Arshdeep Singh"] > w["Arshdeep Singh"] and w2["Arshdeep Singh"] > 0  # worth had him below replacement
+    assert T.DEFAULT_BASIS == "recent" and "worth2" in T.BASES
+    x = T.worth_values("worth2").loc["Arshdeep Singh"]
+    assert abs(w2["Arshdeep Singh"] - (x.bat_war + x.bowl_war)) < 1e-9

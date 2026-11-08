@@ -219,6 +219,70 @@ def worth_pred(T, X, ctx):
     return pd.DataFrame(out)
 
 
+# ------------------------------------------------------------------------------------------------ worth2 (phase-aware, wickets back)
+K_RUNS, WK_K = 150.0, (400.0, 3000.0)  # balls of average evidence for runs-per-ball (SR / economy) in a phase cell; clamp for the fitted wicket k
+_W2: dict = {}
+
+
+def _wk_k(c: pd.DataFrame) -> float:
+    """Wicket k by method of moments on player-season-phase cells (balls n, wickets w; within-variance = binomial p(1-p))."""
+    n, w = c.balls.to_numpy(float), c.wkts.to_numpy(float)
+    p = w.sum() / n.sum()
+    m = w / n
+    between = ((n * (m - p) ** 2).sum() - (len(c) - 1) * p * (1 - p)) / (n.sum() - (n**2).sum() / n.sum())
+    return float(np.clip(p * (1 - p) / between, *WK_K)) if between > 1e-12 else WK_K[1]
+
+
+def _worth2_feats(T: pd.DataFrame, Xc: int, role: str) -> pd.DataFrame:
+    """Per player from IPL rows up to year Xc: three features (runs per ball = SR / economy, wicket rate, runs added per ball), each a
+    mean over the phases of the shrunk phase rate (minus the league rate in that phase) weighted by the player's OWN share of balls in that phase (expected usage)."""
+    if (Xc, role) in _W2:
+        return _W2[Xc, role]
+    d = T[(T.comp == "ipl") & (T.role == role) & (T.sy <= Xc) & (T.sy >= WORTH_FRAME_FROM)]
+    ps = d.groupby(["player", "sy", "phase"], as_index=False)[["balls", "runs", "wkts", "ra"]].sum()
+    ps = ps[ps.balls > 0]
+    pp = ps.groupby(["player", "phase"])[["balls", "runs", "wkts", "ra"]].sum().reset_index()
+    share = pp.balls / pp.groupby("player").balls.transform("sum")
+    ks = {"runs": K_RUNS, "ra": K_SHRINK[role] / 3}
+    out = pd.DataFrame(index=pp.player.unique())
+    for col, name in (("runs", "rr"), ("wkts", "wk"), ("ra", "ra")):
+        v = pd.Series(0.0, index=out.index)
+        for ph, g in pp.groupby("phase"):
+            k = _wk_k(ps[ps.phase == ph]) if col == "wkts" else ks[col]
+            mu = g[col].sum() / g.balls.sum()
+            sh = (g[col] + k * mu) / (g.balls + k) - mu  # relative to the league rate IN THAT PHASE: a death bowler is not penalised for death scoring
+            v = v.add((sh * share[g.index]).set_axis(g.player.values), fill_value=0.0)
+        out[name] = v
+    _W2[Xc, role] = out
+    return out
+
+
+@predictor("worth2", "runs")
+def worth2_pred(T, X, ctx):
+    """worth v2: phase-weighted shrunk features (_worth2_feats) -> ridge per role -> expected runs added per ball next season, fitted on
+    target seasons WORTH_FIT_FROM..X only, exactly like `worth`. Same expected balls (last three seasons)."""
+    p = player_year(T, ["ipl"])
+    out = {}
+    for role in ("bat", "bowl"):
+        xs, ys = [], []
+        for s in range(WORTH_FIT_FROM, X + 1):
+            f = _worth2_feats(T, s - 1, role)
+            y = p[(p.sy == s) & (p.role == role) & (p.balls >= MIN_BALLS)].set_index("player")
+            y = (y.ra / y.balls).reindex(f.index).dropna()
+            xs.append(f.loc[y.index])
+            ys.append(y)
+        Xf, y = pd.concat(xs), pd.concat(ys)
+        mu, sd = Xf.mean(), Xf.std().replace(0, 1)
+        Z = ((Xf - mu) / sd).fillna(0.0)
+        b = np.linalg.solve(Z.T @ Z + WORTH_LAM * np.eye(Z.shape[1]), Z.T @ (y - y.mean()))
+        f = _worth2_feats(T, X, role)
+        out[f"{role}_rate"] = pd.Series(((f[Xf.columns] - mu) / sd).fillna(0.0).to_numpy() @ b + y.mean(), index=f.index)
+        q = p[(p.sy > X - 3) & (p.role == role)].groupby("player").balls.sum() / 3
+        out[f"{role}_q"] = q.reindex(f.index).fillna(0.0)
+        out[role] = out[f"{role}_rate"] * out[f"{role}_q"]
+    return pd.DataFrame(out)
+
+
 # ------------------------------------------------------------------------------------------------ truth + pools
 def auctions() -> pd.DataFrame:
     a = pd.read_csv(REFERENCE_DIR / "ipl_auctions.csv")
