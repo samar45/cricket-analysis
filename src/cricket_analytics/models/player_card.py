@@ -136,6 +136,7 @@ def build(player: str, competition: str | None = "ipl", y0: int = 2023, y1: int 
         war=war, value=_recent_value(player), outlook=o,
         worth={r: _run("player_worth", role=r, **sc) for r in roles},
         highlights={r: _run("player_worth", role=r, mode="highlights", top=5, **sc) for r in roles},
+        phase_profile=_phase_profile(player, competition, y0, y1, bat_on, bowl_on),
         phases={k: v for k, v in (("batting", bat_ph), ("bowling", bowl_ph)) if k in roles},
         splits=({"Batting against bowling type": _vs_kind(f)} if bat_on else {}) | ({"Bowling against batting hand": _vs_hand(f)} if bowl_on else {}),
         dismissals=_run("dismissal_profile", **sc) if bat_on else pd.DataFrame(),
@@ -149,3 +150,11 @@ def _outlook(player: str) -> dict | None:
     if pd.isna(o.exp_matches):
         return None
     return dict(expected=float(o.exp_matches), lo=float(o.m10), hi=float(o.m90), balls_3y=int(o.balls_3y), evidence=o.evidence)
+
+
+def _phase_profile(player, competition, y0, y1, bat_on, bowl_on) -> dict:
+    """{"batting"/"bowling": phase_profile.profile entry} for the roles he is shown in (bowling first)."""
+    from . import phase_profile as PP
+
+    p = PP.profile(player, competition, y0, y1, tuple(r for r, on in (("bowl", bowl_on), ("bat", bat_on)) if on))
+    return {{"bat": "batting", "bowl": "bowling"}[r]: v for r, v in p.items()}

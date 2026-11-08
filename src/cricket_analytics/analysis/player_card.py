@@ -31,6 +31,9 @@ def player_card(f: Filters) -> pd.DataFrame:
     h, rows = c["header"], []
     rows.append(dict(section="header", label="player", text=f.player))
     rows.append(dict(section="header", label="role", text=h["role"]))
+    for role, v in c["phase_profile"].items():
+        if v["tag"]:
+            rows.append(dict(section="header", label="tag", text=f"{role}: {v['tag']}"))
     rows.append(dict(section="header", label="team", text=(c["value"] or {}).get("team") or (h["teams"][0] if h["teams"] else "-")))
     for r in c["war"].sort_values("season").itertuples():
         rows.append(dict(section="war", label=str(int(r.season)), value=r.war))

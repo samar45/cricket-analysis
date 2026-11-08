@@ -181,13 +181,13 @@ def test_player_page():
     at.sidebar.radio(key="page").set_value("Player").run()
     assert_clean(at)
     assert "WAR v3 by season" not in " ".join(m.value for m in at.markdown)  # waits for Run
-    for name, role_word in (("JJ Bumrah", "bowler"), ("H Klaasen", "batter"), ("HH Pandya", "all-rounder")):
-        at.text_input(key="pl_q").set_value(name.split()[-1]).run()
+    assert at.selectbox(key="pl_who").value is None and not at.text_input  # one search box, empty until chosen
+    for name, role_word, tag in (("JJ Bumrah", "bowler", "Complete"), ("H Klaasen", "batter", "Two-phase"), ("HH Pandya", "all-rounder", "Middle-overs specialist")):
         at.selectbox(key="pl_who").set_value(name).run()
         go(at, "player")
         assert_clean(at)
         page = " ".join(m.value for m in at.markdown)
-        assert name in page and role_word in page and "WAR v3 by season" in page and "Player worth" in page and "Phases" in page, name
+        assert name in page and role_word in page and "WAR v3 by season" in page and "Player worth" in page and "Phase profile" in page and tag in page, name
     assert at.selectbox(key="pl_comp").value == "ipl"
 
 

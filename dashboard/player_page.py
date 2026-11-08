@@ -10,7 +10,8 @@ import pandas as pd
 import streamlit as st
 import ui
 
-from cricket_analytics import api, competitions
+from cricket_analytics import competitions
+from cricket_analytics.models import phase_profile as PP
 from cricket_analytics.models import player_card as PC
 
 CSS = """<style>
@@ -26,6 +27,9 @@ CSS = """<style>
 .pp .big,.pp .big span{font-size:30px;font-weight:700;line-height:1.1}
 .pp .bar{display:inline-block;width:110px;height:8px;border-radius:4px;background:rgba(128,128,128,.25);vertical-align:middle;margin-left:8px;overflow:hidden}
 .pp .bar i{display:block;height:100%;background:#e0a800}
+.pp .badge{display:inline-block;margin-left:8px;padding:1px 9px;border-radius:10px;font-size:12px;font-weight:600;background:rgba(224,168,0,.22);color:#e0a800;vertical-align:middle}
+.pp .mb{display:inline-block;width:46px;height:6px;border-radius:3px;background:rgba(128,128,128,.25);vertical-align:middle;margin-left:6px;overflow:hidden}
+.pp .mb i{display:block;height:100%;background:#e0a800}
 </style>"""
 M = "−"
 
@@ -59,7 +63,10 @@ def card(player: str, competition: str | None, y0: int, y1: int | None) -> dict:
 
 def _header(c: dict) -> None:
     h, v, o = c["header"], c["value"], c["outlook"]
-    cells = [("Player", esc(c["player"])), ("Team", esc(" / ".join(h["teams"]) or "-")), ("Role", h["role"])]
+    pp = c["phase_profile"]
+    both = len(pp) > 1
+    badges = "".join(f'<span class=badge>{"Bat: " if both and r == "batting" else "Bowl: " if both else ""}{esc(v["tag"])}</span>' for r, v in pp.items() if v["tag"])
+    cells = [("Player", esc(c["player"]) + badges), ("Team", esc(" / ".join(h["teams"]) or "-")), ("Role", h["role"])]
     if h["role"] != "bowler":
         cells.append(("Bats", h["bat_hand"]))
     if h["role"] != "batter":
@@ -106,9 +113,28 @@ def _worth(c: dict) -> None:
 
 
 def _phases(c: dict) -> None:
-    for role, t in c["phases"].items():
-        if len(t):
-            show(f"<div class=pp><h4>Phases, {role}</h4></div>" + table(t))
+    for role, p in c["phase_profile"].items():
+        g, ph = p["grid"], list(p["balls"])
+        cnt_label = "Runs" if role == "batting" else "Wickets"
+        head = "<tr><th></th>" + "".join(f"<th>{PP.LABEL[x]}</th>" for x in ph) + "</tr>"
+        top = [("Balls", [f"{p['balls'][x]}<small>{p['share'][x] * 100:.0f}%</small>" for x in ph]), (cnt_label, [f"{p['cnt'][x]:.0f}" for x in ph]),
+               ("Phase score", [("-" if pd.isna(p["comp"][x]) else f"p{p['comp'][x]:.0f}") + ("" if p["balls"][x] >= PP.MIN_BALLS else "<small>few balls</small>") for x in ph])]
+        rows = "".join(f"<tr><td>{a}</td>" + "".join(f"<td>{v}</td>" for v in vals) + "</tr>" for a, vals in top)
+        for m, gm in g.groupby("metric", sort=False):
+            gm = gm.set_index("phase")
+            cells = "".join(
+                "<td>-</td>" if pd.isna(gm.value[x]) else f"<td>{gm.value[x]:.1f}<small>p{gm.pct[x]:.0f}</small><span class=mb><i style='width:{gm.pct[x]:.0f}%'></i></span></td>" for x in ph
+            )
+            rows += f"<tr><td>{m}</td>{cells}</tr>"
+        show(f"<div class=pp><h4>Phase profile, {role}</h4><table>{head}{rows}</table></div>")
+    if c["phase_profile"]:
+        with st.expander("Method"):
+            st.caption(
+                f"Values are shrunk toward the league mean of that phase (empirical Bayes, k from season-to-season reliability; wickets and dismissals use a large k). "
+                f"pNN = percentile among players with at least {PP.MIN_BALLS} balls in that phase in the same seasons. Phase score = percentile of the average of the four metric percentiles. "
+                f"Tag: a phase is good with at least {PP.MIN_BALLS} balls and phase score of {PP.GOOD_PCT} or more; all three = Complete, two = Two-phase, one and over half his balls there = specialist "
+                f"(batter death = Finisher), otherwise Limited role. Percentages beside Balls are his share of balls per phase."
+            )
 
 
 def _splits(c: dict) -> None:
@@ -119,14 +145,12 @@ def _splits(c: dict) -> None:
 
 def page() -> None:
     st.title("Player")
-    a, b, d = st.columns([2, 2, 2])
+    a, d = st.columns([4, 2])
     comp = d.selectbox("Competition", list(competitions.COMPETITIONS), index=list(competitions.COMPETITIONS).index("ipl"), format_func=ui.comp_label, key="pl_comp")
-    q = a.text_input("Search a name", key="pl_q", placeholder="e.g. bumrah")
-    names = [r["name"] for r in api.resolve_player(q, comp, limit=15)] if q.strip() else ui.choices("player", comp, None)[:500]
-    if not names:
-        st.info("No player found.")
+    who = a.selectbox("Player", ui.choices("player", comp, None), index=None, placeholder="Type to search a name, e.g. Bumrah", key="pl_who")
+    if who is None:
+        st.info("Pick a player.")
         return
-    who = b.selectbox("Player", names, key="pl_who", index=0)
     years = sorted({int(str(s)[:4]) for s in ui.choices("season", comp, None)})
     y0, y1 = st.select_slider("Seasons", years, value=(max(min(years), 2023) if comp == "ipl" else years[max(len(years) - 4, 0)], years[-1]), key="pl_years")
     sel = ui.gate("player", [who, comp, y0, y1])

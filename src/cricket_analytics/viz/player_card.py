@@ -14,4 +14,5 @@ def figure(result) -> go.Figure:
     fig.add_vline(x=50, line_dash="dot")
     fig.update_xaxes(title_text="Percentile among peers (100 = best)", range=[0, 100])
     fig.update_layout(margin_r=150)
-    return style(fig, "Player card: worth metrics", result, height=bars_height(len(t)))
+    tags = ", ".join(result.data.query("section == 'header' and label == 'tag'").text.str.split(": ").str[-1])
+    return style(fig, "Player card: worth metrics" + (f" ({tags})" if tags else ""), result, height=bars_height(len(t)))
