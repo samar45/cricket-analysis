@@ -97,7 +97,7 @@ def evaluate_xi(team: str, players=(), impact=(), basis: str = T.DEFAULT_BASIS) 
         ParamSpec("team", "choice", default=TEAM_NAMES[5], choices=TEAM_NAMES, help="Team"),
         ParamSpec("players", "player", multi=True, help="The 11 players of the XI (contract or Cricsheet name); empty = the tool's best XII"),
         ParamSpec("impact", "player", multi=True, help="Optional impact player (one name)"),
-        ParamSpec("value_basis", "choice", default=T.DEFAULT_BASIS, choices=T.BASES, help="worth = expected next-season WAR (default), recent = WAR 2023-26 weighted 4/3/2/1"),
+        ParamSpec("value_basis", "choice", default=T.DEFAULT_BASIS, choices=T.BASES, help="recent = WAR 2023-26 weighted 4/3/2/1 (default), worth = expected next-season WAR"),
     ],
     caveats=[
         "Value is a player-level estimate with weak skill: IPL 2024-26 team XII values correlate only about 0.2 with a team's wins (n = 30), so win, playoff and title percentages are ranges, not forecasts.",

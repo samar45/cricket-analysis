@@ -458,11 +458,9 @@ def test_draws_centre_on_the_basis_value():
     assert np.allclose(D - r, (t.value - t.recent_value).values[:, None])  # same spread, moved centre
 
 
-def test_default_basis_beats_recent_in_the_saved_xii_test():
-    s = pd.read_csv(T.w.DATA / "xii_basis_backtest.csv")
-    r = s[s.what == "value"].set_index("basis").pearson
-    assert T.DEFAULT_BASIS == "worth" and r["worth"] > r["recent"]
-    assert s.blend_a.iloc[0] == T.BLEND_A
+def test_default_basis_is_recent():
+    assert T.DEFAULT_BASIS == "recent"  # worth stays selectable; it undervalues phase specialists (docs/VALUE_worth.md)
+    assert T.BLEND_A == pd.read_csv(T.w.DATA / "xii_basis_backtest.csv").blend_a.iloc[0]
 
 
 def test_evaluate_runs_on_each_basis_with_its_own_beta():

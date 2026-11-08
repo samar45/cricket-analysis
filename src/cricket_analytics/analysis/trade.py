@@ -183,7 +183,7 @@ def _trade_frame(r: dict) -> pd.DataFrame:
             "choice",
             default=T.DEFAULT_BASIS,
             choices=T.BASES,
-            help="What the XII is picked on: worth = expected next-season WAR (default), recent = WAR 2023-26 weighted 4/3/2/1, blend = mostly worth",
+            help="What the XII is picked on: recent = WAR 2023-26 weighted 4/3/2/1 (default), worth = expected next-season WAR, blend = mostly worth",
         ),
         ParamSpec(
             "baseline",

@@ -30,7 +30,7 @@ PWAR_CSV = w.DATA / "pwar_ipl_2027.csv"
 WORTHVAL_CSV = w.DATA / "worth_value_2027.csv"  # expected next-season WAR per player (models/xii_basis.py)
 BASES = ("recent", "worth", "blend")  # what the XII is picked on: see docs/VALUE_xii_basis.md
 BLEND_A = 0.1  # weight on recent value in "blend" (the pooled-rho maximum of the backtest in xii_basis.pick_blend)
-DEFAULT_BASIS = "worth"  # beat "recent" in the XII-level test (IPL 2024-26, n=30 team-seasons)
+DEFAULT_BASIS = "recent"  # worth beat recent in the XII-level test but rates phase specialists too low (Arshdeep -0.07 vs recent +0.28): see docs/VALUE_worth.md "worth v2"
 
 SEASONS = (
     2023,
