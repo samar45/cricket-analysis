@@ -119,7 +119,10 @@ def test_auction_room_page_renders_every_section():
     at = AppTest.from_file(
         str(Path(__file__).parent.parent / "dashboard" / "app.py"), default_timeout=180
     ).run()
-    at.sidebar.radio(key="page").set_value("Auction room").run()
+    at.sidebar.radio(key="page").set_value("IPL market").run()
+    at.radio(key="market_tab").set_value("Auction").run()
+    for g in ("ar_needs", "ar_scarce", "ar_est", "ar_scout", "ar_market"):
+        at.button(key=f"run_{g}").click().run()
     assert not at.exception, [e.message for e in at.exception]
     assert not at.error and not [w for w in at.warning if "Check your filters" in w.value]
     heads = [s.value for s in at.subheader]
