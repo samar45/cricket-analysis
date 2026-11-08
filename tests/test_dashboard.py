@@ -84,7 +84,8 @@ def test_module_defaults(module_id):
 def test_module_ipl_with_players(module_id):
     mod = registry.get(module_id)
     at = open_module(new_app(), module_id)
-    at.selectbox(key="p_competition").set_value("ipl").run()
+    if any(x.key == "p_competition" for x in at.selectbox):  # the IPL market tools have no competition selector
+        at.selectbox(key="p_competition").set_value("ipl").run()
     names = dict(PLAYERS, **({"player2": "JJ Bumrah"} if module_id == "matchup" else {}))
     for p in mod.params:
         if p.name in names:
@@ -132,7 +133,8 @@ def test_multi_and_season_controls():
 def test_video_tab(module_id):
     """Every module with a result gets Chart / Table / Video tabs; the aspect toggle and the focus box rerun cleanly."""
     at = open_module(new_app(), module_id)
-    at.selectbox(key="p_competition").set_value("ipl").run()
+    if any(x.key == "p_competition" for x in at.selectbox):  # the IPL market tools have no competition selector
+        at.selectbox(key="p_competition").set_value("ipl").run()
     names = dict(PLAYERS, **({"player2": "JJ Bumrah"} if module_id == "matchup" else {}))
     for p in registry.get(module_id).params:
         if p.name in names:
