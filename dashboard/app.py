@@ -4,10 +4,9 @@ a new file in src/cricket_analytics/analysis/ (plus optional viz/<id>.py) shows 
 Run: .venv\\Scripts\\streamlit.exe run dashboard/app.py
 """
 
-import importlib
-
 import auction_room
 import health
+import module_view
 import player_page
 import streamlit as st
 import ui
@@ -106,106 +105,20 @@ def _leaders(params):
     )
 
 
-def _figure(mod_id: str, result):
-    name = f"cricket_analytics.viz.{mod_id}"
-    try:
-        viz = importlib.import_module(name)
-    except ModuleNotFoundError as e:
-        if e.name != name:
-            raise
-        return None  # a module without a chart is fine
-    return viz.figure(result)
-
-
-def _card_html(mod_id: str, result) -> str | None:
-    try:
-        viz = importlib.import_module(f"cricket_analytics.viz.{mod_id}")
-    except ModuleNotFoundError:
-        return None
-    return viz.html(result) if hasattr(viz, "html") else None
-
-
 @guarded
 def explore():
-    mods = registry.all_modules()
+    mods = [m for m in registry.all_modules() if m.id not in module_view.HIDDEN_FROM_EXPLORE]
     cats = [c for c in registry.CATEGORIES if any(m.category == c for m in mods)]
+    q = st.text_input("Search modules", key="module_search", placeholder="e.g. death, matchup, venue").strip().lower()
     cat = st.radio("Category", cats, horizontal=True, key="category", format_func=str.capitalize)
-    in_cat = {m.id: m for m in mods if m.category == cat}
-    mod = in_cat[ui.select("module", "Module", list(in_cat), format_func=lambda i: in_cat[i].title)]
-
-    lean = mod.id in ("trade", "xi_odds")  # numbers only: no prose; caveats sit in one "Method" expander at the bottom
-    st.subheader(mod.title)
-    if not lean:
-        st.write(mod.description)
-    if mod.category == "experimental" and not lean:
-        st.warning(
-            "Experimental module: treat the numbers as rough. "
-            + (mod.caveats[0] if mod.caveats else "")
-        )
-    params = ui.param_form(mod)
-
-    params = ui.gate(mod.id, params)
-    if params is None:
+    in_cat = {m.id: m for m in mods if (q in f"{m.title} {m.id}".lower() if q else m.category == cat)}
+    if not in_cat:
+        st.info("No module matches that search.")
         return
-    with st.container(key=f"res_{mod.id}"):
-        _explore_result(mod, params, lean)
-
-
-def _explore_result(mod, params, lean):
-    result = ui.run(mod.id, params)
-    meta = result.meta
-    if not lean:
-        st.caption(
-            f"{meta['row_count']:,} rows | data through {meta['data_through']} | source: {meta['source']}"
-        )
-    if result.data.empty:
-        chosen = ", ".join(
-            f"{k} = {v}" for k, v in meta["params"].items() if v not in (None, [], False, 0, "")
-        )
-        st.warning(
-            f"No data for this combination ({chosen}). For example, the player may not have played "
-            "for that team, at that venue or in those seasons. Remove a filter or lower a minimum."
-        )
-    else:
-        names = ["Chart", "Table"] + (["Video"] if ui.has_video(mod.id) else [])
-        chart_tab, table_tab, *video_tab = st.tabs(names)
-        with chart_tab:
-            card = _card_html(
-                mod.id, result
-            )  # a module's own HTML card, if its viz module has html()
-            fig = None if card else _figure(mod.id, result)  # the card replaces the plain chart
-            if card:
-                st.html(card)
-                if lean:
-                    viz = importlib.import_module(f"cricket_analytics.viz.{mod.id}")
-                    for title, body in viz.details(result):
-                        with st.expander(title):
-                            st.html(body)
-            elif fig is None:
-                st.caption("This module has no chart yet.")
-            else:
-                st.plotly_chart(
-                    fig, width="stretch", theme=None
-                )  # theme=None: keep our own template
-        with table_tab:
-            st.dataframe(result.data, hide_index=True, width="stretch")
-        for tab in video_tab:
-            with tab:
-                ui.video_tab(mod.id, result)
-        c1, c2, _ = st.columns([1, 1, 4])
-        c1.download_button(
-            "Download CSV", result.data.to_csv(index=False), f"{mod.id}.csv", "text/csv"
-        )
-        c2.download_button(
-            "Download JSON", result.to_json(indent=2), f"{mod.id}.json", "application/json"
-        )
-    with st.expander("Method" if lean else "About this result"):
-        if lean:
-            st.caption(importlib.import_module(f"cricket_analytics.viz.{mod.id}").method_note(result))
-        else:
-            st.json({k: meta[k] for k in ("params", "data_through", "source", "db_modified")})
-        for c in meta["caveats"]:
-            st.markdown(f"- {c}")
+    short = lambda i: in_cat[i].title.split(" (")[0]  # noqa: E731  # dropdown label only; the description keeps the detail
+    mod = in_cat[ui.select("module", "Module", list(in_cat), format_func=short)]
+    st.subheader(mod.title)
+    module_view.module_view(mod)
 
 
 def ask_page():
@@ -316,7 +229,7 @@ def _ask_body(A):
         r = Result(pd.DataFrame(out["result"]["rows"]), out["result"]["meta"])
         chart_tab, table_tab = st.tabs(["Chart", "Table"])
         with chart_tab:
-            fig = _figure(r.meta["module"], r)
+            fig = module_view.figure(r.meta["module"], r)
             if (
                 fig is None
             ):  # a statement, not a one-line `a if c else b`: Streamlit would print that expression's value
@@ -336,7 +249,7 @@ with st.sidebar:
     st.header("🏏 Cricket analytics")
     page = st.radio(
         "Page",
-        ["Overview", "Explore", "Ask", "Player", "Auction room", "Data health"],
+        ["Overview", "Explore", "Ask", "Player", "IPL market", "Data health"],
         key="page",
         label_visibility="collapsed",
     )
@@ -345,6 +258,6 @@ with st.sidebar:
     "Explore": explore,
     "Ask": guarded(ask_page),
     "Player": guarded(player_page.page),
-    "Auction room": guarded(auction_room.page),
+    "IPL market": guarded(auction_room.page),
     "Data health": guarded(health.page),
 }[page]()

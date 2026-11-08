@@ -264,6 +264,9 @@ def test_cli_chart_png_is_1080x1920_with_content(mod, extra):
 # ── dashboard (AppTest) ───────────────────────────────────────────────────────────────────────────────────
 def _open(mod):
     at = AppTest.from_file(APP, default_timeout=180).run()
+    if mod == "trade":
+        at.sidebar.radio(key="page").set_value("IPL market").run()
+        return at.radio(key="market_tab").set_value("Trade").run()
     at.sidebar.radio(key="page").set_value("Explore").run()
     at.radio(key="category").set_value(registry.get(mod).category).run()
     return at.selectbox(key="module").set_value(mod).run()

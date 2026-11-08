@@ -200,10 +200,10 @@ def _widget(mod: Module, p: ParamSpec, ctx: dict):
     return st.number_input(label, value=p.default, min_value=0, step=1, key=key, help=help or None)
 
 
-def param_form(mod: Module) -> dict:
+def param_form(mod: Module, skip: tuple = ()) -> dict:
     """One widget per ParamSpec; returns only the params the user set (unset / off ones are left out)."""
     has_season = mod.spec("season") is not None and all(mod.spec(n) for n in SEASON_EXTRAS)
-    shown = [p for p in mod.params if not (has_season and p.name in SEASON_EXTRAS)]
+    shown = [p for p in mod.params if p.name not in skip and not (has_season and p.name in SEASON_EXTRAS)]
     ordered = sorted(shown, key=lambda p: ORDER.index(p.name) if p.name in ORDER else len(ORDER))
     cols, values = st.columns(3), {}
     for i, p in enumerate(ordered):

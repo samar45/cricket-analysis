@@ -4,6 +4,7 @@ Every registered module is opened on the Explore page with its default params, t
 competition=ipl and players filled in where a module has a player param. Zero exceptions, zero st.error.
 """
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -16,7 +17,14 @@ from tests.conftest import requires_real_db
 APP = str(Path(__file__).parent.parent / "dashboard" / "app.py")
 pytestmark = requires_real_db
 
-IDS = [m.id for m in registry.all_modules()]
+sys.path.insert(0, str(Path(APP).parent))  # the dashboard imports its siblings by bare name
+import module_view  # noqa: E402
+
+# trade / xi_odds are generic module views on the IPL market page; auction / scarcity have custom sections there;
+# player_card / player_worth are shown by the Player page. Everything else is on Explore.
+MARKET_TAB = {"trade": "Trade", "xi_odds": "XI win odds"}
+CUSTOM = {"auction", "scarcity"} | module_view.ON_PLAYER_PAGE
+IDS = [m.id for m in registry.all_modules() if m.id not in CUSTOM]
 PLAYERS = {"player": "V Kohli", "player2": "RG Sharma"}
 
 
@@ -25,6 +33,9 @@ def new_app() -> AppTest:
 
 
 def open_module(at: AppTest, module_id: str) -> AppTest:
+    if module_id in MARKET_TAB:
+        at.sidebar.radio(key="page").set_value("IPL market").run()
+        return at.radio(key="market_tab").set_value(MARKET_TAB[module_id]).run()
     at.sidebar.radio(key="page").set_value("Explore").run()
     at.radio(key="category").set_value(registry.get(module_id).category).run()
     return at.selectbox(key="module").set_value(module_id).run()
@@ -65,7 +76,8 @@ def test_module_defaults(module_id):
             at.selectbox(key=f"p_{p.name}").set_value(PLAYERS[p.name]).run()
     go(at, module_id)
     assert_clean(at, module_id)
-    assert at.selectbox(key="module").value == module_id
+    if module_id not in MARKET_TAB:
+        assert at.selectbox(key="module").value == module_id
 
 
 @pytest.mark.parametrize("module_id", IDS)
@@ -79,7 +91,7 @@ def test_module_ipl_with_players(module_id):
             at.selectbox(key=f"p_{p.name}").set_value(names[p.name]).run()
     go(at, module_id)
     assert_clean(at, module_id)
-    assert bool(at.warning) == (mod.category == "experimental" and module_id not in ("trade", "xi_odds")), (  # these pages are numbers only
+    assert bool(at.warning) == (mod.category == "experimental" and module_id not in module_view.LEAN), (  # these pages are numbers only
         "only experimental modules show the banner"
     )
     if module_id == "batting":
@@ -175,3 +187,31 @@ def test_player_page():
         page = " ".join(m.value for m in at.markdown)
         assert name in page and role_word in page and "WAR v3 by season" in page and "Player worth" in page and "Phases" in page, name
     assert at.selectbox(key="pl_comp").value == "ipl"
+
+
+def test_every_module_is_reachable():
+    """Explore lists everything not hidden; hidden ones are covered by a test above or by the market / Player page."""
+    at = new_app()
+    at.sidebar.radio(key="page").set_value("Explore").run()
+    listed = set()
+    for cat in at.radio(key="category").options:
+        at.radio(key="category").set_value(cat.lower()).run()
+        listed |= set(at.selectbox(key="module").options)  # option labels are the short titles
+    short = {m.id: m.title.split(" (")[0] for m in registry.all_modules()}
+    shown = {i for i, t in short.items() if t in listed}
+    hidden = module_view.HIDDEN_FROM_EXPLORE
+    assert shown | hidden == set(short) and not (shown & hidden)
+    assert module_view.ON_MARKET_PAGE == set(MARKET_TAB) | {"auction", "scarcity"}
+
+
+def test_ipl_market_tabs():
+    at = new_app()
+    at.sidebar.radio(key="page").set_value("IPL market").run()
+    assert at.radio(key="market_tab").options == ["Trade", "XI win odds", "Squads", "Auction"]
+    at.radio(key="market_tab").set_value("Squads").run()
+    at = go(at, "trade_squad")
+    assert_clean(at, "squads")
+    at.radio(key="market_tab").set_value("Auction").run()
+    for g in ("ar_needs", "ar_scarce", "ar_est", "ar_scout", "ar_market"):
+        at = go(at, g)
+    assert_clean(at, "auction")

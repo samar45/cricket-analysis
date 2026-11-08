@@ -1,4 +1,4 @@
-"""Auction Room page: the IPL auction work (needs, scarcity, price ranges, scouting, market check) on one page.
+"""IPL market page: Trade, XI win odds, Squads (generic module views) and the IPL auction work (needs, scarcity, price ranges, scouting, market check) on one page.
 
 Everything comes from the `scarcity`, `auction` and `war` modules through `ui.run` (so it is cached and has provenance);
 this file only lays it out. Each section shows a plain caveat line.
@@ -6,8 +6,10 @@ this file only lays it out. Each section shows a plain caveat line.
 
 import pandas as pd
 import streamlit as st
+import module_view
 import ui
 
+from cricket_analytics import registry
 from cricket_analytics.models import auction as A
 from cricket_analytics.models import player_outlook as PO
 from cricket_analytics.models.war import DATA
@@ -213,13 +215,38 @@ def _market() -> None:
     )
 
 
-def page() -> None:
-    st.title("Auction room")
-    st.caption(
-        "IPL auction work built on our own models. Every section says how far to trust it (docs/VALUE_m4.md, VALUE_m6.md)."
-    )
+def _auction() -> None:
     _needs()
     _scarce()
     _estimator()
     _scouting()
     _market()
+
+
+def _trade() -> None:
+    module_view.module_view(registry.get("trade"))
+
+
+def _xi_odds() -> None:
+    module_view.module_view(registry.get("xi_odds"))
+
+
+def _squads() -> None:
+    # same module as Trade, view fixed to one team's squad; the swap widgets are hidden
+    module_view.module_view(
+        registry.get("trade"), scope="trade_squad", fixed={"view": "squad"}, skip=("team2", "give", "get", "must_play")
+    )
+
+
+TABS = {"Trade": _trade, "XI win odds": _xi_odds, "Squads": _squads, "Auction": _auction}
+
+
+def page() -> None:
+    st.title("IPL market")
+    st.caption(
+        "Team-building tools on our own models: trades, XI win odds, squads, and the auction work. "
+        "Each says how far to trust it (docs/VALUE_m4.md, VALUE_m6.md)."
+    )
+    # a horizontal radio, not st.tabs: only the chosen tool is built, and tools can share filter widgets without clashing
+    tab = st.radio("Tool", list(TABS), horizontal=True, key="market_tab", label_visibility="collapsed")
+    TABS[tab]()
