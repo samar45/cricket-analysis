@@ -12,6 +12,7 @@ import ui
 from cricket_analytics import registry
 from cricket_analytics.models import auction as A
 from cricket_analytics.models import player_outlook as PO
+from cricket_analytics.models import trade as T
 from cricket_analytics.models.war import DATA
 
 SMAT_CSV = DATA / "scouting_preview_smat.csv"
@@ -223,18 +224,58 @@ def _auction() -> None:
     _market()
 
 
+IPL = {"competition": "ipl"}  # the market tools are IPL-only: no competition selector
+
+
 def _trade() -> None:
-    module_view.module_view(registry.get("trade"))
+    module_view.module_view(registry.get("trade"), fixed=IPL)
 
 
 def _xi_odds() -> None:
-    module_view.module_view(registry.get("xi_odds"))
+    module_view.module_view(registry.get("xi_odds"), fixed=IPL)
+
+
+def _squad_extra(params, result) -> None:
+    """Under the squad chart: TOTAL row, this team's rank, and the 10-team comparison (selected team highlighted)."""
+    basis = params.get("value_basis", T.DEFAULT_BASIS)
+    team = params.get("team") or tuple(T.TEAMS.values())[5]
+    ab = T.team_abbr(team[0] if isinstance(team, (list, tuple)) else team)
+    tt = T.team_table(basis)
+    me = tt[tt.team == ab].iloc[0]
+    d = result.data
+    st.markdown(f"**{me['name']}: XII value {me.xii_value:.2f} · rank {me['rank']}/{len(tt)}**")
+    total = pd.DataFrame(
+        [{
+            "": "TOTAL",
+            "players": len(d),
+            "salary_cr": d.salary_cr.sum(),
+            f"XII value ({basis})": me.xii_value,
+            "sum recent": d.recent_value.sum(),
+            "sum positive": d.recent_value.clip(lower=0).sum(),
+        }]
+    )
+    st.dataframe(total.style.format("{:.2f}", subset=total.columns[2:]), hide_index=True, width="stretch")
+    st.markdown("**All 10 teams, best XII**")
+    cmp = pd.DataFrame(
+        {
+            "rank": tt["rank"],
+            "team": tt["name"],
+            "squad salary cr": tt.salary_cr.round(1),
+            "purse left cr": tt.purse_left_cr.round(1),
+            "XII value": tt.xii_value.round(2),
+            "10-90 range": [f"{lo:.2f} to {hi:.2f}" for lo, hi in zip(tt.lo, tt.hi)],
+        }
+    )
+    hl = lambda r: ["background-color: rgba(255,200,0,.25); font-weight: 600" if r.team == me["name"] else "" for _ in r]  # fmt: skip
+    st.dataframe(cmp.style.apply(hl, axis=1).format({"squad salary cr": "{:.1f}", "purse left cr": "{:.1f}", "XII value": "{:.2f}"}), hide_index=True, width="stretch")
+    st.caption("Purse = 125 cr cap (a guess for 2027) minus squad salaries. Range = 10th to 90th percentile of the XII value.")
 
 
 def _squads() -> None:
     # same module as Trade, view fixed to one team's squad; the swap widgets are hidden
     module_view.module_view(
-        registry.get("trade"), scope="trade_squad", fixed={"view": "squad"}, skip=("team2", "give", "get", "must_play")
+        registry.get("trade"), scope="trade_squad", fixed={"view": "squad", **IPL},
+        skip=("team2", "give", "get", "must_play"), extra=_squad_extra,
     )
 
 

@@ -35,9 +35,9 @@ def card_html(mod_id: str, result) -> str | None:
     return viz.html(result) if hasattr(viz, "html") else None
 
 
-def module_view(mod, *, scope: str | None = None, fixed: dict | None = None, skip: tuple = ()) -> None:
+def module_view(mod, *, scope: str | None = None, fixed: dict | None = None, skip: tuple = (), extra=None) -> None:
     """Form + Run gate + result for one module. `fixed` params are always sent and their widgets (plus `skip`) hidden;
-    `scope` names the Run button / result container (default: the module id)."""
+    `scope` names the Run button / result container (default: the module id). `extra(params, result)` draws more under the result."""
     scope = scope or mod.id
     fixed = fixed or {}
     lean = mod.id in LEAN
@@ -53,10 +53,10 @@ def module_view(mod, *, scope: str | None = None, fixed: dict | None = None, ski
     if params is None:
         return
     with st.container(key=f"res_{scope}"):
-        _result(mod, params, lean)
+        _result(mod, params, lean, extra)
 
 
-def _result(mod, params, lean):
+def _result(mod, params, lean, extra=None):
     result = ui.run(mod.id, params)
     meta = result.meta
     if not lean:
@@ -100,6 +100,8 @@ def _result(mod, params, lean):
         c2.download_button(
             "Download JSON", result.to_json(indent=2), f"{mod.id}.json", "application/json"
         )
+    if extra and not result.data.empty:
+        extra(params, result)
     with st.expander("Method" if lean else "About this result"):
         if lean:
             st.caption(importlib.import_module(f"cricket_analytics.viz.{mod.id}").method_note(result))

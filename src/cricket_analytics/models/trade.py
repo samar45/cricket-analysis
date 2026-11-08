@@ -995,6 +995,26 @@ def squad_view(team: str, basis: str = DEFAULT_BASIS) -> pd.DataFrame:
     )
 
 
+@lru_cache(maxsize=4)
+def team_table(basis: str = DEFAULT_BASIS) -> pd.DataFrame:
+    """All 10 teams: squad salary, purse left, best-XII value with its 10-90 range, and rank (1 = highest value)."""
+    v = values()
+    tab = player_table(squads(), v, basis)
+    rows = []
+    for ab, name in TEAMS.items():
+        pt = tab[tab.team == ab]
+        pick = pick_xii(pt)
+        lo, hi = rng_text(xii_draws(pick, pt, draws_for(pt, v)))
+        sal = float(pt.salary.sum())
+        rows.append(
+            {"team": ab, "name": name, "salary_cr": sal, "purse_left_cr": PURSE_CAP - sal,
+             "xii_value": pick["value"], "lo": lo, "hi": hi}
+        )
+    out = pd.DataFrame(rows)
+    out["rank"] = out.xii_value.rank(ascending=False, method="min").astype(int)
+    return out.sort_values("rank").reset_index(drop=True)
+
+
 def main() -> None:
     import sys
 
