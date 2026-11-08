@@ -20,7 +20,12 @@ def _ipl_data(db_path: str, db_mtime: float, version: str = "v3") -> tuple[pd.Da
     rows, apps = w.season_table("ipl", db_path, fielding=fld)
     rows = w.centre(rows)
     mw = w.load_params(version).get("match_w", 0.0)
-    return (w.match_adjust_rows(rows, mw) if mw else rows), apps
+    rows = w.match_adjust_rows(rows, mw) if mw else rows
+    if version == "v4":
+        from ..models import rapm
+
+        rows = rapm.v4_rows(rows)
+    return rows, apps
 
 
 def _scoped(f, version: str = "v3") -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -109,8 +114,8 @@ def _projected(f, role: str, components: bool, top: int) -> pd.DataFrame:
             "version",
             "choice",
             default="v3",
-            choices=("v1", "v2", "v3"),
-            help="v3 (default) = batting + bowling only, runs added 25% adjusted for match conditions, replacement -6 per 100 balls; v2 adds fielding credit; v1 is the original"
+            choices=("v1", "v2", "v3", "v4"),
+            help="v4 = v3 plus opponent adjustment (ridge regression: credit for facing strong bowlers / batters, docs/VALUE_rapm.md; experimental); v3 (default) = batting + bowling only, runs added 25% adjusted for match conditions, replacement -6 per 100 balls; v2 adds fielding credit; v1 is the original"
         ),
         ParamSpec(
             "fair_fielding",

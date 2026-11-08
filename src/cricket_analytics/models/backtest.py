@@ -358,7 +358,7 @@ def table(res: pd.DataFrame, what: str = "total") -> pd.DataFrame:
     return w.reindex(order + [n for n in w.index if n not in order])
 
 
-from . import availability, marcel, value_variants  # noqa: E402,F401  (registers ipl3_ph, ipl3_wpa, ipl3_grp, marcel*, share_*, balls_*, ropp_*)
+from . import availability, marcel, rapm, value_variants  # noqa: E402,F401  (registers ipl3_ph, ipl3_wpa, ipl3_grp, marcel*, share_*, balls_*, ropp_*)
 
 DEFAULT = ("zero", "last_ipl", "ipl3", "recent_value", "pwar", "pwar_runs", "lw_other", "lw_all", "price")
 

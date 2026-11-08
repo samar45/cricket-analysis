@@ -23,6 +23,7 @@ DATA = Path(__file__).parent / "data"
 PARAMS = DATA / "war_params.json"
 PARAMS_V2 = DATA / "war_params_v2.json"
 PARAMS_V3 = DATA / "war_params_v3.json"
+PARAMS_V4 = DATA / "war_params_v4.json"
 DEFAULT_VERSION = "v3"  # v3 = batting + bowling only (no fielding), runs added adjusted 25% for match conditions (docs/VALUE_war_v3.md)
 MATCH_W = 0.25  # share of the match-condition adjustment (models/match_adjust.py) applied to runs added in v3
 # WAR v2 fielding (docs/VALUE_war_fix.md): share of a catch / stumping wicket value moved from the bowler to the fielder (a
@@ -548,7 +549,7 @@ def replacement(r: pd.DataFrame, app: pd.DataFrame, prior_years, cut=11, lag=1) 
 def load_params(version: str = DEFAULT_VERSION) -> dict:
     """v3 (default) = war_params_v3.json (bat + bowl only, match_w 0.25, replacement -6); v2 = war_params_v2.json (fielding
     shares, replacement -6); v1 = the original war_params.json. See docs/VALUE_war_v3.md and docs/VALUE_war_fix.md."""
-    return json.loads({"v1": PARAMS, "v2": PARAMS_V2, "v3": PARAMS_V3}[version].read_text())
+    return json.loads({"v1": PARAMS, "v2": PARAMS_V2, "v3": PARAMS_V3, "v4": PARAMS_V4}[version].read_text())
 
 
 REF = Path(__file__).parent.parent / "reference"
