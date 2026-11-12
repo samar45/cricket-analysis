@@ -71,27 +71,52 @@ def _ds(d, y, cols, w=None):
     return lgb.Dataset(d[cols], y, weight=w, categorical_feature=["comp_code"] if "comp_code" in cols else [], free_raw_data=False)
 
 
-def fit_score(tr, w, cols, cfg, rounds=None, val=None, innings=1):
-    """Three quantile boosters. rounds=None -> early stopping on val. Returns {q: (booster, n_iter)}."""
+def target_scale(d, scale):
+    """Level-relative target helper: expected remaining runs at the scoring level, s = lvl/120 * balls_left (floor 0.5).
+    Training on remaining/s with weight s has the same pinball loss in runs, but the prediction scales with the level."""
+    return np.maximum(d[scale].to_numpy(float) / 120.0 * d.balls_left.to_numpy(float), 0.5)
+
+
+def to_ratio(y, s):
+    return np.asarray(y, float) / s
+
+
+def from_ratio(r, s):
+    return np.asarray(r, float) * s
+
+
+def fit_score(tr, w, cols, cfg, rounds=None, val=None, innings=1, qs=QS, scale=None):
+    """Quantile boosters of remaining runs. rounds=None -> early stopping on val. Returns {q: (booster, n_iter)}.
+    scale = column name (e.g. 'lvl_ew') -> level-relative target (see target_scale)."""
     d, y = score_rows(tr, innings)
     w = w[tr.index.isin(d.index)]
+    if scale:
+        s = target_scale(d, scale)
+        y, w = to_ratio(y, s), w * s
     out = {}
-    for q in QS:
+    for q in qs:
         p = {**BASE, **cfg, "objective": "quantile", "alpha": q, "metric": "quantile"}
         ds = _ds(d, y, cols, w)
         if val is None:
             out[q] = (lgb.train(p, ds, rounds[q]), rounds[q])
         else:
             vd, vy = score_rows(val, innings)
-            b = lgb.train(p, ds, MAX_ROUNDS, valid_sets=[_ds(vd, vy, cols)], callbacks=[lgb.early_stopping(PATIENCE, verbose=False)])
+            vw = None
+            if scale:
+                vs = target_scale(vd, scale)
+                vy, vw = to_ratio(vy, vs), vs
+            b = lgb.train(p, ds, MAX_ROUNDS, valid_sets=[_ds(vd, vy, cols, vw)], callbacks=[lgb.early_stopping(PATIENCE, verbose=False)])
             out[q] = (b, max(b.best_iteration, 10))
     return out
 
 
-def predict_score(models, d, cols):
-    q = np.column_stack([models[k][0].predict(d[cols], num_iteration=models[k][1]) for k in QS])
+def predict_score(models, d, cols, qs=QS, scale=None):
+    """Absolute quantiles of the final total (runs so far + predicted remaining), sorted so none cross."""
+    q = np.column_stack([models[k][0].predict(d[cols], num_iteration=models[k][1]) for k in qs])
+    if scale:
+        q = from_ratio(q, target_scale(d, scale)[:, None])
     q = np.sort(q, axis=1)  # no crossing quantiles
-    return pd.DataFrame(np.maximum(q, 0) + d.runs.to_numpy()[:, None], columns=["q10", "q50", "q90"], index=d.index)
+    return pd.DataFrame(np.maximum(q, 0) + d.runs.to_numpy()[:, None], columns=[f"q{round(k * 100)}" for k in qs], index=d.index)
 
 
 def fit_win(tr, w, cols, cfg, rounds=None, val=None):
@@ -129,6 +154,38 @@ def platt(model_pred, y):
     lg = lambda p: np.log(np.clip(p, 1e-6, 1 - 1e-6) / (1 - np.clip(p, 1e-6, 1 - 1e-6))).reshape(-1, 1)  # noqa: E731
     lr = LogisticRegression(C=100).fit(lg(model_pred), y)
     return lambda p: lr.predict_proba(lg(p))[:, 1]
+
+
+# ---------- S4b: conformal widening, win from the score distribution ----------
+def over_bucket(balls_bowled):
+    """Checkpoint bucket: 0 = overs 1-6, 1 = 7-10, 2 = 11-15, 3 = 16-20."""
+    return np.digitize(np.asarray(balls_bowled) // 6, [6, 10, 15])
+
+
+def conformal_delta(y, lo, hi, bucket, level=0.8):
+    """Split-conformal (CQR) widening per bucket: delta = the ceil((n+1)*level)/n quantile of max(lo-y, y-hi).
+    Add delta to hi and subtract it from lo and the interval covers about `level` on exchangeable data."""
+    y, lo, hi, bucket = (np.asarray(a) for a in (y, lo, hi, bucket))
+    e = np.maximum(lo - y, y - hi)
+    out = {}
+    for b in np.unique(bucket):
+        x = np.sort(e[bucket == b])
+        k = int(np.ceil((len(x) + 1) * level))
+        out[int(b)] = float(x[min(k, len(x)) - 1])
+    return out
+
+
+def conformal_apply(q10, q50, q90, bucket, delta):
+    dl = np.array([delta.get(int(b), 0.0) for b in bucket])
+    return np.minimum(np.asarray(q10) - dl, q50), np.maximum(np.asarray(q90) + dl, q50)
+
+
+def p_from_quantiles(rem_q, levels, need, lo=0.02):
+    """P(remaining runs >= need) from predicted quantiles rem_q (n, k) at `levels`, linear interpolation of the CDF.
+    Outside the predicted range the CDF is held at the end levels' 0.02 margin (probability clipped to [lo, 1-lo])."""
+    v, lv, need = np.sort(np.asarray(rem_q, float), axis=1), np.asarray(levels, float), np.asarray(need, float)
+    cdf = np.array([np.interp(n, r, lv, left=lo, right=1 - lo) for r, n in zip(v, need)])
+    return np.clip(1 - cdf, lo, 1 - lo)
 
 
 # ---------- experiment ----------
@@ -213,7 +270,7 @@ def summarise(S, W, years=None):
 
 
 def boot_diff(A, B, kind, years=None, n=2000, seed=0):
-    """Innings-weighted loss(A) - loss(B), bootstrapped over MATCHES. kind: 'mae' (A,B score preds) or 'll' (win preds).
+    """Innings-weighted loss(A) - loss(B), bootstrapped over MATCHES. kind: 'mae' / 'bias' / 'pin' / 'cov' (A,B score preds) or 'll' (win preds).
     Returns (mean, p5, p95, n_matches). Negative = A better."""
     if years is not None:
         A, B = A[A.fold.isin(years)], B[B.fold.isin(years)]
@@ -223,6 +280,15 @@ def boot_diff(A, B, kind, years=None, n=2000, seed=0):
     w = ev.match_weights(A)
     if kind == "mae":
         la, lb = (A.final_total - A.q50).abs(), (B.final_total - B.q50).abs()
+    elif kind in ("bias", "pin", "cov"):  # bias: predicted - actual; pin: mean 10/50/90 pinball; cov: inside the 10-90 range
+        def f(d):
+            if kind == "bias":
+                return d.q50 - d.final_total
+            if kind == "cov":
+                return ((d.final_total >= d.q10) & (d.final_total <= d.q90)).astype(float)
+            e = {q: d.final_total - d[c] for q, c in ((0.1, "q10"), (0.5, "q50"), (0.9, "q90"))}
+            return sum(np.maximum(q * x, (q - 1) * x) for q, x in e.items()) / 3
+        la, lb = f(A), f(B)
     else:
         def ll(d):
             p = np.clip(d.p, 1e-6, 1 - 1e-6)
