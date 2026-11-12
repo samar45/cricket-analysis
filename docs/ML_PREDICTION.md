@@ -553,3 +553,20 @@ Both chasers won, consistent with the models underrating chasers.
 - Chase win probability: sim-B is best and beats both G1 and ens-G1 with intervals clear of zero; every model underrates chasers in 2026 (64% won), the direct models most.
 - Limits: 71 matches; teams and venues have 5-10 matches each; one season's chasing share may be a quirk, not a trend. The holdout was evaluated once; nothing was tuned on 2026.
 - Not done, per the pre-registration: nothing was changed after seeing 2026; the GRU step stays skipped. Possible next version (to be judged on future data): use sim-B for win probability, or recalibrate the direct model's win output on the latest season.
+
+### 2026-11-13 (lead): verdict on the IPL 2026 holdout, and the v2 plan
+- **Verdict:** v1 (ens-G1) **fails** the pre-registered rule, on calibration only (ECE 0.117 against the 0.08 limit). It passes the other four criteria: it beats the baseline on score by 3.6 runs and on chase log loss by 0.25, coverage is 0.76, and bias is +1.8.
+- **Cause (measured by us):** chasers won **64%** of IPL 2026 matches, against 45–51% in 2022–25. That is about 2.3 standard errors from 50% on 70 chases, so it is probably real (perhaps the conditions or the 2025+ second-ball rule), but it could also be luck. All models assumed the old base rate.
+- **Also measured:** among non-IPL leagues in 2025–26, chasers won 64–67% of the time in the BBL, BPL, CPL and PSL, while the Blast, SA20 and T20I sat at 46–52%. A chasing advantage that differs by league and by season looks real.
+- **sim-B was the best chase model in 2026** (log loss 0.315, ECE 0.081). The direct model (G1) was the worst of the ML models.
+
+#### Pre-registration for v2 (written before any v2 work)
+- **Fresh holdout:** **men's non-IPL franchise leagues, matches dated 2026-01-01 or later** (BBL 25/26 from January, BPL, PSL, SA20, ILT20, CPL 2026, MLC 2026, LPL 2026, Blast 2026). No model has been evaluated on these yet. It also tests whether the model is generic beyond the IPL.
+- **Locked:** no v2 development may look at those matches. Training and tuning for this test use data dated before 2026-01-01, and IPL 2026 may be used as an already-seen fold.
+- **Comparison:** v1 (ens-G1, G1, sim-B frozen at 918d89e) against v2, on the same states (checkpoints 0/6/10/15), with paired bootstrap over matches.
+- **v2 is adopted only if** it beats v1 ens-G1 on chase log loss with the interval excluding zero, is no worse on score MAE (interval includes or is below zero), and has ECE under 0.08.
+- **Planned v2 changes:**
+  1. Monotone constraints on the chase model.
+  2. A prior-only "chase-win rate so far" level for each competition and season, plus a long-run level.
+  3. Ensemble weights fitted on rolling folds instead of a flat 50/50.
+  4. The sim-B 0-over overshoot (+8.5 in 2026) investigated and fixed if it's a bug.
