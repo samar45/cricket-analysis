@@ -468,3 +468,10 @@ The curve is flat: more history does not help or hurt (differences of 0.1 runs a
   - ECE must be under 0.08.
 - **Reporting:** the results are reported whatever they show.
 - **Deep learning (GRU) step skipped:** the learning curve is flat (more history doesn't help), and from 10 overs on the models sit at the simulator's noise ceiling. A sequence model has no room left to gain. It can be revisited if the holdout shows a specific gap.
+
+### 2026-11-13 (lead review of S5 part 1 curves)
+- **Flaw found** in the PBKS 262 chase curve (`docs/img/ml_curve_1426280.png`): before a ball was bowled, G0 and G1 gave the chase a 21–27% win chance, while sim-B gave 6%.
+  - A 262 target had essentially never been chased before, so the direct classifier is far too kind to huge targets. Tree models flatten out beyond the range they were trained on.
+  - This matches the S5 bias flag "220+ targets over-rated by +0.10".
+- **Fix for v2** (after the holdout, not before, because the models are frozen): LightGBM monotone constraints on the chase model. Win probability must fall as runs_needed and wickets rise, and rise as balls_left rises. Also add a "required minus expected" feature built from the scoring level.
+- The last-over defence finding (direct models too kind to the defending side) is the same problem at the other end. Monotone constraints should help there too.
