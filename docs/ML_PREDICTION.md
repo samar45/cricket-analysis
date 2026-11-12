@@ -77,6 +77,7 @@ Keep rule for every addition: it must beat the best previous model on the rollin
   - A new era cannot be forecast: the IPL 2023 impact-player jump (+12 runs) is only partly caught, because 2023 is the first season with no impact-era data in training (2023 bias -4.5 runs). It is caught better from 2024 on.
   - Wickets that carry runs (run-outs) and wides with extra runs are folded in as small random extras (mean runs on a wicket ball; mean extra beyond 1 on a wide/no-ball), so totals are not biased low.
   - Batter-strength features partly double-count the era: at ball level variant B over-predicted 2025 by 0.34 runs/over (single fold check before the final run); in the final simulated totals the 2025 bias is +3 runs.
+- 2026-11-13 (S4b): (1) My first report script had a broken string (a real newline inside a print) from a bad shell-heredoc edit; fixed before any result was produced. (2) S3's iteration counts were tuned on the IPL-all pool, so a fair control "g0r" re-tunes on the global pool; it is 0.1 runs better than G0. Against g0r, E1's MAE gain is -0.25 [-0.64, +0.15], so the MAE part of E1 is not outside noise; the bias part is (+3.3 runs toward zero [+2.9, +3.6]). (3) E4 (win from the score distribution) failed, likely because chase remaining-runs targets are cut off at the target; dropped.
 
 ## 9. Status (newest at bottom)
 - 2026-11-13: plan written; S0 started.
@@ -285,3 +286,55 @@ By checkpoint, sim C log loss is 0.569 / 0.504 / 0.468 / 0.342 at 0 / 6 / 10 / 1
 - Weak spots: ranges a little narrow early (cov80 0.75-0.79); high-confidence chases (>95%) lost 6 vs 1.7 expected; the first season of a new scoring era (2023) is under-predicted by about 4 runs; powerplay/death scoring is 0.3-0.4 runs/over low.
 - Not checked yet (S5): bias breakdown by team / venue, famous chases, comparison with the S3 direct models. The 2026 holdout was not touched.
 - Models: `data/external/ml/models/ball_<variant>_<pool>_<year>.pkl` (gitignored). Rerun: `python -m cricket_analytics.ml.ball_model` (build), `python -m cricket_analytics.ml.sim_eval ABC ipl 400`, `python -m cricket_analytics.ml.sim_report ABC`.
+
+### 2026-11-13: S4b results (fixing the global model's bias and narrow ranges; `ml/s4b.py`, helpers in `ml/direct.py`)
+**Setup.** G0 = the S3 global model (`lgbm-global`). Every variant changes one thing, uses G0's config per fold, and re-tunes its iteration counts by early stopping on the inner fold (global pool, seasons < Y-1, validation = IPL Y-1). Because that tuning differs slightly from S3's, a control "g0r" (G0 with only the new tuning) is also shown. Test = IPL 2022-25 rolling, 2026 never opened. n = 284 first innings, 283 chases. Bootstrap = 2000 resamples over matches, mean [5%, 95%] of (variant minus G0). Bias = predicted minus actual median (runs); "bias diff" is signed, so +3.8 means the bias moved 3.8 runs toward zero.
+
+| experiment | MAE | bias | pinball | cov80 | MAE diff vs G0 | bias diff vs G0 | pinball diff vs G0 | verdict |
+|---|---|---|---|---|---|---|---|---|
+| G0 | 16.70 | -4.43 | 5.311 | 0.759 | - | - | - | reference |
+| g0r (control, new tuning) | 16.59 | -3.88 | 5.274 | 0.766 | -0.11 [-0.20, -0.02] | +0.55 [+0.44, +0.66] | -0.036 [-0.056, -0.017] | tuning alone helps a hair |
+| E1a level-relative target, lvl_ew | 16.32 | -1.63 | 5.180 | 0.796 | -0.36 [-0.69, -0.02] | +2.78 [+2.46, +3.12] | -0.126 [-0.231, -0.015] | **keep** (bias, clear) |
+| E1b same, in-season level (lvl_season) | 16.33 | -0.48 | 5.192 | 0.801 | -0.36 [-0.79, +0.08] | +3.94 [+3.57, +4.31] | -0.114 [-0.241, +0.018] | **keep, chosen for G1** (lowest bias; ties E1a on MAE: +0.005 [-0.26, +0.28]) |
+| E2 drop season_year | 16.63 | -4.27 | 5.297 | 0.767 | -0.07 [-0.18, +0.04] | +0.15 [+0.00, +0.30] | -0.014 [-0.041, +0.014] | **keep** (ties on score, simpler, helps the win model, see below) |
+| E3 conformal widening (on E1b) | 16.33 | -0.48 | 5.191 | 0.819 | same | same | vs E1b alone: -0.001 | **keep** (coverage 0.80 -> 0.82, no pinball cost) |
+| G1 (E1b + E2 + E3) | 16.30 | -0.61 | 5.169 | 0.815 | -0.38 [-0.79, +0.03] | +3.81 [+3.46, +4.15] | -0.137 [-0.262, -0.007] | final |
+
+E3 on the other variants: g0r 0.766 -> 0.811, E1a 0.796 -> 0.815, E2 0.767 -> 0.817 (coverage +0.05 to +0.06, pinball change -0.001 to -0.008, inside noise). How E1 works: the model learns remaining runs divided by (scoring level / 120 x balls left), with that same quantity as the training weight, so the loss is still measured in runs but the prediction scales with the scoring level (the one thing a tree cannot do by itself). How E3 works: the inner-fold model (trained on seasons < Y-1) predicts season Y-1; the 80th percentile of "how far the result fell outside q10-q90" in each of four over buckets (1-6, 7-10, 11-15, 16-20) is added to both sides. Deltas are small, -3 to +3 runs (`models/g1/conformal_delta.json`), because G1 was already close to 0.80.
+
+**E2 on the chase model** (win log loss, G0 0.454): E2 0.444, difference -0.0100 [-0.0174, -0.0025] (outside noise), ECE 0.042 -> 0.033. Dropping the season number helps the win model.
+
+**E4: chase win from the score distribution** (innings-2 remaining-runs quantiles at 9 levels from 5% to 95%; P(win) = P(remaining >= runs needed), CDF interpolated):
+
+| variant | log loss | ECE | log loss diff vs G0 classifier |
+|---|---|---|---|
+| G0 classifier | 0.454 | 0.042 | - |
+| E4 raw quantile model | 0.550 | 0.174 | +0.095 [+0.057, +0.136] |
+| E4 level-relative | 0.539 | 0.136 | +0.084 [+0.046, +0.124] |
+| average of G0 and E4 raw | 0.474 | 0.102 | +0.019 [+0.001, +0.037] |
+| average of G0 and E4 level-relative | 0.469 | 0.083 | +0.015 [-0.002, +0.032] |
+
+**Drop E4.** It is clearly worse than the classifier and averaging does not help. Likely cause (a guess): remaining runs in a chase are cut off at the target, so the upper quantiles are distorted exactly where the answer is read. The classifier stays.
+
+**E5: by test season (G0 / G1 with conformal / baseline), n = 74 / 71 / 70 / 69 first innings.**
+
+| season | MAE G0 | MAE G1 | MAE base | bias G0 | bias G1 | bias base | cov80 G0 | cov80 G1 | chase ll G0 | chase ll G1 | chase ll base |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2022 | 15.94 | 15.62 | 15.69 | -3.5 | -0.7 | -5.1 | 0.775 | 0.807 | 0.458 | 0.446 | 0.427 |
+| 2023 | 15.90 | 15.75 | 17.54 | -4.0 | -2.2 | -9.1 | 0.732 | 0.822 | 0.525 | 0.521 | 0.603 |
+| 2024 | 18.78 | 17.94 | 20.30 | -7.5 | -0.6 | -13.8 | 0.754 | 0.828 | 0.423 | 0.398 | 0.445 |
+| 2025 | 16.21 | 15.93 | 19.11 | -2.8 | +1.2 | -11.6 | 0.775 | 0.804 | 0.407 | 0.409 | 0.480 |
+
+2024 (worst bias, -7.5) is fixed to -0.6, and 2023 improves from -4.0 to -2.2. 2025 flips to slightly over-predicting (+1.2; E1a alone gave +3.3). In 2022 the old resource baseline is still as good as G1 (MAE 15.69 vs 15.62, chase log loss 0.427 vs 0.446): that was before the jump, so the old table fitted it. Per-season n is about 70 matches, so single-season differences are not significant.
+
+**G1 vs G0 vs baseline (2022-25, n = 284 / 283)**
+
+| model | MAE@6 / @10 / @15 | MAE | pinball | cov80 | bias | chase ll | ECE |
+|---|---|---|---|---|---|---|---|
+| baseline resource-ipl | 23.3 / 18.3 / 11.1 | 18.12 | 5.711 | 0.738 | -9.84 | 0.488 | 0.113 |
+| G0 | 20.7 / 16.5 / 10.4 | 16.70 | 5.311 | 0.759 | -4.43 | 0.454 | 0.042 |
+| **G1 (with conformal)** | 20.2 / 16.2 / 10.0 | **16.30** | **5.169** | **0.815** | **-0.61** | **0.444** | **0.033** |
+
+G1 minus baseline: MAE -1.80 [-2.61, -0.98], pinball -0.53 [-0.79, -0.29], chase log loss -0.044 [-0.081, -0.008] (all outside noise). G1 minus G0: MAE -0.38 [-0.79, +0.03] (borderline), pinball -0.137 [-0.262, -0.007], bias +3.8 runs toward zero [+3.5, +4.2], coverage +0.056 [+0.041, +0.070], chase log loss -0.010 [-0.017, -0.003].
+
+**Verdict (plain).** The two weaknesses are largely fixed: the first-innings bias drops from -4.4 to -0.6 runs (2024: -7.5 to -0.6) and the 80% range covers 0.815 instead of 0.759. The gain on the median itself is small (0.4 runs, on the edge of noise); the main win is that G1 no longer lags the scoring level. Chase win probability also improved a little (log loss 0.454 to 0.444, ECE 0.033). Remaining soft spots: coverage collapses in the last over (about 0.70 with the widening, 0.53 without; so few runs are left and they are so discrete that a 10-90 range is hard to make exact), and the 2025 sign flip (+1.2) shows the level can overshoot after a jump season. Plots: `docs/img/ml_g1_coverage.png`, `ml_g1_reliability.png`, `ml_g1_bias_by_season.png`. G1 models (per test year: three score quantiles + chase classifier) are in `data/external/ml/models/g1/`, predictions in `data/external/ml/s4b_*.parquet`. Rerun with `python -m cricket_analytics.ml.s4b run`, then `... report` (about 30 min, E4 included). G1 = S5 candidate #1.

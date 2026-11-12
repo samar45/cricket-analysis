@@ -10,3 +10,5 @@ MILESTONE: S3/S4 results written to ML_PREDICTION.md section 9 (global pool wins
 MILESTONE: S4b started: direct.py level-relative/conformal helpers, s4b.py runner; running variants g0r/e1a/e1b/e2/e4 (2026-11-13)
 MILESTONE: S4b variants done (E1 helps bias, E2 helps win, E3 fixes coverage, E4 drop); running G1 (2026-11-13)
 MILESTONE: S2 results written to ML_PREDICTION.md section 9; plots docs/img/ml_sim_*.png (2026-11-13)
+MILESTONE: S5p1 validate.py written; head-to-head, bias, noise, tails, curves done; learning curve running (2026-11-13)
+MILESTONE: S4b done: G1 (level-relative season-level target + no season_year + conformal) bias -4.4 to -0.6, cov80 0.76 to 0.815; E4 dropped; results in ML_PREDICTION.md section 9 (2026-11-13)
