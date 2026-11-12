@@ -14,7 +14,7 @@ def test_replay_state_rules():
 
 
 def test_shipped_model_reproduced():
-    f = D.build()
+    f = D.build(write=False)
     p = D._fit_predict(f, (2022, 2023, 2024), 2025, [])
     s = p[p.sold]
     assert abs(np.abs(s.p50 - s.price_cr).mean() - 2.08) < 0.02  # docs/VALUE_m4.md validation MAE

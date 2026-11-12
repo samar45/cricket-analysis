@@ -106,11 +106,12 @@ def replay(year: int) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def build() -> pd.DataFrame:
+def build(write: bool = True) -> pd.DataFrame:
     f = pd.read_csv(A.FEATURES)
     d = pd.concat([replay(y) for y in A.YEARS])
     f = f.merge(d, on=["auction_year", "player"], how="left")
-    f.to_csv(FEAT_CSV, index=False)
+    if write:
+        f.to_csv(FEAT_CSV, index=False)
     return f
 
 
