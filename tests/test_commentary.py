@@ -41,3 +41,26 @@ def test_short_byes():
 
 def test_non_ball_ignored():
     assert parse_item({"commText": "chat", "timestamp": 1, "event": "NONE"}) is None
+
+
+def test_wide_fielder_not_line():
+    r = parse_item(item("Blessing Muzarabani to Heinrich Klaasen, 1 run, attempted yorker ends up as a low full toss. Klaasen toe ends the drive to wide long-on", 5.1, 1, 1))
+    assert r["line"] is None and r["length"] == "full toss" and r["contact"] == "mistimed"
+
+
+def test_wide_of_off_and_down_leg():
+    r = parse_item(item(A + "SIX, back of a length and well wide of off, Dube carts the drive", 5.1, 6, 6))
+    assert r["line"] == "outside off" and r["length"] == "back of a length"
+    r = parse_item(item(A + "wide, sprays it down leg, Dube does not make contact", 5.2, 1, 0))
+    assert r["line"] == "leg" and r["contact"] == "miss"
+
+
+def test_inside_edging_and_leg_lined():
+    r = parse_item(item(A + "no run, fraction shorter and Dube ends up inside-edging it onto his pad", 5.3))
+    assert r["contact"] == "inside edge" and r["length"] == "short"
+    assert parse_item(item(A + "1 run, 127.9ks leg-lined delivery, Dube tucks it", 5.4, 1, 1))["line"] == "leg"
+
+
+def test_truncated_fragment_kept_as_ball():
+    r = parse_item(item("even Dube is playing the reverse. He premeditated the shot and Arshdeep", 5.5, 1, 1))
+    assert r is not None and r["runs_total"] == 1 and r["length"] is None

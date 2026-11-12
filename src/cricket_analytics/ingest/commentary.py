@@ -65,15 +65,16 @@ LENGTH = [
     ("full toss", r"full[- ]toss"), ("yorker", r"yorker"),
     ("bouncer", r"bouncer|banged in short|short and (?:at|into|rising)|short ball"),
     ("short of length", r"short of (?:a )?length"), ("back of a length", r"back of (?:a )?length"),
-    ("short", r"\bshort\b(?! (?:third|mid|fine|leg|cover|midwicket|extra|square|backward|fielder))"),
-    ("length", r"\b(?:good )?length (?:ball|delivery)|\bgood length|\blength delivery|\bon a length"),
+    ("short", r"\bshortish|\bfraction shorter|\bshort\b(?! (?:third|mid|fine|leg|cover|midwicket|extra|square|backward|fielder))"),
+    ("length", r"\blength and|\b(?:good )?length (?:ball|delivery)|\bgood length|\blength delivery|\bon a length"),
     ("full", r"\bfull\b|\bfuller\b|half[- ]volley"),
 ]
 LINE = [
-    ("wide", r"\bwide\b|called as a wide"), ("outside off", r"outside off|outside the off|wide of off|around off|off stump|on off"),
-    ("leg", r"down (?:the )?leg|leg stump|on the pads|on the legs|leg side|into the pads"),
+    ("outside off", r"outside off|outside the off|wide of off|around off|off stump|on off|outside the line of off"),
+    ("leg", r"down (?:the )?leg|leg[- ]lined|leg stump|on the pads|on the legs|leg side|into the pads"),
+    ("wide", r"wide(?! (?:long|mid|third|fine|cover|deep|square|backward|point|slip|gully|of the))|called as a wide"),
     ("body", r"at the body|into the body|at the hips|at the ribs|at the throat|at the left-hander|at the batter|at the batsman|at the head|at the helmet"),
-    ("middle", r"middle stump|\bmiddle and|on middle|\bstraight\b|on the stumps|on the stumps"),
+    ("middle", r"middle stump|middle and|on middle|on the stumps|at the stumps|stumps"),
 ]
 DELIVERY = [
     ("slower ball", r"slower (?:ball|one|delivery)|\bslower\b"), ("knuckle ball", r"knuckle"),
@@ -84,8 +85,8 @@ DELIVERY = [
     ("inswinger", r"in[- ]?swing|swinging in|angled in"), ("outswinger", r"out[- ]?swing|swinging away|away swing"),
 ]
 CONTACT = [
-    ("inside edge", r"inside[- ]edge"), ("top edge", r"top[- ]?edge"), ("leading edge", r"leading[- ]?edge"),
-    ("bottom edge", r"bottom[- ]?edge"), ("edge", r"\bedge[sd]?\b|\bnick"),
+    ("inside edge", r"inside[- ]edg"), ("top edge", r"top[- ]?edg"), ("leading edge", r"leading[- ]?edg"),
+    ("bottom edge", r"bottom[- ]?edg"), ("edge", r"\bedge[sd]?\b|\bnick"),
     ("miss", r"swings? and (?:a )?miss|\bmisses\b|\bmissed\b|beaten|no contact|not make contact|does not connect|fails to connect"),
     ("mistimed", r"mistime|not off the middle|not middled|didn'?t middle|toe[- ]end|bottom of the bat"),
     ("middle", r"off the middle|middled|\bsweet\b|timed|well[- ]timed|connects"),
@@ -115,10 +116,12 @@ def parse_item(x: dict) -> dict | None:
         for k, v in zip(fm["formatId"], fm["formatValue"]):
             text = text.replace(k, v)
     m = re.match(r"(.+?) to (.+?),", text)
-    if not m:
+    if not m and not x.get("ballNbr"):
         return None
+    # Cricbuzz sometimes serves a truncated text fragment for a real delivery: keep the row, parse nothing
+    bowler, batter, end = (m.group(1), m.group(2), m.end()) if m else ("?", "?", len(text))
     low = text.lower()
-    body = low[m.end():]  # skip "bowler to batter," so names never match
+    body = low[end:]  # skip "bowler to batter," so names never match
     sp = re.search(r"(\d{2,3}(?:\.\d)?)\s*(?:ks|kph|km/h|kmph)\b", low)
     ev = x.get("event", "")
     extra = _first(
@@ -129,7 +132,7 @@ def parse_item(x: dict) -> dict | None:
     return {
         "innings": x["inningsId"], "over": int(on), "ball": round((on - int(on)) * 10),
         "ball_no": x["ballNbr"], "ts": x["timestamp"],
-        "bowler": m.group(1), "batter": m.group(2),
+        "bowler": bowler, "batter": batter,
         "runs_total": x["totalRuns"], "runs_legal": x["legalRuns"],
         "extra": extra if x["totalRuns"] > 0 or extra else None, "wicket": wk, "event": ev,
         "text": text,
@@ -177,13 +180,50 @@ def join_cricsheet(rows: list[dict], cricsheet_id: str, db="data/cricket_analyti
     return pairs, st
 
 
+IDS = Path(__file__).parents[1] / "reference" / "cricbuzz_ids.csv"
+
+
+def series_run(season: int, limit: int, only=None, out=None, db="data/cricket_analytics.duckdb"):
+    """Fetch+parse mapped IPL matches (cache-aware: cached matches cost 0 requests, so reruns resume)."""
+    import csv
+
+    todo = [r for r in csv.DictReader(open(IDS)) if r["date"].startswith(str(season))]
+    if only:
+        todo = [r for r in todo if r["cricbuzz_id"] in only]
+    allrows = []
+    for m in todo[:limit]:
+        rs = parse_match(m["cricbuzz_id"])
+        pairs, st = join_cricsheet(rs, m["cricsheet_match_id"], db)
+        for r, d in pairs:
+            r.update(match_id=m["cricsheet_match_id"], cricbuzz_id=m["cricbuzz_id"], cs_ball_num=d[2])
+        print(m["cricbuzz_id"], m["cricsheet_match_id"], "paired", st["paired"], "/", st["cricsheet"],
+              "runs_ok", st["runs"], "bowler_ok", st["bowler"], "batter_ok", st["batter"],
+              "reqs", requests_made[0], flush=True)
+        allrows += [r for r, _ in pairs]
+    if out and allrows:
+        import pandas as pd
+
+        pd.DataFrame(allrows).drop(columns=["text"]).to_csv(out, index=False)  # no raw commentary text
+    if allrows:
+        print("coverage", coverage(allrows))
+    return allrows
+
+
 if __name__ == "__main__":
     import argparse
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--match", required=True, help="Cricbuzz match id")
+    ap.add_argument("--match", help="Cricbuzz match id")
+    ap.add_argument("--series", choices=["ipl"], help="fetch mapped matches of a series")
+    ap.add_argument("--season", type=int, default=2026)
+    ap.add_argument("--limit", type=int, default=10)
+    ap.add_argument("--ids", help="comma-separated Cricbuzz ids (with --series)")
+    ap.add_argument("--out", help="parsed CSV path (no raw text)")
     ap.add_argument("--cricsheet", help="Cricsheet match_id to join to")
     a = ap.parse_args()
+    if a.series:
+        series_run(a.season, a.limit, set(a.ids.split(",")) if a.ids else None, a.out)
+        raise SystemExit
     rs = parse_match(a.match)
     print(len(rs), "balls;", requests_made[0], "requests;", coverage(rs))
     if a.cricsheet:
