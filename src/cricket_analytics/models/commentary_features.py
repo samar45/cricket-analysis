@@ -142,6 +142,52 @@ def player_season(d: pd.DataFrame, role: str, min_balls: int = 30) -> pd.DataFra
     return pd.DataFrame(rows)
 
 
+_CNT: dict = {}
+PLUS_FEATS = ("death_yorker", "slower", "false")  # worth_plus extras: (numerator col, denominator col) in bowler_counts
+K_CLAMP = (30.0, 3000.0)  # balls of evidence a rate needs to be trusted half-way; clamp for the fitted k
+
+
+def bowler_counts() -> pd.DataFrame:
+    """Per (bowler, year) counts behind the three worth_plus features: death yorkers / death balls with a known length,
+    slower balls / legal balls, false shots / balls (any contact mention counts as 'known' only for the false-shot share
+    of ALL balls: contact and delivery mentions are missing-not-at-random, length is close to random). Cached."""
+    if "c" not in _CNT:
+        d = ball_features(fill(load_frame(2017)))
+        lg = d[d.legal == 1]
+        dg = lg[lg.phase == "death"]
+        c = pd.DataFrame({
+            "death_yorker_n": dg.groupby(["bowler", "year"]).f_yorker.sum(), "death_yorker_d": dg.groupby(["bowler", "year"]).known_len.sum(),
+            "slower_n": lg.groupby(["bowler", "year"]).f_slower.sum(), "slower_d": lg.groupby(["bowler", "year"]).size(),
+            "false_n": d.groupby(["bowler", "year"]).f_false.sum(), "false_d": d.groupby(["bowler", "year"]).faced.sum()}).fillna(0.0)
+        _CNT["c"] = c
+    return _CNT["c"]
+
+
+def _k(n: pd.Series, d: pd.Series) -> float:
+    """Reliability k (balls of average evidence) of a rate by method of moments on bowler totals; mu = pooled rate."""
+    m = d > 0
+    n, d = n[m], d[m]
+    mu = n.sum() / d.sum()
+    between = ((d * (n / d - mu) ** 2).sum() - (len(d) - 1) * mu * (1 - mu)) / (d.sum() - (d**2).sum() / d.sum())
+    return float(np.clip(mu * (1 - mu) / between, *K_CLAMP)) if between > 1e-12 else K_CLAMP[1]
+
+
+def bowl_plus_feats(Xc: int, which=PLUS_FEATS) -> pd.DataFrame:
+    """Per bowler, commentary data of years <= Xc only: shrunk rate minus the pooled rate, one column per feature in `which`
+    (0 = no evidence or average). k is refitted from the same years, so nothing from later years leaks in."""
+    c = bowler_counts()
+    c = c[c.index.get_level_values("year") <= Xc].groupby(level="bowler").sum()
+    out = pd.DataFrame(index=c.index)
+    for f in which:
+        n, d = c[f"{f}_n"], c[f"{f}_d"]
+        if d.sum() == 0:
+            out[f"cm_{f}"] = 0.0
+            continue
+        mu, k = n.sum() / d.sum(), _k(n, d)
+        out[f"cm_{f}"] = (n + k * mu) / (d + k) - mu
+    return out
+
+
 def team_season_fielding(d: pd.DataFrame) -> pd.DataFrame:
     """Dropped catches and missed run-out chances per fielding team-season, with runs conceded after the drop."""
     t = d.groupby(["bowling_team", "year"]).agg(balls=("legal", "size"), drops=("f_drop", "sum"), runout_miss=("f_runout_miss", "sum"),

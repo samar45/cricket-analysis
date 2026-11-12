@@ -39,3 +39,19 @@ def test_aggregate_tiny():
     assert bat.drop_n == 1 and bat.runs_after_drop == 4  # one 4 after the drop
     bowl = C.player_season(d, "bowl", min_balls=1).iloc[0]
     assert np.isclose(bowl.yorker_pct, 1 / 3) and np.isclose(bowl.short_pct, 1 / 3)  # 3 known lengths among the 8 legal balls
+
+
+def test_bowl_plus_feats_no_future_leak(monkeypatch):
+    from cricket_analytics.models import commentary_features as cf
+
+    rows = {(b, y): dict(death_yorker_n=n, death_yorker_d=40, slower_n=3, slower_d=100, false_n=5, false_d=100)
+            for b, ns in {"A": (4, 30, 10), "B": (8, 2, 12), "C": (6, 10, 11)}.items() for y, n in zip((2017, 2018, 2019), ns)}
+    c = pd.DataFrame(rows).T
+    c.index.names = ["bowler", "year"]
+    monkeypatch.setitem(cf._CNT, "c", c)
+    early = cf.bowl_plus_feats(2018, ("death_yorker",))
+    c2 = c.copy()
+    c2.loc[(slice(None), 2019), "death_yorker_n"] = 0  # change the future
+    monkeypatch.setitem(cf._CNT, "c", c2)
+    assert early.equals(cf.bowl_plus_feats(2018, ("death_yorker",)))
+    assert early.cm_death_yorker["A"] > early.cm_death_yorker["B"] and abs(early.cm_death_yorker.mean()) < 0.05

@@ -192,16 +192,17 @@ def _worth_feats(Xc: int, role: str) -> pd.DataFrame:
 
 
 @predictor("worth", "runs")
-def worth_pred(T, X, ctx):
+def worth_pred(T, X, ctx, feats=None):
     """Kept player_worth metrics (shrunk, IPL data up to X) -> ridge per role -> expected runs added per ball next season.
     Weights are fitted on target seasons WORTH_FIT_FROM..X only (features cut at s-1, truth = T season s, 60+ balls): no leakage.
     Expected runs = rate x the IPL balls per season of the last three seasons (a missed season counts 0)."""
     p = player_year(T, ["ipl"])
     out = {}
+    feats = feats or _worth_feats  # worth_plus passes feats that add commentary columns for bowlers
     for role in ("bat", "bowl"):
         xs, ys = [], []
         for s in range(WORTH_FIT_FROM, X + 1):
-            f = _worth_feats(s - 1, role)
+            f = feats(s - 1, role)
             y = p[(p.sy == s) & (p.role == role) & (p.balls >= MIN_BALLS)].set_index("player")
             y = (y.ra / y.balls).reindex(f.index).dropna()
             xs.append(f.loc[y.index])
@@ -211,12 +212,36 @@ def worth_pred(T, X, ctx):
         Z = ((Xf - mu) / sd).fillna(0.0)
         yc = y - y.mean()
         b = np.linalg.solve(Z.T @ Z + WORTH_LAM * np.eye(Z.shape[1]), Z.T @ yc)
-        f = _worth_feats(X, role)
+        f = feats(X, role)
         out[f"{role}_rate"] = pd.Series(((f[Xf.columns] - mu) / sd).fillna(0.0).to_numpy() @ b + y.mean(), index=f.index)
         q = p[(p.sy > X - 3) & (p.role == role)].groupby("player").balls.sum() / 3
         out[f"{role}_q"] = q.reindex(f.index).fillna(0.0)  # expected balls next season
         out[role] = out[f"{role}_rate"] * out[f"{role}_q"]
     return pd.DataFrame(out)
+
+
+def _plus_feats(which):
+    def feats(Xc: int, role: str) -> pd.DataFrame:
+        f = _worth_feats(Xc, role)
+        if role == "bat":
+            return f
+        from .commentary_features import bowl_plus_feats
+
+        return f.join(bowl_plus_feats(Xc, which), how="left")  # no commentary (pre-2017 / unseen) -> NaN -> 0 after standardising
+
+    return feats
+
+
+@predictor("worth_plus", "runs")
+def worth_plus(T, X, ctx):
+    """worth + the bowler's shrunk death-over yorker share (commentary, IPL 2017+). Batting identical to worth. Experiment, not a default."""
+    return worth_pred(T, X, ctx, _plus_feats(("death_yorker",)))
+
+
+@predictor("worth_plus3", "runs")
+def worth_plus3(T, X, ctx):
+    """worth + death yorker share + slower-ball share + false-shot share (all commentary, shrunk by their own reliability)."""
+    return worth_pred(T, X, ctx, _plus_feats(("death_yorker", "slower", "false")))
 
 
 # ------------------------------------------------------------------------------------------------ worth2 (phase-aware, wickets back)

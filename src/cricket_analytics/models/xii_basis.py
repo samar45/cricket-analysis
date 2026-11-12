@@ -53,7 +53,7 @@ def pick_blend(grid=np.linspace(0, 1, 11)) -> pd.DataFrame:
     return r[["a", "n", "spearman"]].reset_index(drop=True)
 
 
-def xii_test(a: float, targets=(2024, 2025, 2026)) -> pd.DataFrame:
+def xii_test(a: float, targets=(2024, 2025, 2026), extra_bases=()) -> pd.DataFrame:
     """Per team-season: each basis picks the 11 best-valued players among those who played 3+ matches for the team that season,
     using only data before the season. Rows: season, team, wins, and per basis the XII value it assigns and the XII's actual WAR
     that season (no rules applied: the same pool and the same top-11 rule for every basis)."""
@@ -73,9 +73,11 @@ def xii_test(a: float, targets=(2024, 2025, 2026)) -> pd.DataFrame:
         wv = worth_war(T, t - 1).sum(axis=1)
         j = pd.concat([rec.rename("r"), wv.rename("w"), worth_war(T, t - 1, "worth2").sum(axis=1).rename("w2")], axis=1).fillna(0.0)
         j["b"] = a * j.r + (1 - a) * j.w
+        for x in extra_bases:  # extra predictors (e.g. worth_plus), same top-11 rule
+            j[x] = worth_war(T, t - 1, x).sum(axis=1).reindex(j.index).fillna(0.0)
         for team, g in ap[(ap.sy == t) & (ap.matches >= 3)].groupby("team"):
             row = dict(sy=t, team=team)
-            for basis, col in (("recent", "r"), ("worth", "w"), ("worth2", "w2"), ("blend", "b")):
+            for basis, col in (("recent", "r"), ("worth", "w"), ("worth2", "w2"), ("blend", "b"), *((x, x) for x in extra_bases)):
                 v = j[col].reindex(g.player).fillna(0.0)
                 top = v.sort_values(ascending=False).index[:11]
                 row[f"{basis}_value"] = float(v[top].sum())
@@ -85,9 +87,9 @@ def xii_test(a: float, targets=(2024, 2025, 2026)) -> pd.DataFrame:
     return d
 
 
-def summary(d: pd.DataFrame) -> pd.DataFrame:
+def summary(d: pd.DataFrame, extra_bases=()) -> pd.DataFrame:
     out = []
-    for b in ("recent", "worth", "worth2", "blend"):
+    for b in ("recent", "worth", "worth2", "blend", *extra_bases):
         for tag in ("value", "actual"):
             x, y = d[f"{b}_{tag}"], d.wins
             out.append(dict(basis=b, what=tag, n=len(d), pearson=x.corr(y), spearman=x.rank().corr(y.rank())))
