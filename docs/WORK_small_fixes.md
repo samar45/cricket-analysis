@@ -1,0 +1,2 @@
+MILESTONE: fix 1 cause = player_outlook._model() -> backtest.tables() (all-league WAR tables) ~50 s per fresh process, plus ~7 s commentary style frame. Both now disk-cached (data/external, gitignored, keyed on DB + source files). Bumrah card build 56 s -> 8.5 s, style 7 s -> 0.8 s. Commit 8e53a0b.
+MILESTONE: fix 2 = demand.build() wrote FEAT_CSV on every test run; added write flag, test uses write=False. Commit below in git log.
