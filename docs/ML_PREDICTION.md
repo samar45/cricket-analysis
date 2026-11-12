@@ -455,3 +455,16 @@ The curve is flat: more history does not help or hurt (differences of 0.1 runs a
 - G0 alone is dominated (21 bias flags, 0.9 runs worse than G1); the G0 + sim-B average is not useful once G1 exists; the baseline is dominated everywhere (12 runs low).
 - Known limits to state in any product: the first innings before a ball is bowled is almost unpredictable (about 3% of variance); chasers of 220+ are over-rated by about 10 points; Chepauk first innings are over-predicted by about 10 runs; direct and ensemble models are too kind to a last-over defence; 220+ and freak-over events are rare so n is small.
 - Selection caveat: models and the ensemble were compared on the same 2022-25 seasons (G1 was tuned on them through the S4b experiments), so margins are slightly optimistic; the 2026 holdout is the clean check. The 2026 holdout was not opened in this task.
+
+### 2026-11-13 (lead): pre-registration for the IPL 2026 holdout, written BEFORE opening it
+- **Frozen models** as of commit 918d89e. Nothing is changed after seeing 2026 results; any later fix is a new version, judged on future data.
+- **Candidates:** ens-G1 (primary, the average of G1 and sim-B), with G1, sim-B, G0 and resource-ipl reported on the same states.
+- **Training:** each model is refit on all seasons up to 2025 with the same tuning procedure (inner fold = 2025). The 2026 rows are used only for scoring.
+- **States:** IPL 2026 at the 0/6/10/15-over checkpoints (same metrics as the S5 head-to-head), plus every over for the curves.
+- **Pass rule for ens-G1:**
+  - It must beat resource-ipl on first-innings MAE and on chase log loss, with the paired bootstrap interval over matches (5–95%) excluding zero.
+  - 80% coverage must fall between 0.72 and 0.88.
+  - |bias| must be under 5 runs.
+  - ECE must be under 0.08.
+- **Reporting:** the results are reported whatever they show.
+- **Deep learning (GRU) step skipped:** the learning curve is flat (more history doesn't help), and from 10 overs on the models sit at the simulator's noise ceiling. A sequence model has no room left to gain. It can be revisited if the holdout shows a specific gap.
