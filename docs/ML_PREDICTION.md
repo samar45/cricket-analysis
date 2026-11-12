@@ -86,6 +86,7 @@ Keep rule for every addition: it must beat the best previous model on the rollin
   - Bias flags at 2 s.e. produce about 5% false alarms (1-2 of 33 groups); a single flagged venue is not evidence unless several models agree (Chepauk +10 runs is flagged for all of them).
 
 - 2026-11-13 (S5 part 2, holdout): No bug hit; the holdout was run once (fit, then report). Two things to remember: (1) the pre-registration said "ECE" without saying pooled or mean-of-4; I used the head-to-head form (mean of the 4 checkpoints) as the literal reading and also printed the pooled one; both fail the 0.08 limit, so the choice did not matter. (2) The "season" bias group is constant (all 2026) and was dropped from the audit.
+- 2026-11-13 (sim-B overshoot investigation): (1) My first hypothesis (level input too high / half-life too reactive) was wrong: the level input at the start of 2026 (9.29 slow, 9.84 fast) was at or below the real 2026 scoring (9.82), and half-life or log-level changes did nothing. (2) The first "era-relative" player fix (subtract the all-men's-T20 average strength) did not help because that average does not follow the IPL's own rise; the working version rescales each ball's runs by 8 / the competition level of that match. (3) A bug found before any result: `simfix` first referenced columns (`g_rpb`) that I had already removed from the ball table; the run crashed at once, no numbers were produced. (4) `season_year` is the year a season STARTS, so BBL 2025/26 has January-2026 matches with season_year 2025: the training filter uses the match date (< 2026-01-01), not the season year.
 
 ## 9. Status (newest at bottom)
 - 2026-11-13: plan written; S0 started.
@@ -570,3 +571,56 @@ Both chasers won, consistent with the models underrating chasers.
   2. A prior-only "chase-win rate so far" level for each competition and season, plus a long-run level.
   3. Ensemble weights fitted on rolling folds instead of a flat 50/50.
   4. The sim-B 0-over overshoot (+8.5 in 2026) investigated and fixed if it's a bug.
+
+### 2026-11-13: sim-B overshoot investigation (why +8.5 runs on IPL 2026 at 0 overs; `ml/simfix.py`, `ml/ball_model.py`)
+Data used: IPL 2008-2025 (rolling 2022-25 = the fair test) plus IPL 2026 as an already-seen fold. Men's non-IPL matches dated 2026-01-01 or later were not read (the training filter asserts it). 400 paths per state (2026 sim-B: the original 1000-path run; 71 first innings / 70 chases). Plot: `docs/img/ml_simfix_bias.png`.
+
+**1. Where the bias is** (sim-B 2026 model, innings 1 from ball 0, 1000 paths): simulated vs actual runs per over, actual in brackets: overs 1-6 10.15 (9.84), overs 7-15 9.52 (9.31), overs 16-20 11.38 (10.58). So +0.3, +0.2 and +0.8 runs/over, the death overs being the biggest part. Wickets are fine (6.34 per innings vs 6.21 actual), so it is not a wicket problem. Total 203.5 vs 195.8. Through the season: the bias is present in all four blocks of 18 matches (+0.4 to +1.0 runs/over at ball level), so it is not just an early-season level lag.
+
+**2. The scoring level is not the cause.** The level input at the first 2026 match was 9.29 (slow) / 9.84 (fast); the 2026 average was 9.82 runs/over. Using only the linear level part (no trees) the model gives 9.89 / 9.29 / 11.45 for powerplay / middle / death against actual 9.84 / 9.35 / 11.09: nearly right. The trees then ADD +0.46 / +0.66 / +1.05 runs/over. The ball-level bias of the whole model grows year by year (runs/over, predicted minus actual, PP / middle / death): 2022 -0.31 / -0.09 / -0.12; 2023 -0.57 / -0.10 / +0.16; 2024 -0.04 / +0.17 / +0.46; 2025 -0.10 / +0.36 / +0.63; 2026 +0.51 / +0.61 / +1.41. In 2026 actual death scoring (11.09) fell from 2025 (11.78) while the level kept rising; a model tied to the level cannot know that.
+- What drives the trees: the batter-strength feature `bat_rpb` (career runs per ball, shrunk) is itself era-dependent: IPL average 1.35 in 2019-23, then 1.38 / 1.41 / 1.44 in 2024 / 25 / 26 (batters' records come from the high-scoring years). Replacing it with its training mean lowers the 2026 forecast by 0.57 runs/over. So the same era signal enters twice: through the level and through the players (guess for the mechanism: the trees also learned a "lag bonus" in 2023-25, when the level trailed real scoring).
+
+**3. Fix candidates** (ball-level screen on real states, first innings; sum over an innings of predicted minus actual runs, 2022 / 23 / 24 / 25 / 26):
+
+| candidate (one change each) | 2022 | 2023 | 2024 | 2025 | 2026 |
+|---|---|---|---|---|---|
+| sim-B (baseline) | -3.2 | -3.8 | +3.3 | +5.4 | +14.7 |
+| level as log-ratio | -3.3 | -4.0 | +2.7 | +5.4 | +14.2 |
+| slow half-life 100 -> 50 | -3.0 | -4.2 | +2.8 | +6.6 | +16.4 |
+| fast half-life 25 -> 12 | -1.8 | -3.5 | +1.5 | +4.5 | +14.8 |
+| slow half-life 100 -> 400 | -4.1 | -2.7 | +6.4 | +6.6 | +15.0 |
+| level slopes shrunk x0.5 (damped level) | -3.2 | -7.3 | -5.4 | -2.2 | +5.4 |
+| player strengths from era-rescaled runs ("adj") | -3.5 | -4.1 | +1.8 | +2.9 | +11.5 |
+| adj + level slopes x0.7 | -3.5 | -6.3 | -3.4 | -1.9 | +4.6 |
+| season-neutral trees + adj ("Bsn_adj") | -4.3 | -6.5 | -0.2 | +0.5 | +8.9 |
+
+Half-lives and the log level do nothing; damping the level just shifts every year down (2023 becomes -7). Only the player-era fixes act on the cause. (Ball level exaggerates the simulated bias by about 1.7x; the real check is section 4.) A blend toward a long-run level was not tried separately: the linear part already receives a slow and a fast level and can weight them freely, so a blend adds nothing.
+- "adj": batter and bowler career strength is built from runs rescaled to a reference era (x 8 / the competition level of that match), so strength no longer carries the era.
+- "season-neutral trees": while the trees are fitted, a per-season, per-phase shift is added to the linear part so that the trees cannot learn the season-level scoring; the shift is not used at prediction time.
+
+**4. Full simulated evaluation** (400 paths; checkpoints 0/6/10/15; 2022-25: 1,135 first-innings and 1,111 chase states; 2026: 284 / 274). Bias at 0 overs = mean forecast minus actual; MAE and chase = mean of the 4 checkpoints:
+
+| | 2022 | 2023 | 2024 | 2025 | 2026 (seen) |
+|---|---|---|---|---|---|
+| sim-B bias at 0 ov | -3.7 | -8.9 | -2.2 | +1.9 | +8.1 |
+| Badj | -5.1 | -8.9 | -3.0 | +1.9 | +9.5 |
+| Bsn_adj | -5.3 | -10.4 | -3.7 | +0.7 | +5.4 |
+| sim-B MAE | 17.5 | 17.9 | 20.4 | 18.0 | 20.1 |
+| Bsn_adj MAE | 17.7 | 17.9 | 20.1 | 18.2 | 19.9 |
+| sim-B chase log loss / ECE | 0.485 / 0.104 | 0.548 / 0.121 | 0.389 / 0.092 | 0.483 / 0.124 | 0.315 / 0.081 |
+| Bsn_adj chase log loss / ECE | 0.486 / 0.091 | 0.558 / 0.130 | 0.389 / 0.092 | 0.509 / 0.108 | 0.324 / 0.090 |
+
+Paired bootstrap over matches, candidate minus sim-B (5-95%, negative = candidate better):
+
+| candidate | fold | MAE | pinball | chase log loss | Brier |
+|---|---|---|---|---|---|
+| Badj | 2022-25 | -0.02 [-0.13, +0.10] | -0.01 [-0.04, +0.02] | -0.005 [-0.019, +0.005] | 0.000 [-0.001, +0.002] |
+| Badj | 2026 | +0.06 [-0.19, +0.31] | +0.02 [-0.05, +0.09] | +0.005 [-0.001, +0.010] | +0.002 [0.000, +0.004] |
+| Bsn_adj | 2022-25 | +0.03 [-0.10, +0.16] | +0.01 [-0.03, +0.05] | +0.009 [-0.003, +0.025] | 0.000 [-0.002, +0.002] |
+| Bsn_adj | 2026 | -0.25 [-0.67, +0.19] | -0.09 [-0.21, +0.04] | +0.009 [-0.001, +0.021] | +0.004 [0.000, +0.009] |
+
+**5. Last-over realism** (chases that reached the 20th over needing 1-10 runs, IPL 2022-2026, 60 chases, 1000 paths): sim-B predicts the chasing team wins 87.7% of them, actually 93.2% (56 of 60; the defence held 4 times, sim-B expected 7.4). Bsn_adj: 87.2%. By year (predicted / actual, %): 2022 91 / 92, 2023 85 / 93, 2024 88 / 100, 2025 86 / 89, 2026 88 / 92 (n = 10-14 each). A mild under-rating of chasers at the death, in line with the 2026 finding; 60 chases is too few to call it a fault.
+
+**Verdict.** No fix passes the rule "better on the rolling 2022-25 test, not only on 2026". On 2022-25 every candidate ties sim-B within noise (all intervals contain zero), and the one that cuts the 2026 overshoot most (Bsn_adj: +8.1 to +5.4 at 0 overs) makes the 2023 bias a little worse (-8.9 to -10.4) and the 2025 chase log loss worse (0.483 to 0.509). So **sim-B2 is not adopted; sim-B stays as it was** and its caches are unchanged. What the investigation shows: (a) the 2026 overshoot is not a bug; (b) it is a double count of the era through batter and bowler strengths on top of an almost correct level (trees add +0.5 to +1.0 runs/over), plus a real 2026 drop in death-over scoring that no level-based model could foresee; (c) about 40% of the 2026 simulated bias (8.1 to 5.4) can be removed by era-neutral player strengths and season-neutral trees, with no gain on average accuracy and no provable harm, so for v2 it is a candidate to re-test on new data, not a change to adopt now.
+- Not done: no non-IPL cache for the v2 stacking (no candidate won, and sim-B has only ever been fitted for IPL test years; the old `s2_preds_B_men.parquet` holds IPL test states only). Extra files for the record: `data/external/ml/s2_preds_Badj_ipl.parquet`, `s2_preds_Bsn_adj_ipl.parquet` (IPL 2022-26, columns as `s2_preds_B_ipl.parquet` plus `competition`), `simfix_screen.csv`, `simfix_lastover.csv`; models `data/external/ml/models/ball_{Badj,Bsn_adj}_ipl_{2022..2026}.pkl`.
+- Code: `ml/ball_model.py` (ball table gains `bat_rpa` / `bow_rpa` and level columns `lvl_h50` / `lvl_h12` / `lvl_h400`; `BallModel` options `lvl_cols`, `lvl_log`, `lvl_shrink`, `season_neutral`; default behaviour unchanged, old pickles still load), `ml/simulate.py` (extra level columns), `ml/simfix.py` (candidates, screen, full, compare, lastover), `tests/test_ml_simfix.py`. Rerun: `python -m cricket_analytics.ml.simfix screen B,Badj,Bsn_adj` / `full Bsn_adj 400` / `compare B,Badj,Bsn_adj` / `lastover B,Bsn_adj`.

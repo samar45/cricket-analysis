@@ -16,3 +16,8 @@ MILESTONE: S5 part 1 written to ML_PREDICTION.md section 9 (incl. G1, ens-G1 = b
 MILESTONE: S5p2 holdout.py written; starting fit (2026-11-13)
 MILESTONE: S5p2 fit done (G0,G1,sim-B 1000 paths,baseline on <=2025 -> 2026 preds cached); running report
 MILESTONE: S5p2 holdout results written to ML_PREDICTION.md section 9 (ens-G1 FAIL: ECE 0.117 > 0.08; 4 of 5 criteria pass); ML tests 27 pass
+MILESTONE: simfix: diagnosis done (bias grows by year in mid/death; ball-level), ball_model got rel/lvl options, running screen (2026-11-13)
+MILESTONE: v2 started: fresh-holdout guard in evaluate.py, chase/resource features, v2.py fold runner (2026-11-13)
+MILESTONE: simfix: cause = batter-strength features carry the era (bat_rpb 1.35->1.44) + trees add era bonus on top of level; screen: Badj/Bsn_adj best; running full sims (2026-11-13)
+MILESTONE: v2 dev folds done (IPL 2022-26, leagues 2024-25); C1 monotone small gain, C2 no gain, C3 linear stack ties on 2022-25 and helps 2026; report + fresh CLI next (2026-11-13)
+MILESTONE: simfix done: no fix beats sim-B on 2022-25 (Bsn_adj cuts 2026 overshoot 8.1->5.4 but ties/worse elsewhere); sim-B2 not adopted; docs written (2026-11-13)
