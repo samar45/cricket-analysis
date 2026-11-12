@@ -60,6 +60,11 @@ def show(html: str) -> None:
     st.markdown(CSS + html, unsafe_allow_html=True)
 
 
+@st.cache_data(ttl=3600, show_spinner="Reading commentary...")
+def style_card(player: str, y0: int, y1: int | None) -> dict:
+    return PC.style(player, y0, y1)
+
+
 @st.cache_data(ttl=3600, show_spinner="Building the player card...")
 def card(player: str, competition: str | None, y0: int, y1: int | None) -> dict:
     return PC.build(player, competition, y0, y1)
@@ -149,6 +154,47 @@ def _splits(c: dict) -> None:
             show(f"<div class=pp><h4>{title}</h4></div>" + table(t))
 
 
+def _mixbar(s: pd.Series, colors: dict) -> str:
+    segs = "".join(f"<i title='{k} {v:.0f}%' style='width:{v:.1f}%;background:{colors.get(k, '#888')}'></i>" for k, v in s.items() if v > 0)
+    legend = " &nbsp; ".join(f"<span style='color:{colors.get(k, '#888')}'>&#9632;</span> {esc(str(k))} {v:.0f}%" for k, v in s.items() if v > 0)
+    return f"<div class=mix>{segs}</div><small>{legend}</small>"
+
+
+LEN_COL = {"yorker": "#e5534b", "full": "#e0a800", "good": "#2e9e5b", "short": "#4c8dd6"}
+LINE_COL = {"outside off": "#4c8dd6", "middle": "#2e9e5b", "leg": "#e0a800", "wide": "#9b6bd1", "body": "#e5534b"}
+
+
+def _style(who, y0, y1) -> None:
+    s = style_card(who, y0, y1)
+    if s["status"] == "unavailable":
+        st.caption("Style (ball-by-ball commentary): commentary data not available.")
+        return
+    if s["status"] != "ok" or not (s["bowl"] or s["bat"]):
+        st.caption("Style (ball-by-ball commentary): " + ("no commentary before 2017." if s["status"] == "out_of_range" else "no commentary balls for this player in these seasons."))
+        return
+    if y0 < 2017:
+        st.caption("Style uses 2017 onwards (no commentary before 2017).")
+    html = "<style>.pp .mix{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0 2px}.pp .mix i{display:block;height:100%}</style>"
+    if b := s["bowl"]:
+        rows = "".join(
+            f"<tr><td>{r['label']}</td><td>{n(r['value'], r['dec'])}</td><td>"
+            + ("-" if pd.isna(r["pct"]) else f"{r['pct']:.0f}<span class=bar><i style='width:{r['pct']:.0f}%'></i></span>") + f"</td><td>{r['n']}</td></tr>"
+            for r in b["rows"]
+        )
+        sq, sf = b["speed_q"], b["speed_f"]
+        spd = f"Avg speed, quoted: {n(sq[0], 1)} kph (n {sq[1]}) &nbsp; Typical speed (filled from his quoted balls): {n(sf[0], 1)} kph (n {sf[1]})"
+        html += (f"<div class=pp><h4>Style, bowling (percentile among {b['peers']} IPL bowlers)</h4><table><tr><th>Metric</th><th>Value</th><th>Percentile</th><th>Balls</th></tr>{rows}</table>"
+                 f"<div style='margin-top:8px'>{_mixbar(b['length_mix'], LEN_COL)}</div><div>{_mixbar(b['line_mix'], LINE_COL) if len(b['line_mix']) else ''}</div><small>{spd}</small></div>")
+    if t := s["bat"]:
+        rows = "".join(f"<tr><td>vs {r['vs']}</td><td>{n(r['sr'], 0)}</td><td>{n(r['out'], 1)}</td><td>{r['n']}</td></tr>" for r in t["rows"])
+        html += (f"<div class=pp><h4>Style, batting</h4><div class=hd><div><span class=l>FALSE-SHOT %</span>{t['false']:.1f}</div><div><span class=l>CONTROL %</span>{t['control']:.1f}</div>"
+                 f"<div><span class=l>EDGE BOUNDARIES</span>{t['edge_bnd']}</div><div><span class=l>CLEAN BOUNDARIES</span>{t['clean_bnd']}</div><div><span class=l>BALLS</span>{t['n']}</div></div>"
+                 f"<table><tr><th></th><th>Strike rate</th><th>Dismissal %</th><th>Balls</th></tr>{rows}</table></div>")
+    show(html)
+    with st.expander("Method"):
+        st.caption("commentary-derived; length is described on ~60% of balls; contact/delivery mentions are biased toward wickets")
+
+
 def page() -> None:
     st.title("Player")
     a, d = st.columns([4, 2])
@@ -177,6 +223,7 @@ def _body(who, comp, y0, y1) -> None:
     _worth(c)
     _phases(c)
     _splits(c)
+    _style(who, y0, y1)
     for role, h in c["highlights"].items():
         if len(h):
             with st.expander(f"Best matches, {role}"):

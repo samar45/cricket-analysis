@@ -217,3 +217,11 @@ def test_ipl_market_tabs():
     for g in ("ar_needs", "ar_scarce", "ar_est", "ar_scout", "ar_market"):
         at = go(at, g)
     assert_clean(at, "auction")
+
+
+def test_player_style_without_commentary(monkeypatch):
+    """No commentary files (another machine): the Style section says so and nothing breaks."""
+    from cricket_analytics.models import player_card as PC
+
+    monkeypatch.setattr(PC, "_style_frame", lambda: None)
+    assert PC.style("JJ Bumrah", 2023, None) == {"status": "unavailable"}

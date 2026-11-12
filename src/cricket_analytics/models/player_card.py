@@ -171,3 +171,83 @@ def _phase_profile(player, competition, y0, y1, bat_on, bowl_on) -> dict:
 
     p = PP.profile(player, competition, y0, y1, tuple(r for r, on in (("bowl", bowl_on), ("bat", bat_on)) if on))
     return {{"bat": "batting", "bowl": "bowling"}[r]: v for r, v in p.items()}
+
+
+# ---- Style (ball-by-ball commentary, IPL 2017+) ----
+MIN_PEER = 120  # balls with a known length for a bowler to count as a peer
+
+
+@lru_cache(maxsize=1)
+def _style_frame() -> pd.DataFrame | None:
+    """Per-ball commentary frame with flags; None when the gitignored commentary files are missing (e.g. another machine)."""
+    try:
+        from . import commentary_features as CF
+
+        return CF.ball_features(CF.fill(CF.load_frame()))
+    except Exception:  # missing files, DB, anything: the section just says "not available"
+        return None
+
+
+def _bowl_stats(g: pd.DataFrame) -> dict:
+    from . import commentary_features as CF
+
+    lg = g[g.legal == 1]
+    k = lg.known_len.sum()
+    dg = lg[lg.phase == "death"]
+    kd = dg.known_len.sum()
+    return {
+        "known": int(k), "known_death": int(kd),
+        "yorker": lg.f_yorker.sum() / k * 100 if k else np.nan,
+        "death_yorker": dg.f_yorker.sum() / kd * 100 if kd >= 30 else np.nan,
+        "death_slot_full": dg.length_f.isin(CF.FULL).sum() / kd * 100 if kd >= 30 else np.nan,
+        "short": lg.f_short.sum() / k * 100 if k else np.nan,
+        "slower": lg.f_slower.mean() * 100 if len(lg) else np.nan,
+        "variety": CF._mix_entropy(lg.len_c) if k else np.nan,
+        "false": g.f_false.mean() * 100,
+    }
+
+
+_BOWL_KEYS = [("yorker", "Yorker %", 1), ("death_yorker", "Death yorker %", 1), ("death_slot_full", "Death full / full toss %", 1),
+              ("short", "Short-ball %", 1), ("slower", "Slower-ball %", 1), ("variety", "Length variety (entropy)", 2), ("false", "Induced false-shot %", 1)]
+
+
+def style(player: str, y0: int, y1: int | None) -> dict:
+    """Commentary-derived style numbers for the player in seasons y0..y1. {'status': 'unavailable' | 'out_of_range' | 'ok', ...}.
+    Bowler rows carry a percentile among IPL peers (>= MIN_PEER known-length balls) in the same seasons."""
+    d = _style_frame()
+    if d is None:
+        return dict(status="unavailable")
+    d = d[(d.year >= y0) & (d.year <= (y1 or 9999))]
+    out = dict(status="ok", bowl=None, bat=None)
+    mine_bowl, mine_bat = d[d.bowler == player], d[(d.batter == player) & (d.faced == 1)]
+    if not len(mine_bowl) and not len(mine_bat):
+        return dict(status="out_of_range" if y1 is not None and y1 < 2017 else "none")
+    if len(mine_bowl) >= 30:
+        me = _bowl_stats(mine_bowl)
+        peers = pd.DataFrame([_bowl_stats(g) for _, g in d.groupby("bowler")])
+        peers = peers[peers.known >= MIN_PEER]
+        rows = []
+        for key, label, dec in _BOWL_KEYS:
+            v = me[key]
+            col = peers[key].dropna()
+            pct = np.nan if pd.isna(v) or me["known"] < MIN_PEER or not len(col) else (col <= v).mean() * 100
+            nn = me["known_death"] if key.startswith("death") else len(mine_bowl) if key in ("slower", "false") else me["known"]
+            rows.append(dict(label=label, value=v, dec=dec, pct=pct, n=int(nn)))
+        lg = mine_bowl[mine_bowl.legal == 1]
+        q = lg.speed.where(lg.speed.between(50, 160)).dropna()
+        filled = lg[lg.speed_src == "filled_bowler"].speed_f
+        out["bowl"] = dict(
+            rows=rows, peers=len(peers), known=me["known"],
+            length_mix=lg.len_c.value_counts(normalize=True).reindex(["yorker", "full", "good", "short"]).fillna(0) * 100,
+            line_mix=lg.line_c.value_counts(normalize=True).mul(100) if lg.line_c.notna().any() else pd.Series(dtype=float),
+            speed_q=(float(q.mean()) if len(q) else np.nan, len(q)), speed_f=(float(filled.median()) if len(filled) else np.nan, len(filled)),
+        )
+    if len(mine_bat) >= 30:
+        g = mine_bat
+        rows = []
+        for name, mask in (("short", g.len_c == "short"), ("good length", g.len_c == "good"), ("full", g.len_c == "full"), ("yorker", g.len_c == "yorker"), ("outside off", g.line_c == "outside off")):
+            h = g[mask]
+            rows.append(dict(vs=name, n=len(h), sr=h.runs_batter.mean() * 100 if len(h) else np.nan, out=(h.player_out == h.batter).mean() * 100 if len(h) else np.nan))
+        fp = g.f_false.mean() * 100
+        out["bat"] = dict(n=len(g), false=fp, control=100 - fp, rows=rows, edge_bnd=int(g.f_edge_bnd.sum()), clean_bnd=int(g.f_clean_bnd.sum()))
+    return out
