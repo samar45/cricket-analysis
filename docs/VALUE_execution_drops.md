@@ -63,7 +63,7 @@ Team fielding cost = sum of the runs after drops, per match (cost / (balls/240))
 | Rajasthan Royals | 174 | 56.9 |
 | Delhi Capitals | 226 | 64.4 |
 | Gujarat Titans | 112 | 72.6 |
-Worst team-season: Gujarat Titans 2025 (955 runs over 112 drops-equivalent, 133 per match; mostly a few big innings after drops). Best: KKR 2023 (19 per match). Team-season repeatability (cost per match, t vs t+1): r = 0.18 on 78 pairs; drop counts per ball: r = 0.30 on 78 pairs. So drops are partly a team habit, mostly luck of which batter gets reprieved. Runs-after-drop is dominated by one big innings, so cost is noisy.
+Worst team-season: Gujarat Titans 2025 (27 drops costing 955 runs, 133 per match, avg 35 per drop). Best: KKR 2023 (19 per match). Team-season repeatability (cost per match, t vs t+1): r = 0.18 on 78 pairs; drop counts per ball: r = 0.30 on 78 pairs. So drops are partly a team habit, mostly luck of which batter gets reprieved. Runs-after-drop is dominated by one big innings, so cost is noisy.
 
 Bowler drop luck: 510 bowler-seasons with >= 120 balls had 1,398 drops against 6,048 wickets (drops are about 1.2 per 100 balls). Highest: HV Patel 2022 (9 drops, 321 balls, 19 wk), KK Ahmed 2024 (8 drops, 17 wk), TU Deshpande 2023 (8, 21). Adjusted wickets = wickets + drops (assumes every drop is a lost wicket; the catch is not always takeable, so this is an upper bound).
 
