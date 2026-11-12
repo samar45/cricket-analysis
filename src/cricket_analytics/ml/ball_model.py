@@ -55,7 +55,7 @@ def match_levels(inn):
     f = inn[(inn.innings == 1) & ~inn.reduced & (inn.gender == "male")].copy()
     f["v"] = f.final_total / f.legal_balls * 6
     f = f.sort_values(["date", "match_id"]).reset_index(drop=True)
-    for name, hl in (("lvl_slow", HL_SLOW), ("lvl_fast", HL_FAST)):
+    for name, hl in (("lvl_slow", HL_SLOW), ("lvl_fast", HL_FAST), ("lvl_h50", 50), ("lvl_h12", 12), ("lvl_h400", 400)):
         f[name] = np.nan
         for c, g in f.groupby("competition"):
             f.loc[g.index, name] = ew_level(g, hl)
@@ -65,7 +65,7 @@ def match_levels(inn):
     pv = prior_sums(ag, "venue", ["res", "n"])
     f = f.merge(pv, on=["venue", "date"], how="left")
     f["venue_eff"] = (f.p_res.fillna(0) / (f.p_n.fillna(0) + K_VENUE)).astype(float)
-    return f[["match_id", "lvl_slow", "lvl_fast", "venue_eff"]]
+    return f[["match_id", "lvl_slow", "lvl_fast", "lvl_h50", "lvl_h12", "lvl_h400", "venue_eff"]]
 
 
 # ---------- ball table ----------
@@ -103,21 +103,28 @@ def build_balls(write=True):
     d["wk_flag"], d["legal"] = wk, legal
 
     # --- player strength from strictly earlier dates (all men's matches) ---
+    # *_a columns: runs rescaled to a reference era (x 8 / competition level of that match) so strength does not carry the era
+    era = 8.0 / d.lvl_slow.fillna(8.0)
     bat = d.assign(f=faced, r=d.runs_batter.where(d.wides == 0, 0), o=((wk == 1) & (d.player_out == d.batter)).astype(int))
-    ba = bat.groupby(["batter", "date"], as_index=False).agg(f=("f", "sum"), r=("r", "sum"), o=("o", "sum"))
+    bat["ra"] = bat.r * era
+    ba = bat.groupby(["batter", "date"], as_index=False).agg(f=("f", "sum"), r=("r", "sum"), ra=("ra", "sum"), o=("o", "sum"))
     bwl = d.assign(bl=legal, br=d.runs_total - d.byes - d.legbyes,
                    bw=((wk == 1) & ~d.wicket_type.fillna("").isin(NOT_BOWLER_WK)).astype(int))
-    bo = bwl.groupby(["bowler", "date"], as_index=False).agg(bl=("bl", "sum"), br=("br", "sum"), bw=("bw", "sum"))
-    day = ba.groupby("date", as_index=False)[["f", "r", "o"]].sum().merge(
-        bo.groupby("date", as_index=False)[["bl", "br", "bw"]].sum(), on="date").assign(k=0)
-    pg = prior_sums(day, "k", ["f", "r", "o", "bl", "br", "bw"]).drop(columns="k")
-    pb = prior_sums(ba, "batter", ["f", "r", "o"]).rename(columns={"p_f": "b_f", "p_r": "b_r", "p_o": "b_o"})
-    po = prior_sums(bo, "bowler", ["bl", "br", "bw"]).rename(columns={"p_bl": "o_bl", "p_br": "o_br", "p_bw": "o_bw"})
+    bwl["bra"] = bwl.br * era
+    bo = bwl.groupby(["bowler", "date"], as_index=False).agg(bl=("bl", "sum"), br=("br", "sum"), bra=("bra", "sum"), bw=("bw", "sum"))
+    day = ba.groupby("date", as_index=False)[["f", "r", "ra", "o"]].sum().merge(
+        bo.groupby("date", as_index=False)[["bl", "br", "bra", "bw"]].sum(), on="date").assign(k=0)
+    pg = prior_sums(day, "k", ["f", "r", "ra", "o", "bl", "br", "bra", "bw"]).drop(columns="k")
+    pb = prior_sums(ba, "batter", ["f", "r", "ra", "o"]).rename(columns={"p_f": "b_f", "p_r": "b_r", "p_ra": "b_ra", "p_o": "b_o"})
+    po = prior_sums(bo, "bowler", ["bl", "br", "bra", "bw"]).rename(columns={"p_bl": "o_bl", "p_br": "o_br", "p_bra": "o_bra", "p_bw": "o_bw"})
     d = d.merge(pg, on="date", how="left").merge(pb, on=["batter", "date"], how="left").merge(po, on=["bowler", "date"], how="left")
     gf = d.p_f.where(d.p_f > 0)
     g_rpb, g_out = (d.p_r / gf).fillna(1.2), (d.p_o / gf).fillna(0.05)
     g_brpb, g_bwk = (d.p_br / d.p_bl.where(d.p_bl > 0)).fillna(1.2), (d.p_bw / d.p_bl.where(d.p_bl > 0)).fillna(0.04)
     bf, bl = d.b_f.fillna(0), d.o_bl.fillna(0)
+    gra, gbra = (d.p_ra / gf).fillna(1.2), (d.p_bra / d.p_bl.where(d.p_bl > 0)).fillna(1.2)
+    d["bat_rpa"] = (d.b_ra.fillna(0) + K_BAT_RUNS * gra) / (bf + K_BAT_RUNS)
+    d["bow_rpa"] = (d.o_bra.fillna(0) + K_BOWL_RUNS * gbra) / (bl + K_BOWL_RUNS)
     d["bat_rpb"] = (d.b_r.fillna(0) + K_BAT_RUNS * g_rpb) / (bf + K_BAT_RUNS)
     d["bat_out"] = (d.b_o.fillna(0) + K_BAT_OUT * g_out) / (bf + K_BAT_OUT)
     d["bat_exp"] = np.log1p(bf)
@@ -157,11 +164,13 @@ if __name__ == "__main__":
 
 
 # ---------- the model ----------
-def _offset_feats(over_n, lvl_slow, lvl_fast):
-    """Linear-in-level part: (level - 8) x phase (3) for both levels, plus the phase dummies."""
+def _offset_feats(over_n, lvl_slow, lvl_fast, log=False):
+    """Linear-in-level part: (level - 8) x phase (3) for both levels, plus the phase dummies.
+    log=True uses 8 * log(level / 8) (a ratio, so the same relative change counts the same at any level)."""
     ov = np.asarray(over_n)
     ph = np.stack([ov < 6, (ov >= 6) & (ov < 16), ov >= 16], 1).astype(float)
-    lv = np.stack([np.asarray(lvl_slow, float) - 8, np.asarray(lvl_fast, float) - 8], 1)
+    lv = np.stack([np.asarray(lvl_slow, float), np.asarray(lvl_fast, float)], 1)
+    lv = 8 * np.log(lv / 8) if log else lv - 8
     return np.concatenate([(lv[:, :, None] * ph[:, None, :]).reshape(len(ov), -1), ph], 1)
 
 
@@ -179,19 +188,45 @@ class BallModel:
     bowler strength, C + venue effect. `generic` tables (new batter by wicket, bowler by over) are used by the simulator.
     """
 
+    lvl_cols, lvl_log, lvl_shrink, season_neutral = ("lvl_slow", "lvl_fast"), False, 1.0, False  # defaults for older pickles
     TREE_BASE = ["over_n", "ball_in_over", "balls_bowled", "wickets", "innings", "crr", "target", "runs_needed", "rrr", "comp"]
     PARAMS = dict(objective="multiclass", num_class=8, learning_rate=0.08, num_leaves=31, min_data_in_leaf=200,
                   feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, lambda_l2=5.0, verbose=-1, num_threads=5)
 
-    def __init__(self, variant="B", params=None):
-        self.variant = variant
+    def __init__(self, variant="B", params=None, lvl_cols=("lvl_slow", "lvl_fast"), lvl_log=False,
+                 lvl_shrink=1.0, season_neutral=False):
+        """season_neutral: while fitting the trees, a per-(competition, season, phase) shift is added to the offset so that
+        the offset matches that season's average runs; the trees then cannot learn the season-level scoring (era), and
+        the shift is NOT used at prediction time.
+        lvl_cols: which two level columns feed the linear part. lvl_log: level as 8*log(level/8).
+        lvl_shrink: fitted level coefficients are multiplied by this before the trees are fitted (1 = off)."""
+        self.variant, self.lvl_cols, self.lvl_log, self.lvl_shrink = variant, tuple(lvl_cols), lvl_log, lvl_shrink
+        self.season_neutral = season_neutral
         self.feats = self.TREE_BASE + (["bat_rpb", "bat_out", "bat_exp", "bat_faced", "bow_rpb", "bow_wk"] if variant >= "B" else []) \
             + (["venue_eff"] if variant == "C" else [])
         self.params = {**self.PARAMS, **(params or {})}
 
     def _off(self, d):
-        o = _offset_feats(d["over_n"], d["lvl_slow"], d["lvl_fast"])
+        o = _offset_feats(d["over_n"], d[self.lvl_cols[0]], d[self.lvl_cols[1]], self.lvl_log)
         return o @ self.lr_coef.T + self.lr_b
+
+    def _season_shift(self, d):
+        """Tilt (shift of the logits along the runs-per-class direction) per (competition, season, phase) so that the
+        offset's mean runs per ball equals the actual mean in that group. Returns an (n, 8) array."""
+        z = self._off(d)
+        R = RUNS.astype(float)
+        ph = np.where(d.over_n < 6, 0, np.where(d.over_n < 16, 1, 2))
+        g = pd.factorize(pd.Series(d.competition.astype(str).to_numpy() + "|" + d.season_year.astype(str).to_numpy() + "|" + ph.astype(str)))[0]
+        ng = g.max() + 1
+        cnt = np.bincount(g, minlength=ng)
+        target = np.bincount(g, weights=R[d.cls.to_numpy()], minlength=ng) / cnt
+        lo, hi = np.full(ng, -1.5), np.full(ng, 1.5)
+        for _ in range(25):
+            lam = (lo + hi) / 2
+            pr = _softmax(z + lam[g][:, None] * R)
+            f = np.bincount(g, weights=pr @ R, minlength=ng) / cnt - target
+            lo, hi = np.where(f < 0, lam, lo), np.where(f < 0, hi, lam)
+        return ((lo + hi) / 2)[g][:, None] * R
 
     def _x(self, d):
         return np.column_stack([np.asarray(d[c], dtype="float32") for c in self.feats])
@@ -201,9 +236,13 @@ class BallModel:
         import lightgbm as lgb
         from sklearn.linear_model import LogisticRegression
 
-        lr = LogisticRegression(C=10, max_iter=300).fit(_offset_feats(train.over_n, train.lvl_slow, train.lvl_fast), train.cls)
-        self.lr_coef, self.lr_b = lr.coef_, lr.intercept_
-        ds = lambda d, ref=None: lgb.Dataset(self._x(d), d.cls.to_numpy(), init_score=self._off(d), feature_name=self.feats,  # noqa: E731
+        lr = LogisticRegression(C=10, max_iter=300).fit(
+            _offset_feats(train.over_n, train[self.lvl_cols[0]], train[self.lvl_cols[1]], self.lvl_log), train.cls)
+        self.lr_coef, self.lr_b = lr.coef_.copy(), lr.intercept_
+        if self.lvl_shrink != 1.0:  # shrink only the level columns (first 6), keep phase dummies
+            self.lr_coef[:, :6] *= self.lvl_shrink
+        off = (lambda d: self._off(d) + self._season_shift(d)) if self.season_neutral else self._off
+        ds = lambda d, ref=None: lgb.Dataset(self._x(d), d.cls.to_numpy(), init_score=off(d), feature_name=self.feats,  # noqa: E731
                                               categorical_feature=["comp"], reference=ref)
         dt = ds(train)
         if n_rounds is None:

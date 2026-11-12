@@ -31,6 +31,8 @@ def _features(p, i):
          "crr": crr, "crr_rel": crr - p["lvl_slow"][i], "target": tgt, "runs_needed": need, "rrr": rrr,
          "rrr_rel": rrr - p["lvl_slow"][i], "lvl_slow": p["lvl_slow"][i], "lvl_fast": p["lvl_fast"][i],
          "comp": p["comp"][i], "venue_eff": p["venue_eff"][i]}
+    for c in p["lvl_extra"]:
+        f[c] = p[c][i]
     s, b = p["S"][i], p["bowl"][i]
     for k, name in enumerate(["bat_rpb", "bat_out", "bat_exp", "bat_faced"]):
         f[name] = s[:, k]
@@ -51,6 +53,9 @@ def simulate(model, states, n=2000, seed=0, record_overs=False):
          "lvl_slow": rep("lvl_slow"), "lvl_fast": rep("lvl_fast"), "comp": rep("comp", np.int32), "venue_eff": rep("venue_eff"),
          "S": np.column_stack([rep(f"s_{k}") for k in ST]), "N": np.column_stack([rep(f"n_{k}") for k in ST]),
          "bowl": np.column_stack([rep("bow_rpb"), rep("bow_wk")])}
+    p["lvl_extra"] = [c for c in getattr(model, "lvl_cols", ()) if c not in ("lvl_slow", "lvl_fast")]
+    for c in p["lvl_extra"]:
+        p[c] = rep(c)
     gb, go = np.asarray(model.gen_bat, float), np.asarray(model.gen_bowl, float)
     wk_runs, ex_extra = getattr(model, "wk_runs", 0.0), getattr(model, "ex_extra", 0.0)
 
@@ -122,6 +127,7 @@ def start_states(balls, keys, k):
             "n_rpb": getattr(nsr, "bat_rpb", np.nan), "n_out": getattr(nsr, "bat_out", np.nan),
             "n_exp": getattr(nsr, "bat_exp", np.nan), "n_faced": float(len(before)),
             "bow_rpb": r.bow_rpb, "bow_wk": r.bow_wk, "final_total": np.nan,
+            "lvl_h50": r.lvl_h50, "lvl_h12": r.lvl_h12, "lvl_h400": r.lvl_h400,
         })
     return pd.DataFrame(rows)
 
