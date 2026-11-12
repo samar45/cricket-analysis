@@ -4,6 +4,7 @@
 highlights (player_worth), expected matches (player_outlook), recent value (trade), splits (SQL fragments / pace_vs_spin).
 """
 
+import pickle
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
@@ -12,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from .. import api
+from .. import db
 from ..db import query
 from ..sql import fragments as F
 from ..sql.attributes import attributes_cte
@@ -183,7 +185,22 @@ def _style_frame() -> pd.DataFrame | None:
     try:
         from . import commentary_features as CF
 
-        return CF.ball_features(CF.fill(CF.load_frame()))
+        root = Path(__file__).parents[3] / "data" / "external" / "commentary"
+        cache = root / "style_frame.pkl"  # ~7 s to rebuild; keyed on DB, commentary files and the code that builds it
+        srcs = [*root.glob("*.csv"), *root.glob("*.parquet"), db.current_db_path(), *(Path(__file__).with_name(f"{m}.py") for m in ("commentary_features", "worth", "run_expectancy"))]
+        k = [(f.name, f.stat().st_mtime_ns, f.stat().st_size) for f in srcs]
+        try:
+            saved = pickle.loads(cache.read_bytes())
+            if saved[0] == k:
+                return saved[1]
+        except Exception:
+            pass
+        out = CF.ball_features(CF.fill(CF.load_frame()))
+        try:
+            cache.write_bytes(pickle.dumps((k, out)))
+        except OSError:
+            pass
+        return out
     except Exception:  # missing files, DB, anything: the section just says "not available"
         return None
 
