@@ -10,6 +10,9 @@ import requests
 
 CACHE = Path("data/external/commentary/cricbuzz")
 UA = "cricket-analysis personal research"
+GAP = 2        # seconds between requests (Samar: never below 2)
+PAUSE_EVERY = 100  # extra rest of PAUSE s after this many requests in one process
+PAUSE = 30
 _last = [0.0]
 requests_made = [0]
 
@@ -24,7 +27,10 @@ def fetch(url: str) -> str:
     f = CACHE / (hashlib.sha1(url.encode()).hexdigest()[:16] + ".txt")
     if f.exists():
         return f.read_text(encoding="utf-8")
-    wait = 3 - (time.time() - _last[0])
+    if requests_made[0] and requests_made[0] % PAUSE_EVERY == 0 and _last[0] >= 0:
+        time.sleep(PAUSE)
+        _last[0] = time.time()
+    wait = GAP - (time.time() - _last[0])
     if wait > 0:
         time.sleep(wait)
     r = requests.get(url, headers={"User-Agent": UA}, timeout=30)
@@ -132,6 +138,9 @@ def parse_item(x: dict) -> dict | None:
     return {
         "innings": x["inningsId"], "over": int(on), "ball": round((on - int(on)) * 10),
         "ball_no": x["ballNbr"], "ts": x["timestamp"],
+        "bat_id": (x.get("batsmanStriker") or {}).get("batId"), "bowl_id": (x.get("bowlerStriker") or {}).get("bowlId"),
+        "bat_mins": (x.get("batsmanStriker") or {}).get("batMins"), "bat_dots": (x.get("batsmanStriker") or {}).get("batDots"),
+        "team_score": x.get("batTeamScore"), "bat_team": x.get("batTeamName"),
         "bowler": bowler, "batter": batter,
         "runs_total": x.get("totalRuns", 0), "runs_legal": x.get("legalRuns", 0),
         "extra": extra if x.get("totalRuns", 0) > 0 or extra else None, "wicket": wk, "event": ev,
@@ -147,6 +156,47 @@ def parse_match(mid) -> list[dict]:
     rows = [r for x in fetch_match(mid) if (r := parse_item(x))]
     rows.sort(key=lambda r: (r["innings"], r["ts"], r["ball_no"]))
     return rows
+
+
+def extras(mid) -> dict:
+    """Everything else in the cached JSON (0 requests): match header row, over summaries, players, impact-sub mentions. No commentary text."""
+    import json
+
+    m, overs, imp = {}, [], []
+    for i in (1, 2):
+        f = CACHE / (hashlib.sha1(API.format(mid=mid, inn=i).encode()).hexdigest()[:16] + ".txt")
+        if not f.exists():
+            continue
+        d = json.loads(f.read_text(encoding="utf-8"))
+        if not m:
+            h, ms = d["matchDetails"]["matchHeader"], d["matchDetails"].get("miniscore") or {}
+            r, t, v = h.get("result") or {}, h.get("tossResults") or {}, h.get("venue") or {}
+            pm = (h.get("playersOfTheMatch") or [{}])[0]
+            pp = (ms.get("ppData") or {}).get("pp_1") or {}
+            ud = ms.get("matchUdrs") or {}
+            m = dict(cricbuzz_id=mid, desc=h.get("matchDescription"), day_night=h.get("dayNight"),
+                     start_ts=h.get("matchStartTimestamp"), end_ts=h.get("matchCompleteTimestamp"), state=h.get("state"),
+                     toss_winner=t.get("tossWinnerName"), toss_decision=t.get("decision"),
+                     result_type=r.get("resultType"), winner=r.get("winningTeam"), margin=r.get("winningMargin"),
+                     by_runs=r.get("winByRuns"), dls_reason=(h.get("revisedTarget") or {}).get("reason"),
+                     potm_id=pm.get("id"), potm=pm.get("name"), venue_id=v.get("id"), venue=v.get("name"),
+                     city=v.get("city"), lat=v.get("latitude"), lon=v.get("longitude"), tz=v.get("timezone"),
+                     pp_from=pp.get("ppOversFrom"), pp_to=pp.get("ppOversTo"),
+                     udrs=json.dumps({k: v for k, v in ud.items() if k.startswith("team")}) if ud else None,
+                     pots=json.dumps([{k: p.get(k) for k in ("id", "name", "battingStyle", "bowlingStyle", "role")}
+                                      for p in h.get("playersOfTheSeries") or []]) or None)
+        for c in d["commentary"]:
+            for x in c["commentaryList"]:
+                o = x.get("overSeparator")
+                if o:
+                    overs.append(dict(cricbuzz_id=mid, innings=i, over=int(o["overNum"]), ts=o.get("timestamp"),
+                                      score=o["score"], wickets=o["wickets"], runs=o["runs"], o_summary=o["o_summary"],
+                                      bowl_id=(o.get("bowlIds") or [None])[0], bat_ids=json.dumps(o.get("batStrikerIds")),
+                                      nonstriker_ids=json.dumps(o.get("batNonStrikerIds"))))
+                if re.search(r"impact (?:player|sub)", x["commText"] + str(x.get("commentaryFormats")), re.I):
+                    # free text only (names not reliably parseable): keep where/when, not the text
+                    imp.append(dict(cricbuzz_id=mid, innings=i, ts=x["timestamp"], team=x.get("batTeamName"), is_ball=bool(x.get("overNumber"))))
+    return dict(match=m, overs=overs, impact=imp)
 
 
 def coverage(rows: list[dict]) -> dict[str, float]:
@@ -240,23 +290,40 @@ def series_run(season: int, limit: int, only=None, out=None, db="data/cricket_an
 
 
 PARSED = Path("data/external/commentary/parsed_ipl_2023_2026.csv")
+PARSED_OLD = Path("data/external/commentary/parsed_ipl_2020_2022.csv")
 
 
-def load_parsed(path=PARSED):
-    """Parsed commentary, one row per ball. Join to deliveries on (match_id, innings, ball_seq)."""
+def load_parsed(path=None):
+    """Parsed commentary, one row per ball (IPL 2020-2026 when both files exist). Join to deliveries on (match_id, innings, ball_seq)."""
     import pandas as pd
 
-    return pd.read_csv(path, dtype={"match_id": str, "cricbuzz_id": str})
+    paths = [path] if path else sorted(PARSED.parent.glob("parsed_ipl_[0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9].csv"))
+    return pd.concat([pd.read_csv(p, dtype={"match_id": str, "cricbuzz_id": str}) for p in paths], ignore_index=True)
 
 
 def pull_all(seasons=(2023, 2024, 2025, 2026), out=PARSED):
-    """Fetch (cache-aware, resumable) + parse every mapped IPL match of the seasons into one CSV, no raw text."""
+    """Fetch (cache-aware, resumable) + parse every mapped IPL match of the seasons into one CSV, no raw text.
+    Also writes <out stem>_matches / _overs / _impact / _players CSVs from the same cached JSON."""
     import pandas as pd
 
     rows = []
     for y in seasons:
         rows += series_run(y, 10**6)
-    pd.DataFrame(rows).drop(columns=["text"]).to_csv(out, index=False)
+    df = pd.DataFrame(rows).drop(columns=["text"])
+    df.to_csv(out, index=False)
+    out = Path(out)
+    ex = [(extras(c), c, mid) for c, mid in df[["cricbuzz_id", "match_id"]].drop_duplicates().itertuples(index=False)]
+    ids = {c: mid for _, c, mid in ex}
+    for key in ("overs", "impact"):
+        t = pd.DataFrame([r for e, _, _ in ex for r in e[key]], columns=None if any(e[key] for e, _, _ in ex) else ["cricbuzz_id"])
+        t.insert(1, "match_id", t.cricbuzz_id.map(ids))
+        t.to_csv(out.with_name(out.stem + f"_{key}.csv"), index=False)
+    t = pd.DataFrame([e["match"] for e, _, _ in ex if e["match"]])
+    t.insert(1, "match_id", t.cricbuzz_id.map(ids))
+    t.to_csv(out.with_name(out.stem + "_matches.csv"), index=False)
+    pl = pd.concat([df[["match_id", "bat_id", "batter", "bat_team"]].set_axis(["match_id", "cricbuzz_player_id", "name", "team"], axis=1).assign(role="bat"),
+                    df[["match_id", "bowl_id", "bowler"]].set_axis(["match_id", "cricbuzz_player_id", "name"], axis=1).assign(role="bowl")])
+    pl.drop_duplicates().to_csv(out.with_name(out.stem + "_players.csv"), index=False)
     print("wrote", out, len(rows), "balls; requests", requests_made[0], flush=True)
 
 
@@ -266,6 +333,8 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--match", help="Cricbuzz match id")
     ap.add_argument("--all", action="store_true", help="pull_all IPL 2023-2026")
+    ap.add_argument("--seasons", help="e.g. 2017-2019: pull into parsed_ipl_2017_2019.csv")
+    ap.add_argument("--old", action="store_true", help="pull IPL 2020-2022 into parsed_ipl_2020_2022.csv")
     ap.add_argument("--series", choices=["ipl"], help="fetch mapped matches of a series")
     ap.add_argument("--season", type=int, default=2026)
     ap.add_argument("--limit", type=int, default=10)
@@ -273,6 +342,13 @@ if __name__ == "__main__":
     ap.add_argument("--out", help="parsed CSV path (no raw text)")
     ap.add_argument("--cricsheet", help="Cricsheet match_id to join to")
     a = ap.parse_args()
+    if a.seasons:
+        lo, hi = map(int, a.seasons.split("-"))
+        pull_all(range(lo, hi + 1), PARSED.with_name(f"parsed_ipl_{lo}_{hi}.csv"))
+        raise SystemExit
+    if a.old:
+        pull_all((2020, 2021, 2022), PARSED_OLD)
+        raise SystemExit
     if a.all:
         pull_all()
         raise SystemExit

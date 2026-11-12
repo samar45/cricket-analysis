@@ -1,4 +1,5 @@
 from cricket_analytics.ingest.commentary import parse_item
+from cricket_analytics.ingest import commentary
 
 
 def item(text, ov, runs=0, legal=0, event="NONE", fmt=None):
@@ -75,3 +76,13 @@ def test_seed2_rule_fixes():
     assert r["shot"] == "drive"
     r = parse_item(item(A + "SIX, a finely connected shot", 5.4, 6, 6))
     assert r["contact"] == "middle"
+
+
+def test_ids_csv_covers_ipl_2015_2026():
+    import csv
+    from collections import Counter
+
+    rows = list(csv.DictReader(open(commentary.IDS)))
+    n = Counter(r["date"][:4] for r in rows)
+    assert [n[y] for y in "2015 2016 2017 2018 2019 2020 2021 2022 2023 2024 2025 2026".split()] == [59, 60, 59, 60, 60, 60, 60, 74, 74, 71, 73, 74]
+    assert len({r["cricsheet_match_id"] for r in rows}) == len(rows)
