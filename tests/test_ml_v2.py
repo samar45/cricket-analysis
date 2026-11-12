@@ -78,7 +78,7 @@ def _pair(rng, n, off=0.0):
 def test_stacking_weights_finite():
     rng = np.random.default_rng(3)
     pairs = [_pair(rng, 400, off=5.0) for _ in range(3)]
-    for mode in ("global", "cp"):
+    for mode in ("global", "cp", "lin"):
         w = v2.fit_weights(pairs, mode)
         vals = list(w["win"].values()) + [x for d in w["score"].values() for x in d.values()]
         assert len(vals) and np.isfinite(vals).all() and all(0.0 <= v <= 1.0 for v in vals)

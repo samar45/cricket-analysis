@@ -86,6 +86,14 @@ Keep rule for every addition: it must beat the best previous model on the rollin
   - Bias flags at 2 s.e. produce about 5% false alarms (1-2 of 33 groups); a single flagged venue is not evidence unless several models agree (Chepauk +10 runs is flagged for all of them).
 
 - 2026-11-13 (S5 part 2, holdout): No bug hit; the holdout was run once (fit, then report). Two things to remember: (1) the pre-registration said "ECE" without saying pooled or mean-of-4; I used the head-to-head form (mean of the 4 checkpoints) as the literal reading and also printed the pooled one; both fail the 0.08 limit, so the choice did not matter. (2) The "season" bias group is constant (all 2026) and was dropped from the audit.
+
+- 2026-11-13 (v2 development):
+  - **Lock slip, disclosed.** Before the lock code existed I ran `tune_k_chase(inn, 2026)` on the unfiltered table once. Its "season < 2026" filter let in Jan-2026 matches of BBL 2025/26 and SA20 2025/26 (season_year 2025). I saw only the chosen k (100) and one aggregate log loss (0.694) over tens of thousands of matches, plus per-league match counts and latest dates of the locked set (no per-match results). Nothing from it was used: k was re-tuned on lock-filtered data. The fresh test is not materially compromised, but the lead should know.
+  - The lock is wider than the test set: all men's non-IPL matches >= 2026-01-01 (also T20I and Hundred) are dropped from development; the fresh test set is the 9 franchise leagues.
+  - The tuned chase-season weight k hit the top of its grid (first 100, then 1000) in every fold. I widened the grid once, on pre-2026 data. Result: the season-so-far rate has no pooled predictive value.
+  - My first stacking pooled in logit space; on leave-one-fold-out it was worse than a plain average (over-confident). I then added a linear pool. This choice was made after looking at a table that also contains the seen 2026 fold, so v2's margins are slightly optimistic.
+  - The chosen chase variant (w1m) was picked after seeing all dev folds including the seen IPL 2026 (reason: consistent small gain, simplest).
+  - Non-IPL sim-B: no cache existed; the sim worker's men's-pool sim-B parquet was not ready when I finished (its script failed on an undefined name), so the non-IPL check covers the direct models only. The report picks the parquet up automatically when it exists.
 - 2026-11-13 (sim-B overshoot investigation): (1) My first hypothesis (level input too high / half-life too reactive) was wrong: the level input at the start of 2026 (9.29 slow, 9.84 fast) was at or below the real 2026 scoring (9.82), and half-life or log-level changes did nothing. (2) The first "era-relative" player fix (subtract the all-men's-T20 average strength) did not help because that average does not follow the IPL's own rise; the working version rescales each ball's runs by 8 / the competition level of that match. (3) A bug found before any result: `simfix` first referenced columns (`g_rpb`) that I had already removed from the ball table; the run crashed at once, no numbers were produced. (4) `season_year` is the year a season STARTS, so BBL 2025/26 has January-2026 matches with season_year 2025: the training filter uses the match date (< 2026-01-01), not the season year.
 
 ## 9. Status (newest at bottom)
@@ -624,3 +632,54 @@ Paired bootstrap over matches, candidate minus sim-B (5-95%, negative = candidat
 **Verdict.** No fix passes the rule "better on the rolling 2022-25 test, not only on 2026". On 2022-25 every candidate ties sim-B within noise (all intervals contain zero), and the one that cuts the 2026 overshoot most (Bsn_adj: +8.1 to +5.4 at 0 overs) makes the 2023 bias a little worse (-8.9 to -10.4) and the 2025 chase log loss worse (0.483 to 0.509). So **sim-B2 is not adopted; sim-B stays as it was** and its caches are unchanged. What the investigation shows: (a) the 2026 overshoot is not a bug; (b) it is a double count of the era through batter and bowler strengths on top of an almost correct level (trees add +0.5 to +1.0 runs/over), plus a real 2026 drop in death-over scoring that no level-based model could foresee; (c) about 40% of the 2026 simulated bias (8.1 to 5.4) can be removed by era-neutral player strengths and season-neutral trees, with no gain on average accuracy and no provable harm, so for v2 it is a candidate to re-test on new data, not a change to adopt now.
 - Not done: no non-IPL cache for the v2 stacking (no candidate won, and sim-B has only ever been fitted for IPL test years; the old `s2_preds_B_men.parquet` holds IPL test states only). Extra files for the record: `data/external/ml/s2_preds_Badj_ipl.parquet`, `s2_preds_Bsn_adj_ipl.parquet` (IPL 2022-26, columns as `s2_preds_B_ipl.parquet` plus `competition`), `simfix_screen.csv`, `simfix_lastover.csv`; models `data/external/ml/models/ball_{Badj,Bsn_adj}_ipl_{2022..2026}.pkl`.
 - Code: `ml/ball_model.py` (ball table gains `bat_rpa` / `bow_rpa` and level columns `lvl_h50` / `lvl_h12` / `lvl_h400`; `BallModel` options `lvl_cols`, `lvl_log`, `lvl_shrink`, `season_neutral`; default behaviour unchanged, old pickles still load), `ml/simulate.py` (extra level columns), `ml/simfix.py` (candidates, screen, full, compare, lastover), `tests/test_ml_simfix.py`. Rerun: `python -m cricket_analytics.ml.simfix screen B,Badj,Bsn_adj` / `full Bsn_adj 400` / `compare B,Badj,Bsn_adj` / `lastover B,Bsn_adj`.
+
+
+### 2026-11-13 (v2 development results; fresh holdout NOT opened)
+Code: `ml/v2.py` (`run`, `report`, `final`, `fresh`), new features in `ml/features.py` (frozen list untouched), lock in `ml/evaluate.py` (`fresh_holdout_mask`, `assert_no_fresh`), tests `tests/test_ml_v2.py` (5). Full report `data/external/ml/v2_report.md`. Plots `docs/img/ml_v2_reliability.png`, `ml_v2_drift.png`, `ml_v2_lg_reliability.png`, `ml_v2_curve_1426280.png`. Final dev-trained models (all data < 2026-01-01 + IPL 2026) in `data/external/ml/models/v2/final_*`.
+
+**Lock.** Men's non-IPL matches dated >= 2026-01-01 are dropped from every table before features are built; `split()` raises if one reaches train, validation or test (training raises even with `allow_fresh=True`). Only `fresh` may open the test rows.
+
+**Folds.** IPL 2022, 23, 24, 25 (rolling), IPL 2026 (seen, trained on <= 2025), and non-IPL franchise leagues 2024 and 2025 (rolling, dated < 2026-01-01). Checkpoints 0/6/10/15, "mean of 4", paired bootstrap over matches (2000 resamples, 5-95%; ECE 500). n chase states: 289/281/273/268 (IPL 22-25, 1,111), 274 (2026), 1,569 + 1,317 (leagues). v1 = cached G1 / sim-B / 50-50 ens-G1; on the leagues v1 = the same G1 recipe refit (w0), which reproduces v1 G1 on IPL 2022-25 to 3 decimals.
+
+**Per-change verdicts.**
+
+| change | evidence (chase log loss, difference vs control w0; negative = better) | verdict |
+|---|---|---|
+| C1a monotone constraints only (w1m) | IPL 2022-25 -0.002 [-0.009, +0.006]; IPL 2026 -0.030 [-0.047, -0.013]; leagues -0.004 [-0.007, -0.001]; ECE 0.063 -> 0.057, 2026 0.155 -> 0.139 | **keep** (never worse, clear gain in two sets; small) |
+| C1b + `req_vs_exp` / `req_ratio` (w1) | 2022-25 -0.001 ns; 2026 -0.008 ns but +0.022 [+0.008, +0.036] worse than w1m; leagues -0.002 ns | **drop** (adds nothing over monotone alone) |
+| C2 chase-rate features + C1 (w2) | 2022-25 -0.011 [-0.022, +0.001]; 2026 +0.002 ns; leagues -0.002 ns | **drop** (does not hold in 2026 or leagues) |
+| C2 alone (w2c) | 2022-25 +0.003 ns; 2026 +0.023 [+0.010, +0.037] (worse) | **drop** |
+| C2 with fixed fast season weight k=10 (w2s) | 2022-25 0.000; 2026 -0.005 ns | **drop** |
+| C3 chase ensemble, logit-space weights | vs v1-ens 2022-25 +0.010 [0.000, +0.024] (worse); 2026 -0.017 [-0.026, -0.007] | drop (over-confident) |
+| C3 chase ensemble, **linear pool** (weight on direct 0.32 fitted on 2022-25, 0.20 on 2022-26) | vs v1-ens 2022-25 +0.003 [-0.003, +0.010] (tie); 2026 -0.019 [-0.030, -0.007] (weights from 2022-25 only); ECE 2026 -0.028 [-0.036, -0.005] | **keep** |
+| C3 score weights (fitted per quantile) | MAE +0.02 [-0.02, +0.05], coverage 0.81 -> 0.79 | **drop**: score stays a plain 50/50 average |
+| C4 score side (G1 recipe, level-relative target, conformal) | refit on dev data = v1 numbers on IPL 2022-25; leagues: MAE 18.7, bias -1.5, cov80 0.816 | fine, unchanged |
+
+Why C2 failed: the tuned season weight k hit the top of its grid (1000) in all 7 folds, so "season so far" carried no information beyond the long-run rate. The 2026 chase surge (64%) was not predicted by any prior-only rate. All chase variants still under-rate chasers in 2026 (mean predicted - actual: w0 -0.12, w1m -0.09, v1 ens -0.08, v2 ens -0.05, sim-B -0.03; `ml_v2_drift.png`).
+
+**v2 = G1 score model (unchanged) + monotone chase classifier (w1m); chase probability = linear pool 0.20 x v2 direct + 0.80 x sim-B (weights fitted on IPL 2022-26; 0.32 / 0.68 if fitted on 2022-25); score = 50/50 average of G1 and sim-B quantiles.** Chase log loss / ECE (mean of 4, the pre-registered form):
+
+| model | IPL 2022-25 ll | 2022 | 2023 | 2024 | 2025 | IPL 2026 (seen) ll | ECE 22-25 | ECE 2026 |
+|---|---|---|---|---|---|---|---|---|
+| v1 G1 | 0.485 | 0.481 | 0.566 | 0.439 | 0.451 | 0.389 | 0.063 | 0.166 |
+| v1 sim-B | 0.477 | 0.485 | 0.548 | 0.389 | 0.483 | 0.315 | 0.056 | 0.081 |
+| v1 ens-G1 | 0.469 | 0.478 | 0.543 | 0.408 | 0.443 | 0.344 | 0.059 | 0.117 |
+| v2 direct (w1m) | 0.483 | 0.477 | 0.581 | 0.432 | 0.439 | 0.359 | 0.057 | 0.139 |
+| **v2 ens (linear pool)** | 0.472 | 0.480 | 0.551 | 0.403 | 0.452 | 0.325 | 0.045 | 0.100 |
+
+(The 2026 v2-ens row uses weights from IPL 2022-25 only, so the weights are out of sample, but the 2026 fold is seen.) Pooled ECE for IPL 2026: v1 ens 0.091, v2 ens 0.062, sim-B 0.055. Plot `ml_v2_reliability.png`.
+
+Score, mean of 4 (v2 ens equals v1 ens by construction, except G1's small 2026 difference from dev-data features): 2022-25 MAE v1 G1 18.37, sim-B 18.42, v1 ens 18.28, v2 ens 18.28; pinball 5.86 / 5.80 / 5.77 / 5.77; cov80 0.83 / 0.78 / 0.81 / 0.81; bias -0.9 / -1.5 / -1.2 / -1.2. IPL 2026: MAE 20.94 / 20.14 / 20.23 / 20.07; cov80 0.72 / 0.76 / 0.76 / 0.76; bias -2.9 / +6.5 / +1.8 / +2.9. Differences v2 ens vs v1 ens on score are inside noise (2026 MAE -0.16 [-0.41, +0.09]).
+
+**Bootstrap, v2 ens minus v1 ens-G1** (negative = v2 better): IPL 2022-25 log loss +0.003 [-0.003, +0.010], Brier +0.001 [-0.001, +0.003], ECE -0.010 [-0.019, +0.009]; IPL 2026 log loss -0.019 [-0.030, -0.007], Brier -0.006 [-0.011, -0.001], ECE -0.028 [-0.036, -0.005]. v2 ens minus sim-B alone: 2022-25 -0.005 [-0.019, +0.006]; 2026 +0.010 [+0.001, +0.019] (sim-B alone still wins 2026).
+
+**Non-IPL leagues 2024 + 2025 (rolling; direct models only so far; 1,569 + 1,317 chase states).** Log loss w0 0.427, w1m 0.423, w1 0.425, w2 0.425 (ECE 0.048 / 0.046 / 0.044 / 0.043); chasers under-rated by 3-5 points in both years (actual chase rate 0.54 / 0.53). Only the monotone model separates from noise (-0.004 [-0.007, -0.001]). Score (G1 recipe) is fine outside the IPL: MAE 18.7, pinball 5.94, cov80 0.82, bias -1.5. Plot `ml_v2_lg_reliability.png`.
+
+**Huge targets.** Chase calibration for targets of 220+ (235 checkpoint states, IPL 2022-26; mean predicted - actual): w0 +0.019, w1m +0.003, sim-B +0.038, v1 ens +0.029, v2 ens +0.030 (small n). **PBKS chase of 262** (match 1426280, before ball 1): v1 G1 21.3%, v2 monotone 16.0% (with req_vs_exp 15.4%), v1 sim-B 6.2%, v2 ens about 8.2%. Monotone constraints only partly fix it (21% to 16%); the ensemble gets the rest from sim-B. Curve: `ml_v2_curve_1426280.png`.
+
+**Honest read.** v2 is a modest, cheap improvement, not a breakthrough: the monotone chase model is a small consistent gain; chase-rate drift features did not work; the re-weighted ensemble ties v1 on 2022-25 and wins on the seen 2026 fold mainly by leaning on sim-B (0.8). Selection caveat: the chase variant and pooling type were picked after seeing the 2026 fold. The fresh holdout is the clean test.
+
+**Not done.** sim-B on the non-IPL dev folds: waiting on the sim worker's `s2_preds_B_men_nonipl.parquet` (its script failed on an undefined `CHECK`); rerun `python -m cricket_analytics.ml.v2 report` once it exists and the leagues tables gain v1-ens / v2-ens rows. `fresh` calls the sim worker's `simfix.predict_checkpoints(..., "ball_B_men_fresh")`, so `simfix.fit_fresh()` must be run first. `fresh` was rehearsed on dev data (non-IPL leagues 2025 as pretend holdout, 13 matches, 100 paths with my own sim-B training path, since the simfix model did not exist yet): it runs end to end, numbers meaningless. The simfix branch of `fresh` is untested. The real fresh run was NOT executed.
+
+**Command for the lead (opens the locked data once):**
+`.venv\Scripts\python -m cricket_analytics.ml.v2 fresh` (optional `--sims 600`). It trains v1 and v2 on data < 2026-01-01 + IPL 2026, scores the 9 franchise leagues, prints the pre-registered adoption rule, and writes `data/external/ml/v2_fresh_report.md` and `docs/img/ml_v2_fresh_reliability.png`.

@@ -131,6 +131,27 @@ def predict_models(m, test, name):
     return S, W
 
 
+def save_models(m, prefix):
+    """Write the boosters (score q10/q50/q90, chase variants) and the conformal deltas to data/external/ml/models/v2/."""
+    V2_DIR.mkdir(parents=True, exist_ok=True)
+    for q, (b, n) in m["score"].items():
+        b.save_model(str(V2_DIR / f"{prefix}_score_q{int(q * 100)}.txt"), num_iteration=n)
+    for v, b in m["win"].items():
+        b.save_model(str(V2_DIR / f"{prefix}_win_{v}.txt"))
+    (V2_DIR / f"{prefix}_conformal_delta.json").write_text(json.dumps({str(k): v for k, v in m["delta"].items()}))
+
+
+def final(log=print):
+    """v2 trained on everything dated < 2026-01-01 plus IPL 2026 (inner fold = IPL 2026); never reads a locked row."""
+    states, inn = drop_fresh(*load())
+    kv, kt, _ = F.tune_k(inn, 2022, k_venue_grid=(10, 30, 100, 300, 1000))
+    k, _ = F.tune_k_chase(inn, 2027)
+    feat = F.add_v2(D.prep(F.build_features(states, inn, kv, kt)), inn, k)
+    m = train_models(feat, 2027, lambda f: (f.competition == "ipl") & (f.season_year == 2026), tuned_cfg("ipl2026"), variants=("w0", WIN_PICK), log=log)
+    save_models(m, "final")
+    log(f"saved final v2 models to {V2_DIR}")
+
+
 def fit_fold(base, inn, name, log=print, save=True):
     """One dev fold: tune the season weight k on seasons < Y, fit, predict. Returns (S, V, W)."""
     Y = FOLDS[name]
@@ -140,9 +161,6 @@ def fit_fold(base, inn, name, log=print, save=True):
     ev.assert_no_fresh(feat[test_sel(feat)], "test")
     m = train_models(feat, Y, val_sel, tuned_cfg(name), log=log)
     S, W = predict_models(m, feat[test_sel(feat)], name)
-    if save:
-        V2_DIR.mkdir(parents=True, exist_ok=True)
-        m["win"]["w2"].save_model(str(V2_DIR / f"{name}_win_w2.txt"))
     log(f"{name}: k_season={k}, {len(S)} score rows, {len(W) // len(WIN)} chase rows")
     return S, m["V"].assign(model="G1v2", fold=name), W.assign(k_season=k)
 
@@ -162,7 +180,7 @@ def run(names=None):
 
 
 # ---------- comparison frames ----------
-WIN_PICK = "w2"  # chase variant used inside v2 (set from the dev results; see the doc)
+WIN_PICK = "w1m"  # chase variant used inside v2 (set from the dev results; see the doc)
 IPL_FOLDS = ("ipl2022", "ipl2023", "ipl2024", "ipl2025", "ipl2026")
 LG_FOLDS = ("lg2024", "lg2025")
 KEEP_S = KEYS + ["final_total", *QC]
@@ -199,6 +217,11 @@ def fold_frames(fold):
         a, b, c, d = v1_frames(fold)
         st.update({"v1-G1": a, "v1-sim-B": c})
         wn.update({"v1-G1": b, "v1-sim-B": d})
+    elif (OUT_DIR / "s2_preds_B_men_nonipl.parquet").exists():  # sim worker's men's-pool sim-B on the non-IPL folds (300 paths)
+        sb = pd.read_parquet(OUT_DIR / "s2_preds_B_men_nonipl.parquet").query("year == @FOLDS[@fold]")
+        sb = sb[sb.balls_bowled.isin(CP)]
+        st.update({"v1-G1": st["v2-G1"], "v1-sim-B": sb[sb.innings == 1][KEEP_S]})
+        wn.update({"v1-G1": wn["w0"], "v1-sim-B": sb[(sb.innings == 2) & sb.chase_won.notna()].rename(columns={"win": "p"})[KEEP_W]})
     return align(st), align(wn)
 
 
@@ -221,21 +244,25 @@ def _pin(y, q, lv):
 
 def fit_weights(pairs, mode="global"):
     """pairs = list of (score_direct, score_sim, win_direct, win_sim) aligned frames, one per training fold.
-    Win: p = sigmoid(w*logit(p_direct) + (1-w)*logit(p_sim)), ONE weight w in [0, 1] (no intercept, so the chase base rate is never re-learned).
-    Score: per quantile level one weight on the direct quantile, the rest on sim-B (rows then sorted). mode 'cp' = one set per checkpoint."""
+    Win: p = sigmoid(w*logit(p_direct) + (1-w)*logit(p_sim)) (mode 'lin': p = w*p_direct + (1-w)*p_sim), ONE weight w in [0, 1] (no intercept, so the chase base rate is never re-learned).
+    Score: per quantile level one weight on the direct quantile, the rest on sim-B (rows then sorted). mode 'cp' = one set per checkpoint; mode 'lin' keeps the score weights at 0.5."""
     S1, S2, W1, W2 = (pd.concat([p[i] for p in pairs]) for i in range(4))
     out = {"mode": mode, "win": {}, "score": {}}
-    for g in ([None] if mode == "global" else list(CP)):
+    lin = mode == "lin"  # linear pool of probabilities (like the plain average) instead of a pool in logit space
+    for g in ([None] if mode in ("global", "lin") else list(CP)):
         ms = np.ones(len(S1), bool) if g is None else (S1.balls_bowled == g).to_numpy()
         mw = np.ones(len(W1), bool) if g is None else (W1.balls_bowled == g).to_numpy()
         y, l1, l2 = W1.chase_won.to_numpy()[mw], logit(W1.p.to_numpy()[mw]), logit(W2.p.to_numpy()[mw])
 
         def f(w):
-            p = sig(w * l1 + (1 - w) * l2)
+            p = np.clip(w * sig(l1) + (1 - w) * sig(l2), 1e-6, 1 - 1e-6) if lin else sig(w * l1 + (1 - w) * l2)
             return -np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))
 
         out["win"][str(g)] = float(minimize_scalar(f, bounds=(0, 1), method="bounded").x)
         ys = S1.final_total.to_numpy()[ms]
+        if lin:  # the score side showed no gain from fitted weights (see the doc): keep the plain 50/50 average of quantiles
+            out["score"][str(g)] = {c: 0.5 for c in QC}
+            continue
         out["score"][str(g)] = {c: float(minimize_scalar(lambda w: _pin(ys, w * S1[c].to_numpy()[ms] + (1 - w) * S2[c].to_numpy()[ms], lv), bounds=(0, 1), method="bounded").x)
                                 for c, lv in zip(QC, (0.1, 0.5, 0.9))}
     return out
@@ -250,7 +277,9 @@ def _sorted_pair(a, b):
 def stack_win(a, b, weights):
     a, b = _sorted_pair(a, b)
     d = weights["win"]
-    w = np.array([d.get(str(g), d.get("None")) for g in a.balls_bowled])
+    w = np.array([d.get(str(int(g)), d.get("None")) for g in a.balls_bowled])
+    if weights.get("mode") == "lin":
+        return a.assign(p=w * a.p.to_numpy() + (1 - w) * b.p.to_numpy())
     return a.assign(p=sig(w * logit(a.p.to_numpy()) + (1 - w) * logit(b.p.to_numpy())))
 
 
@@ -259,7 +288,7 @@ def stack_score(a, b, weights):
     q = np.zeros((len(a), 3))
     for g in set(a.balls_bowled):
         m = (a.balls_bowled == g).to_numpy()
-        d = weights["score"].get(str(g), weights["score"].get("None"))
+        d = weights["score"].get(str(int(g)), weights["score"].get("None"))
         for j, c in enumerate(QC):
             q[m, j] = d[c] * a.loc[m, c].to_numpy() + (1 - d[c]) * b.loc[m, c].to_numpy()
     out = a.copy()
@@ -275,7 +304,7 @@ def lofo(frames, folds_for_fit, test_fold, mode):
 
 # ---------- report ----------
 DEV_IPL = ("ipl2022", "ipl2023", "ipl2024", "ipl2025")
-MODES = ("global", "cp")
+MODES = ("global", "cp", "lin")
 
 
 def build_all():
@@ -291,6 +320,10 @@ def build_all():
                 w = lofo(raw, [x for x in DEV_IPL if x in raw], f, mode)
                 st[f"v2-ens-{mode}"] = stack_score(raw[f][0]["v2-G1"], raw[f][0]["v1-sim-B"], w)
                 wn[f"v2-ens-{mode}"] = stack_win(raw[f][1][WIN_PICK], raw[f][1]["v1-sim-B"], w)
+        elif "v1-sim-B" in st:
+            st, wn = attach_ens(st, wn)
+            w = fit_weights([(raw[x][0]["v2-G1"], raw[x][0]["v1-sim-B"], raw[x][1][WIN_PICK], raw[x][1]["v1-sim-B"]) for x in DEV_IPL if x in raw], "lin")
+            st["v2-ens-lin"], wn["v2-ens-lin"] = stack_score(raw[f][0]["v2-G1"], raw[f][0]["v1-sim-B"], w), stack_win(raw[f][1][WIN_PICK], raw[f][1]["v1-sim-B"], w)
         out[f] = (st, wn)
     return out, raw
 
@@ -398,7 +431,7 @@ def plots(frames):
     for ax, (lab, fl) in zip(axs, (("IPL 2022-25 (rolling)", list(DEV_IPL)), ("IPL 2026 (seen fold)", ["ipl2026"]))):
         w = pool(frames, fl, "win")
         ax.plot([0, 1], [0, 1], "--", color="grey")
-        for m, st in (("v1-ens", "o-"), ("v1-sim-B", "s-"), ("w0", "x:"), (WIN_PICK, "^-"), ("v2-ens-global", "d-")):
+        for m, st in (("v1-ens", "o-"), ("v1-sim-B", "s-"), ("w0", "x:"), (WIN_PICK, "^-"), ("v2-ens-lin", "d-")):
             if m in w:
                 t = ev.reliability_table(w[m].chase_won, w[m].p, 10)
                 ax.plot(t.pred, t.obs, st, ms=4, label=f"{m} (ECE {ev.ece(w[m].chase_won, w[m].p):.3f})")
@@ -410,7 +443,7 @@ def plots(frames):
     # drift: mean predicted - actual chase win rate by fold
     d = drift_table(frames).drop(index="actual chase win rate")
     fig, ax = plt.subplots(figsize=(7.5, 4))
-    for m in ("v1-G1", "v1-sim-B", "v1-ens", "w0", "w1", WIN_PICK, "v2-ens-global"):
+    for m in ("v1-G1", "v1-sim-B", "v1-ens", "w0", "w1", WIN_PICK, "v2-ens-lin"):
         if m in d.index:
             ax.plot(d.columns, d.loc[m].values, "o-", ms=4, label=m)
     ax.axhline(0, color="grey", ls=":")
@@ -464,8 +497,8 @@ def report():
     groups = {"IPL 2022-25": list(DEV_IPL), **{f[3:]: [f] for f in DEV_IPL}, "IPL 2026 (seen)": ["ipl2026"]}
     n = {f: (len(next(iter(frames[f][0].values()))), len(next(iter(frames[f][1].values())))) for f in frames}
     log("States per fold (first-innings score rows / chase rows, 4 checkpoints): " + str(n))
-    wk = lambda t: t.reindex([m for m in ("v1-G1", "w0", "w1m", "w1", "w2c", "w2", "w2s", "v1-sim-B", "v1-ens", "v2-ens-global", "v2-ens-cp") if m in t.index])  # noqa: E731
-    sk = lambda t: t.reindex([m for m in ("v1-G1", "v2-G1", "v1-sim-B", "v1-ens", "v2-ens-global", "v2-ens-cp") if m in t.index])  # noqa: E731
+    wk = lambda t: t.reindex([m for m in ("v1-G1", "w0", "w1m", "w1", "w2c", "w2", "w2s", "v1-sim-B", "v1-ens", "v2-ens-global", "v2-ens-cp", "v2-ens-lin") if m in t.index])  # noqa: E731
+    sk = lambda t: t.reindex([m for m in ("v1-G1", "v2-G1", "v1-sim-B", "v1-ens", "v2-ens-global", "v2-ens-cp", "v2-ens-lin") if m in t.index])  # noqa: E731
     log("\n### IPL: chase win probability (mean of the 4 checkpoints)")
     for col in ("logloss", "brier", "ece"):
         log(f"\n{col}:\n" + md(wk(pivot(frames, "win", col, groups)).reset_index().rename(columns={"index": "model"}), 3))
@@ -477,7 +510,7 @@ def report():
     log("\n### Paired bootstrap over matches (2000 resamples, 5-95%, mean-of-4 differences; negative = first model better; ECE: 500 resamples, pooled checkpoints)")
     rows = []
     cmp_ = [("w1m", "w0"), ("w1", "w0"), ("w2c", "w0"), ("w2", "w0"), ("w2s", "w0"), ("w2", "w1"), ("w2s", "w1"), ("w1", "w1m"),
-            ("v2-ens-global", "v1-ens"), ("v2-ens-cp", "v1-ens"), ("v2-ens-global", "v1-sim-B"), ("v2-ens-global", "v2-ens-cp"), (WIN_PICK, "v1-sim-B")]
+            ("v2-ens-global", "v1-ens"), ("v2-ens-cp", "v1-ens"), ("v2-ens-lin", "v1-ens"), ("v2-ens-lin", "v1-sim-B"), ("v2-ens-global", "v1-sim-B"), ("v2-ens-global", "v2-ens-cp"), (WIN_PICK, "v1-sim-B")]
     for lab, fr in (("IPL 2022-25", ipl), ("IPL 2026", ipl26)):
         for a, b in cmp_:
             if a not in fr[1] or b not in fr[1]:
@@ -488,7 +521,7 @@ def report():
     log("\nChase side:\n" + md(pd.DataFrame(rows), 3))
     rows = []
     for lab, fr in (("IPL 2022-25", ipl), ("IPL 2026", ipl26)):
-        for a, b in (("v2-G1", "v1-G1"), ("v2-ens-global", "v1-ens"), ("v2-ens-cp", "v1-ens"), ("v2-ens-global", "v1-sim-B"), ("v2-ens-global", "v2-ens-cp")):
+        for a, b in (("v2-G1", "v1-G1"), ("v2-ens-global", "v1-ens"), ("v2-ens-cp", "v1-ens"), ("v2-ens-lin", "v1-ens"), ("v2-ens-lin", "v1-sim-B"), ("v2-ens-global", "v1-sim-B"), ("v2-ens-global", "v2-ens-cp")):
             if a not in fr[0] or b not in fr[0]:
                 continue
             rows.append({"fold": lab, "comparison": f"{a} - {b}", **boot_row(fr, fr, a, b, ("mae", "pinball"))})
@@ -499,13 +532,15 @@ def report():
         log("\n### Non-IPL franchise leagues, rolling 2024 and 2025 (direct models only: sim-B has no cache for these leagues). v1 = w0 / G1 recipe")
         gl = {"leagues 2024+2025": lgf, **{f: [f] for f in lgf}}
         for col in ("logloss", "brier", "ece"):
-            t = pivot(frames, "win", col, gl).reindex([m for m in WIN if m in frames[lgf[0]][1]])
+            t = pivot(frames, "win", col, gl).reindex([m for m in (*WIN, "v1-sim-B", "v1-ens", "v2-ens-lin") if m in frames[lgf[0]][1]])
             log(f"\n{col}:\n" + md(t.reset_index().rename(columns={"index": "model"}), 3))
         for col in ("mae", "pinball", "cov80", "bias"):
             log(f"\nscore {col}:\n" + md(pivot(frames, "score", col, gl).reset_index().rename(columns={"index": "model"}), 3))
         lg = merged(frames, lgf)
         rows = []
-        for a, b in (("w1m", "w0"), ("w1", "w0"), ("w2c", "w0"), ("w2", "w0"), ("w2s", "w0"), ("w2", "w1")):
+        for a, b in (("w1m", "w0"), ("w1", "w0"), ("w2c", "w0"), ("w2", "w0"), ("w2s", "w0"), ("w2", "w1"), ("v2-ens-lin", "v1-ens"), ("v2-ens-lin", "v1-sim-B"), ("v1-ens", "v1-sim-B")):
+            if a not in lg[1] or b not in lg[1]:
+                continue
             rows.append({"comparison": f"{a} - {b}", **boot_row(lg, lg, a, b, ("logloss", "brier", "ece"))})
         log("\nBootstrap, leagues 2024+2025:\n" + md(pd.DataFrame(rows), 3))
         log("\nChase-win bias in the leagues (mean predicted - actual): " + str(drift_table({f: frames[f] for f in lgf}).round(3).to_dict("index")))
@@ -529,3 +564,146 @@ if __name__ == "__main__" and sys.argv[1:2] == ["run"]:
     run(sys.argv[2:] or None)
 elif __name__ == "__main__" and sys.argv[1:2] == ["report"]:
     report()
+
+
+# ---------- the fresh-holdout comparison (the lead runs this) ----------
+STACK_MODE = "lin"  # which stacking weights v2-ens uses (set from the dev results)
+
+
+def checkpoint_keys(states, ids):
+    """Usable checkpoint states (same filter as sim_eval.test_keys) of the given matches."""
+    t = states[states.match_id.isin(ids) & ~states.reduced & states.balls_bowled.isin(CP) & (states.balls_left > 0) & (states.wickets < 10)]
+    t = t[(t.innings == 1) | (t.chase_won.notna() & (t.runs_needed > 0))]
+    return t[["match_id", "innings", "balls_bowled", "final_total", "chase_won"]]
+
+
+def sim_b(states, keys, cut, fresh_ids, n_sims, log):
+    """sim-B (ball simulator, variant B) trained on ALL men's T20 seasons < cut (IPL season cut-1 as the inner early-stopping fold),
+    locked matches removed from training; simulates every state in `keys`. Returns (score frame, win frame) at the checkpoints."""
+    from .ball_model import BallModel, load_balls
+    from .simulate import fill_missing_batter, simulate, start_states, summarize
+
+    balls = load_balls()
+    balls = balls[~balls.reduced & balls.lvl_slow.notna()]
+    train = balls[~balls.match_id.isin(fresh_ids) & (balls.competition != "hundred")]
+    ev.assert_no_fresh(states[states.match_id.isin(set(train.match_id))].drop_duplicates("match_id"), "sim-B train")
+    m = BallModel("B").fit(train[train.season_year < cut - 1], train[(train.season_year == cut - 1) & (train.competition == "ipl")])
+    m = BallModel("B").fit(train[train.season_year < cut], None, n_rounds=int(m.best_iter * 1.1) + 1)
+    log(f"sim-B trained ({m.best_iter} rounds); simulating {len(keys)} states x {n_sims} paths")
+    out = []
+    for k, kk in keys.groupby("balls_bowled"):
+        k = int(k)
+        st = fill_missing_batter(start_states(balls[balls.match_id.isin(kk.match_id)], kk[["match_id", "innings"]].to_numpy(), k), m)
+        res = simulate(m, st, n=n_sims, seed=k)
+        yv = kk.set_index(["match_id", "innings"]).loc[list(zip(st.match_id, st.innings))]
+        d = pd.concat([st[["match_id", "innings", "balls_bowled"]], summarize(res["final"])], axis=1)
+        d["p"], d["final_total"], d["chase_won"] = res["win"], yv.final_total.to_numpy(float), yv.chase_won.to_numpy(float)
+        out.append(d)
+    r = pd.concat(out, ignore_index=True)
+    return r[r.innings == 1][KEEP_S], r[(r.innings == 2) & r.chase_won.notna()][KEEP_W]
+
+
+def fresh(rehearse=False, n_sims=1000, max_matches=0):
+    """Pre-registered v1 vs v2 comparison on the fresh holdout (men's non-IPL franchise leagues dated >= 2026-01-01).
+    rehearse=True runs the SAME code on dev data (non-IPL leagues season 2025 as the pretend holdout) and never touches locked rows."""
+    t0 = time.time()
+    log = lambda m: print(f"[{time.time() - t0:5.0f}s] {m}", flush=True)  # noqa: E731
+    states_all, inn_all = load()
+    states, inn = drop_fresh(states_all, inn_all)
+    lg = lambda f: f.competition.isin(ev.FRESH_LEAGUES)  # noqa: E731
+    if rehearse:
+        cut, tname = 2025, "lg2025"
+        test_sel, val_sel = (lambda f: lg(f) & (f.season_year == 2025)), (lambda f: lg(f) & (f.season_year == 2024))
+        tag = "rehearsal"
+    else:
+        cut, tname = 2027, "ipl2026"  # train on everything dated < 2026-01-01 plus IPL 2026; inner fold = IPL 2026
+        test_sel, val_sel = (lambda f: lg(f) & ev.fresh_holdout_mask(f)), (lambda f: (f.competition == "ipl") & (f.season_year == 2026))
+        tag = "fresh"
+        log("OPENING THE FRESH HOLDOUT (men's non-IPL franchise leagues, >= 2026-01-01). This is the one pre-registered run.")
+    kv, kt, _ = F.tune_k(inn, 2022, k_venue_grid=(10, 30, 100, 300, 1000))
+    k, _ = F.tune_k_chase(inn, cut)
+    train_feat = F.add_v2(D.prep(F.build_features(states, inn, kv, kt)), inn, k)  # built WITHOUT the locked matches
+    if rehearse:
+        test = train_feat[test_sel(train_feat)]
+        ev.assert_no_fresh(test, "test")
+    else:  # test features come from the full history (a live forecast knows earlier 2026 matches); prior-only, so no result leaks into its own row
+        full = F.add_v2(D.prep(F.build_features(states_all, inn_all, kv, kt)), inn_all, k)
+        test = ev.assert_no_fresh(full[test_sel(full)], "test", allow_fresh=True)
+        del full
+    log(f"k_season={k}; test rows {len(test)} ({test.match_id.nunique()} matches); training rows {len(train_feat)}")
+    models = train_models(train_feat, cut, val_sel, tuned_cfg(tname), variants=("w0", WIN_PICK), log=log)
+    save_models(models, tag)
+    S, W = predict_models(models, test, tag)
+    ids = sorted(set(test.match_id))
+    if max_matches:
+        ids = list(np.random.default_rng(0).choice(ids, min(max_matches, len(ids)), replace=False))
+    keys = checkpoint_keys(states_all if not rehearse else states, ids)
+    fresh_ids = set(inn_all.match_id[ev.fresh_holdout_mask(inn_all)]) if not rehearse else set(inn_all.match_id[ev.fresh_holdout_mask(inn_all)]) | set(test.match_id)
+    if rehearse:
+        sS, sW = sim_b(states_all, keys, cut, fresh_ids, n_sims, log)
+    else:  # the sim worker's men's-pool sim-B (matches < 2026-01-01 + IPL 2026): simfix.fit_fresh() must have been run once
+        from .simfix import predict_checkpoints
+
+        r = predict_checkpoints(keys[["match_id", "innings", "balls_bowled"]], "ball_B_men_fresh", n=n_sims)
+        r = r.rename(columns={"win": "p"}).merge(keys[["match_id", "innings", "balls_bowled", "final_total", "chase_won"]], on=["match_id", "innings", "balls_bowled"])
+        sS, sW = r[r.innings == 1][KEEP_S], r[(r.innings == 2) & r.chase_won.notna()][KEEP_W]
+    cp = lambda d: d[d.balls_bowled.isin(CP)]  # noqa: E731
+    Wc = cp(W[W.chase_won.notna()])
+    st = {"v1-G1": cp(S)[KEEP_S], "v2-G1": cp(S)[KEEP_S], "v1-sim-B": sS}
+    wn = {"v1-G1": Wc[Wc.model == "w0"][KEEP_W], WIN_PICK: Wc[Wc.model == WIN_PICK][KEEP_W], "v1-sim-B": sW}
+    st, wn = align(st), align(wn)
+    weights = json.loads((V2_DIR / "stack_weights.json").read_text())[STACK_MODE]
+    st, wn = attach_ens(st, wn, weights)
+    st["v2-direct"], wn["v2-direct"] = st["v2-G1"], wn[WIN_PICK]
+    rep = []
+
+    def pr(x=""):
+        print(x, flush=True)
+        rep.append(str(x))
+
+    pr(f"## {tag}: v1 vs v2 on {len(wn['v1-ens'])} chase states ({wn['v1-ens'].match_id.nunique()} matches) and {len(st['v1-ens'])} first-innings states ({st['v1-ens'].match_id.nunique()} matches); sim-B {n_sims} paths")
+    pr(f"stacking weights ({STACK_MODE}, fitted on IPL 2022-26): {json.dumps(weights)}")
+    ts, tw = per_checkpoint(st, "score"), per_checkpoint(wn, "win")
+    pr("\nScore (mean of 4 checkpoints):\n" + md(ts[ts.cp == "mean of 4"].drop(columns="cp"), 3))
+    pr("\nChase (mean of 4 checkpoints):\n" + md(tw[tw.cp == "mean of 4"].drop(columns="cp"), 3))
+    pooled_ece = {m: ev.ece(g.chase_won, g.p) for m, g in wn.items()}
+    pr("\nPooled ECE: " + str({m: round(v, 3) for m, v in pooled_ece.items()}))
+    fr = (st, wn)
+    rows = []
+    for a, b in (("v2-ens", "v1-ens"), ("v2-ens", "v1-sim-B"), ("v2-direct", "v1-G1"), ("v1-ens", "v1-sim-B")):
+        rows.append({"comparison": f"{a} - {b}", **boot_row(fr, fr, a, b, ("mae", "pinball", "logloss", "brier", "ece"))})
+    pr("\nPaired bootstrap over matches (5-95%; negative = first model better):\n" + md(pd.DataFrame(rows), 3))
+    mae_d, ll_d = bootstrap(st["v2-ens"], st["v1-ens"], "mae"), bootstrap(wn["v2-ens"], wn["v1-ens"], "logloss")
+    e4 = float(tw[(tw.model == "v2-ens") & (tw.cp == "mean of 4")].ece.iloc[0])
+    crit = [("chase log loss beats v1 ens-G1, interval excludes 0", f"{ll_d[0]:+.3f} [{ll_d[1]:+.3f}, {ll_d[2]:+.3f}]", ll_d[2] < 0),
+            ("score MAE no worse than v1 ens-G1 (interval includes or is below 0)", f"{mae_d[0]:+.2f} [{mae_d[1]:+.2f}, {mae_d[2]:+.2f}]", mae_d[1] <= 0),
+            ("ECE < 0.08 (mean of 4 checkpoints)", f"{e4:.3f} (pooled {pooled_ece['v2-ens']:.3f})", e4 < 0.08)]
+    pr("\n#### Pre-registered adoption rule for v2\n" + md(pd.DataFrame([{"criterion": c, "value": v, "result": "PASS" if ok else "FAIL"} for c, v, ok in crit])))
+    pr("v2 ADOPTED: " + ("YES" if all(ok for *_, ok in crit) else "NO"))
+    comp = inn_all[inn_all.innings == 2].set_index("match_id").competition
+    d = pd.DataFrame({m: wn[m].assign(c=wn[m].match_id.map(comp)).groupby("c").apply(lambda g: g.p.mean() - g.chase_won.mean()) for m in ("v1-ens", "v2-ens", "v1-sim-B", "v2-direct")})
+    d["n matches"] = wn["v1-ens"].groupby(wn["v1-ens"].match_id.map(comp)).match_id.nunique()
+    d["actual chase rate"] = wn["v1-ens"].assign(c=wn["v1-ens"].match_id.map(comp)).groupby("c").chase_won.mean()
+    pr("\nMean predicted - actual chase win by league:\n" + md(d.round(3).reset_index().rename(columns={"c": "league"}), 3))
+    (OUT_DIR / f"v2_{tag}_report.md").write_text("\n".join(rep), encoding="utf-8")
+    for n_, f_ in (("S", pd.concat([x.assign(model=k_) for k_, x in st.items()])), ("W", pd.concat([x.assign(model=k_) for k_, x in wn.items()]))):
+        f_.to_parquet(P(f"{tag}_{n_}"))
+    plt = ev._plt()
+    if plt is not None:
+        fig, ax = plt.subplots(figsize=(4.8, 4.5))
+        ax.plot([0, 1], [0, 1], "--", color="grey")
+        for m in ("v1-ens", "v1-sim-B", "v2-direct", "v2-ens"):
+            t = ev.reliability_table(wn[m].chase_won, wn[m].p, 10)
+            ax.plot(t.pred, t.obs, "o-", ms=4, label=f"{m} (ECE {pooled_ece[m]:.3f})")
+        ax.set(title=f"{tag}: chase win reliability", xlabel="predicted", ylabel="observed")
+        ax.legend(fontsize=7)
+        fig.savefig(ev.IMG_DIR / f"ml_v2_{tag}_reliability.png", dpi=110, bbox_inches="tight")
+        plt.close(fig)
+
+
+if __name__ == "__main__" and sys.argv[1:2] == ["final"]:
+    final()
+elif __name__ == "__main__" and sys.argv[1:2] == ["fresh"]:
+    a = sys.argv[2:]
+    fresh(rehearse="--rehearse" in a, n_sims=int(a[a.index("--sims") + 1]) if "--sims" in a else 1000,
+          max_matches=int(a[a.index("--max-matches") + 1]) if "--max-matches" in a else 0)
