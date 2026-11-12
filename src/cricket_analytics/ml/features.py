@@ -124,10 +124,10 @@ def _faced(s):
     return sf, m.f.fillna(0).to_numpy()
 
 
-def build_features(states, inn, k_venue=15.0, k_team=10.0, k_player=K_PLAYER):
+def build_features(states, inn, k_venue=15.0, k_team=10.0, k_player=K_PLAYER, hl_level=HL_LEVEL):
     """State table (men's rows only) with FEATURES columns added. Use k_*=0 for the raw / unshrunk variant."""
     s = states[states.gender == "male"].reset_index(drop=True)
-    ifeat = innings_features(inn, k_venue, k_team)
+    ifeat = innings_features(inn, k_venue, k_team, hl_level)
     lvl = ifeat.drop_duplicates("match_id").set_index("match_id").lvl_ew
     pri = player_priors(s, inn, lvl, k_player)
     s = s.merge(ifeat, on=["match_id", "innings"], how="left")

@@ -260,7 +260,42 @@ def prep(df):
     return d
 
 
-if __name__ == "__main__":
+def report():
+    """Print the S3/S4 tables, bootstrap differences and save plots (reads the cached predictions)."""
+    import sys  # noqa: F401
+
+    L = lambda n: tuple(pd.read_parquet(OUT_DIR / f"direct_{n}_{k}.parquet") for k in ("score", "win"))  # noqa: E731
+    parts = {"resource-ipl": L("baseline")}
+    for f in sorted(OUT_DIR.glob("direct_*_score.parquet")):
+        n = f.name[7:-14]
+        if n != "baseline":
+            parts[n] = L(n)
+    S = pd.concat([p[0] for p in parts.values()])
+    W = pd.concat([p[1] for p in parts.values()])
+    for yrs, lab in ((None, "2022-25"), ((2024, 2025), "2024-25")):
+        s = summarise(S[S.model != "lgbm-impact"] if yrs is None else S, W[W.model != "lgbm-impact"] if yrs is None else W, yrs)
+        print(f"\n### test seasons {lab}\n" + md(s.round(3)))
+    base = (S[S.model == "resource-ipl"], W[W.model == "resource-ipl"])
+    print("\n### bootstrap over matches: model minus baseline (negative = better), mean [5%, 95%], n matches")
+    for m in sorted(S.model.unique()):
+        if m == "resource-ipl" or "platt" in m:
+            continue
+        yrs = (2024, 2025) if m == "lgbm-impact" else None
+        a = boot_diff(S[S.model == m], base[0], "mae", yrs)
+        b = boot_diff(W[W.model == m], base[1], "ll", yrs)
+        print(f"{m}: MAE {a[0]:+.2f} [{a[1]:+.2f}, {a[2]:+.2f}] | logloss {b[0]:+.3f} [{b[1]:+.3f}, {b[2]:+.3f}] | n={a[3]}")
+    g = W[W.model == "lgbm-global"]
+    print(ev.reliability_plot(g.chase_won, g.p, "direct_global_reliability", w=ev.match_weights(g)))
+    s = S[S.model == "lgbm-global"].assign(y=lambda d: d.final_total, over=lambda d: d.balls_bowled // 6)
+    print(ev.coverage_by_over_plot(s, "direct_global_coverage"))
+    r = W[W.model == "resource-ipl"]
+    print(ev.reliability_plot(r.chase_won, r.p, "direct_baseline_reliability", w=ev.match_weights(r)))
+    return S, W, parts
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "report":
+    report()
+elif __name__ == "__main__":
     t0 = time.time()
     log = lambda m: print(f"[{time.time() - t0:5.0f}s] {m}", flush=True)  # noqa: E731
     states, inn = load()
@@ -298,4 +333,7 @@ if __name__ == "__main__":
     del feat
     raw = prep(F.build_features(states, inn, 0.0, 0.0, 0.0))
     cached(f"var_{best}_raw", lambda: run_variant(raw, states, f"lgbm-{best}-raw", best, "full", tuned))
+    del raw
+    fast = prep(F.build_features(states, inn, kv, kt, hl_level=20.0))  # faster-moving scoring level (half-life 20 matches)
+    cached(f"var_{best}_fast", lambda: run_variant(fast, states, f"lgbm-{best}-fastlevel", best, "full", tuned))
     log("done all")
