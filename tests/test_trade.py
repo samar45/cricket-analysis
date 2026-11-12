@@ -478,3 +478,18 @@ def test_worth2_rates_the_phase_specialist_above_worth_and_is_not_the_default():
     assert T.DEFAULT_BASIS == "recent" and "worth2" in T.BASES
     x = T.worth_values("worth2").loc["Arshdeep Singh"]
     assert abs(w2["Arshdeep Singh"] - (x.bat_war + x.bowl_war)) < 1e-9
+
+
+def test_joint_xii_never_worse_than_xi_first_and_legal(tab):
+    pt = tab[tab.team == "RCB"]
+    p = T.pick_xii(pt)
+    a = {  # the old XI-first value: best XI, then best legal impact from the rest
+        "val": pt.value.values, "os": pt.overseas.values.astype(int), "keeper": pt.keeper.values.astype(bool),
+        "need_keeper": True, "overs": pt.overs.values, "bowler": pt.is_bowler.values.astype(int),
+        "bat7": ((pt.bat_pos.fillna(99).values <= 7.0) & (pt.bat_matches.fillna(0).values >= 5)).astype(int),
+    }
+    sel = T._search(a, 11)
+    rest = [i for i in np.flatnonzero(~sel) if a["os"][sel].sum() < T.MAX_OS_XI or not a["os"][i]]
+    old = a["val"][sel].sum() + T.IMPACT_WEIGHT * max(0, max(a["val"][i] for i in rest))
+    assert p["value"] >= old - 1e-9
+    assert pt.loc[p["xi"] + [p["impact"]], "overseas"].sum() <= T.MAX_OS_XI

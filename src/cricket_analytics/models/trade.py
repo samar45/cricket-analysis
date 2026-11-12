@@ -359,7 +359,7 @@ def draws_for(pt: pd.DataFrame, v: Values | None = None) -> np.ndarray:
 
 def _penalty(sel, a) -> float:
     """Rule breaks of an XI, in 'wins'; one break costs far more than any player is worth, so a legal XI always wins."""
-    p = max(0, a["os"][sel].sum() - MAX_OS_XI) * 20.0
+    p = max(0, a["os"][sel].sum() - a.get("os_max", MAX_OS_XI)) * 20.0
     if a["need_keeper"] and not a["keeper"][sel].any():
         p += 20.0
     p += max(0.0, MIN_OVERS - a["overs"][sel].sum()) * 2.0
@@ -368,7 +368,7 @@ def _penalty(sel, a) -> float:
     return p
 
 
-def _search(a, n: int, seed: int = 7) -> np.ndarray:
+def _search(a, n: int, seed: int = 7, extra_starts: int = 30) -> np.ndarray:
     val, m = a["val"], len(a["val"])
     force = a.get(
         "force", np.zeros(m, bool)
@@ -378,7 +378,7 @@ def _search(a, n: int, seed: int = 7) -> np.ndarray:
     rng = np.random.default_rng(seed)
     fixed = np.flatnonzero(force)
     starts = [np.r_[fixed, free[np.argsort(-val[free])][:k]]] + [
-        np.r_[fixed, rng.permutation(free)[:k]] for _ in range(30)
+        np.r_[fixed, rng.permutation(free)[:k]] for _ in range(extra_starts)
     ]
     best, best_f = None, -1e18
     for st in starts:
@@ -407,7 +407,7 @@ def pick_xii(pt: pd.DataFrame, force=()) -> dict:
     Rules enforced (as penalties in a swap search that starts from the top-valued 11 and 30 random starts, so no ILP library):
     at most 4 overseas in the XI; a keeper from the REVIEWED list (a 'yes', else a 'sometimes'; if the squad has none the rule is
     dropped and flagged, never guessed); at least 5 bowling options with 20+ expected overs between them; at least 6 usual
-    top-seven batters. The impact player is the best remaining player (an Indian if the XI already has 4 overseas), always named, counted at
+    top-seven batters. XI and impact are chosen jointly (best XI for each strong impact candidate, never worse than XI-first). Impact is always named, an Indian if the XI has 4 overseas, counted at
     IMPACT_WEIGHT only if his value is above 0 (a below-replacement impact player adds 0). `force` = labels of players who must be in the XI (a captain or star in poor form).
     Returns {'xi': [index labels], 'impact': label or None, 'value': float, 'flags': [str], 'penalty': float}."""
     n = 11
@@ -434,21 +434,36 @@ def pick_xii(pt: pd.DataFrame, force=()) -> dict:
         ).astype(int),
         "force": fmask,
     }
+    idx = pt.index
     sel = _search(a, n)
     pen = float(_penalty(sel, a))
-    if pen > 0:
-        flags.append("squad cannot meet every rule (not enough bowlers / batters / keepers)")
     rest = np.flatnonzero(~sel)
     os_xi = a["os"][sel].sum()
     cand = [i for i in rest if os_xi < MAX_OS_XI or not a["os"][i]]
     imp = max(cand, key=lambda i: a["val"][i]) if cand else None
-    idx = pt.index
+    best = (sel, imp)  # the old two-step pick (XI first, impact from the rest) is the floor
+    tot = lambda s_, i_: a["val"][s_].sum() + (IMPACT_WEIGHT * a["val"][i_] if i_ is not None and a["val"][i_] > 0 else 0.0)
+    best_t = tot(*best) - pen
+    # joint pick: for each strong impact candidate, best XI from the rest (the overseas cap is shared: XI + impact <= 4)
+    # ponytail: only the 5 highest-valued non-forced players are tried as impact; widen if a deeper bench ever matters
+    for i in sorted(np.flatnonzero(~fmask & (a["val"] > 0)), key=lambda j: -a["val"][j])[:5]:
+        keep = np.flatnonzero(np.arange(len(pt)) != i)
+        b = {k: (v[keep] if isinstance(v, np.ndarray) else v) for k, v in a.items()}
+        b["os_max"] = MAX_OS_XI - int(a["os"][i])
+        s2 = _search(b, n, extra_starts=3)
+        p2 = float(_penalty(s2, b))
+        full = np.zeros(len(pt), bool)
+        full[keep[s2]] = True
+        t2 = tot(full, i) - p2
+        if t2 > best_t + 1e-9:
+            best, best_t, sel, pen, imp = (full, i), t2, full, p2, i
+    sel, imp = best
+    if pen > 0:
+        flags.append("squad cannot meet every rule (not enough bowlers / batters / keepers)")
     return {
         "xi": [idx[i] for i in np.flatnonzero(sel)],
         "impact": None if imp is None else idx[imp],
-        "value": float(
-            a["val"][sel].sum() + (IMPACT_WEIGHT * a["val"][imp] if imp is not None and a["val"][imp] > 0 else 0.0)
-        ),
+        "value": float(tot(sel, imp)),
         "impact_counted": imp is not None and a["val"][imp] > 0,
         "flags": flags,
         "penalty": pen,
