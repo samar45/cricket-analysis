@@ -119,10 +119,11 @@ def predict_score(models, d, cols, qs=QS, scale=None):
     return pd.DataFrame(np.maximum(q, 0) + d.runs.to_numpy()[:, None], columns=[f"q{round(k * 100)}" for k in qs], index=d.index)
 
 
-def fit_win(tr, w, cols, cfg, rounds=None, val=None):
+def fit_win(tr, w, cols, cfg, rounds=None, val=None, extra=None):
+    """Chase classifier. extra = more LightGBM params, e.g. {"monotone_constraints": [...]} (v2)."""
     d = win_rows(tr)
     w = w[tr.index.isin(d.index)]
-    p = {**BASE, **cfg, "objective": "binary", "metric": "binary_logloss"}
+    p = {**BASE, **cfg, "objective": "binary", "metric": "binary_logloss", **(extra or {})}
     ds = _ds(d, d.chase_won.to_numpy(), cols, w)
     if val is None:
         return lgb.train(p, ds, rounds), rounds

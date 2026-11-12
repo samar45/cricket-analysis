@@ -180,3 +180,22 @@ def coverage_by_over_plot(df, name, y="y", lo="q10", hi="q90", over="over"):
     fig.savefig(path, dpi=110, bbox_inches="tight")
     plt.close(fig)
     return path
+
+
+# ---------- v2 fresh holdout lock ----------
+FRESH_FROM = "2026-01-01"
+FRESH_LEAGUES = ("bbl", "blast", "bpl", "cpl", "ilt20", "lpl", "mlc", "psl", "sa20")  # the pre-registered fresh test set
+
+
+def fresh_holdout_mask(df):
+    """True for rows of the LOCKED v2 holdout: men's non-IPL matches dated 2026-01-01 or later (needs gender, competition, date).
+    The lock is deliberately wider than the test set (it also covers men's T20I and Hundred)."""
+    return ((df["gender"] == "male") & (df["competition"] != "ipl") & (pd.to_datetime(df["date"]) >= pd.Timestamp(FRESH_FROM))).to_numpy()
+
+
+def assert_no_fresh(df, what, allow_fresh=False):
+    """Raise if any locked row is in `df` (a train / validation / test set), unless allow_fresh=True."""
+    n = int(fresh_holdout_mask(df).sum())
+    if n and not allow_fresh:
+        raise ValueError(f"{n} rows of the locked fresh holdout (men's non-IPL, >= {FRESH_FROM}) are in the {what} set; pass allow_fresh=True only for the one pre-registered run")
+    return df

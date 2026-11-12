@@ -162,3 +162,61 @@ def tune_k(inn, year, k_venue_grid=(10, 30, 100, 300, 1000), k_team_grid=(3, 10,
             if best is None or mse < best[0]:
                 best = (mse, kv, kt)
     return best[1], best[2], best[0]
+
+
+# ---------- v2 additions (FEATURES above stays frozen) ----------
+V2_RESOURCE = ["req_vs_exp", "req_ratio"]  # chase: runs needed vs the runs the scoring level expects in the balls left
+V2_CHASE = ["chase_lr", "chase_season"]
+V2_CHASE10 = ["chase_lr", "chase_s10"]  # same with a fixed season weight k=10 (the tuned k is often huge = no season signal)  # prior-only chase-win rates of the competition (long-run, season so far)
+CHASE_HL, CHASE_PRIOR_W = 150.0, 10.0  # long-run rate: half-life in matches; pseudo-matches at 0.5 for a new competition
+
+
+def chase_features(inn, k_season=10.0, hl=CHASE_HL):
+    """Prior-only chase-win rates per (competition, gender): one row per match_id with
+    chase_lr = exponentially weighted long-run rate, chase_season = (wins so far this season + k * chase_lr) / (matches so far + k).
+    Only matches on EARLIER dates count (same-day matches do not see each other). Reduced / no-result / tied matches are not counted."""
+    c = inn[inn.innings == 2].sort_values(["date", "match_id"], kind="stable")
+    dec = _decay(hl)
+    lr, sea, rows = {}, {}, []
+    for _, day in c.groupby("date", sort=True):
+        upd = []
+        for r in day.itertuples(index=False):
+            ck = (r.competition, r.gender)
+            s, w = lr.get(ck, (0.0, 0.0))
+            rate = (s + CHASE_PRIOR_W * 0.5) / (w + CHASE_PRIOR_W)
+            a, n = sea.get((ck, r.season_year), (0.0, 0))
+            rows.append((r.match_id, rate, (a + k_season * rate) / (n + k_season)))
+            if not r.reduced and not np.isnan(r.chase_won):
+                upd.append((ck, r))
+        for ck, r in upd:
+            s, w = lr.get(ck, (0.0, 0.0))
+            lr[ck] = (s * dec + r.chase_won, w * dec + 1.0)
+            a, n = sea.get((ck, r.season_year), (0.0, 0))
+            sea[(ck, r.season_year)] = (a + r.chase_won, n + 1)
+    return pd.DataFrame(rows, columns=["match_id", "chase_lr", "chase_season"])
+
+
+def tune_k_chase(inn, year, grid=(10, 30, 100, 300, 1000)):
+    """k for chase_season, chosen on seasons < year only: log loss of 'chase_season is the win probability' over all those matches."""
+    best = None
+    for k in grid:
+        f = chase_features(inn[inn.season_year < year], k)
+        m = inn[(inn.innings == 2) & ~inn.reduced & inn.chase_won.notna() & (inn.season_year < year)].merge(f, on="match_id")
+        p = m.chase_season.clip(0.02, 0.98)
+        ll = float(-(m.chase_won * np.log(p) + (1 - m.chase_won) * np.log(1 - p)).mean())
+        if best is None or ll < best[0]:
+            best = (ll, k)
+    return best[1], best[0]
+
+
+def add_v2(feat, inn, k_season=10.0):
+    """Add req_vs_exp, req_ratio (innings 2 only) and the chase-rate features to a prep()'d state table. Row order is kept."""
+    f = feat.merge(chase_features(inn, k_season), on="match_id", how="left")
+    f["chase_s10"] = f.match_id.map(chase_features(inn, 10.0).set_index("match_id").chase_season).astype("float32")  # fixed k=10 (sensitivity)
+    exp = (f.lvl_season / 120.0 * f.balls_left).clip(lower=1.0)
+    chase = f.innings == 2
+    f["req_vs_exp"] = np.where(chase, f.runs_needed - exp, np.nan).astype("float32")
+    f["req_ratio"] = np.where(chase, f.runs_needed / exp, np.nan).astype("float32")
+    for c in V2_CHASE:
+        f[c] = f[c].astype("float32")
+    return f
