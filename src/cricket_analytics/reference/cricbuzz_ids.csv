@@ -1,4 +1,222 @@
 cricbuzz_id,cricsheet_match_id,date,team1,team2
+66169,1359475,2023-03-31,Gujarat Titans,Chennai Super Kings
+66176,1359477,2023-04-01,Lucknow Super Giants,Delhi Capitals
+66173,1359476,2023-04-01,Punjab Kings,Kolkata Knight Riders
+66190,1359479,2023-04-02,Royal Challengers Bengaluru,Mumbai Indians
+66183,1359478,2023-04-02,Sunrisers Hyderabad,Rajasthan Royals
+66197,1359480,2023-04-03,Chennai Super Kings,Lucknow Super Giants
+66204,1359481,2023-04-04,Delhi Capitals,Gujarat Titans
+66208,1359482,2023-04-05,Rajasthan Royals,Punjab Kings
+66211,1359483,2023-04-06,Kolkata Knight Riders,Royal Challengers Bengaluru
+66215,1359484,2023-04-07,Lucknow Super Giants,Sunrisers Hyderabad
+66225,1359486,2023-04-08,Mumbai Indians,Chennai Super Kings
+66218,1359485,2023-04-08,Rajasthan Royals,Delhi Capitals
+66232,1359487,2023-04-09,Gujarat Titans,Kolkata Knight Riders
+66236,1359488,2023-04-09,Sunrisers Hyderabad,Punjab Kings
+66239,1359489,2023-04-10,Royal Challengers Bengaluru,Lucknow Super Giants
+66243,1359490,2023-04-11,Delhi Capitals,Mumbai Indians
+66250,1359491,2023-04-12,Chennai Super Kings,Rajasthan Royals
+66253,1359492,2023-04-13,Punjab Kings,Gujarat Titans
+66257,1359493,2023-04-14,Kolkata Knight Riders,Sunrisers Hyderabad
+66264,1359495,2023-04-15,Lucknow Super Giants,Punjab Kings
+66260,1359494,2023-04-15,Royal Challengers Bengaluru,Delhi Capitals
+66274,1359497,2023-04-16,Gujarat Titans,Rajasthan Royals
+66271,1359496,2023-04-16,Mumbai Indians,Kolkata Knight Riders
+66278,1359498,2023-04-17,Royal Challengers Bengaluru,Chennai Super Kings
+66285,1359499,2023-04-18,Sunrisers Hyderabad,Mumbai Indians
+66292,1359500,2023-04-19,Rajasthan Royals,Lucknow Super Giants
+66330,1359502,2023-04-20,Delhi Capitals,Kolkata Knight Riders
+66313,1359501,2023-04-20,Punjab Kings,Royal Challengers Bengaluru
+66351,1359503,2023-04-21,Chennai Super Kings,Sunrisers Hyderabad
+66369,1359504,2023-04-22,Lucknow Super Giants,Gujarat Titans
+66404,1359505,2023-04-22,Mumbai Indians,Punjab Kings
+66435,1359507,2023-04-23,Kolkata Knight Riders,Chennai Super Kings
+66421,1359506,2023-04-23,Royal Challengers Bengaluru,Rajasthan Royals
+66449,1359508,2023-04-24,Sunrisers Hyderabad,Delhi Capitals
+66470,1359509,2023-04-25,Gujarat Titans,Mumbai Indians
+66484,1359510,2023-04-26,Royal Challengers Bengaluru,Kolkata Knight Riders
+66502,1359511,2023-04-27,Rajasthan Royals,Chennai Super Kings
+66512,1359512,2023-04-28,Punjab Kings,Lucknow Super Giants
+66526,1359514,2023-04-29,Delhi Capitals,Sunrisers Hyderabad
+66519,1359513,2023-04-29,Kolkata Knight Riders,Gujarat Titans
+66288,1359515,2023-04-30,Chennai Super Kings,Punjab Kings
+66299,1359516,2023-04-30,Mumbai Indians,Rajasthan Royals
+66306,1359517,2023-05-01,Lucknow Super Giants,Royal Challengers Bengaluru
+66320,1359518,2023-05-02,Gujarat Titans,Delhi Capitals
+66337,1359519,2023-05-03,Lucknow Super Giants,Chennai Super Kings
+66327,1359520,2023-05-03,Punjab Kings,Mumbai Indians
+66344,1359521,2023-05-04,Sunrisers Hyderabad,Kolkata Knight Riders
+66348,1359522,2023-05-05,Rajasthan Royals,Gujarat Titans
+66355,1359523,2023-05-06,Chennai Super Kings,Mumbai Indians
+66358,1359524,2023-05-06,Delhi Capitals,Royal Challengers Bengaluru
+66365,1359525,2023-05-07,Gujarat Titans,Lucknow Super Giants
+66376,1359526,2023-05-07,Rajasthan Royals,Sunrisers Hyderabad
+66379,1359527,2023-05-08,Kolkata Knight Riders,Punjab Kings
+66386,1359528,2023-05-09,Mumbai Indians,Royal Challengers Bengaluru
+66393,1359529,2023-05-10,Chennai Super Kings,Delhi Capitals
+66397,1359530,2023-05-11,Kolkata Knight Riders,Rajasthan Royals
+66411,1359531,2023-05-12,Mumbai Indians,Gujarat Titans
+66428,1359533,2023-05-13,Delhi Capitals,Punjab Kings
+66414,1359532,2023-05-13,Sunrisers Hyderabad,Lucknow Super Giants
+66442,1359535,2023-05-14,Chennai Super Kings,Kolkata Knight Riders
+66432,1359534,2023-05-14,Rajasthan Royals,Royal Challengers Bengaluru
+66446,1359536,2023-05-15,Gujarat Titans,Sunrisers Hyderabad
+66453,1359537,2023-05-16,Lucknow Super Giants,Mumbai Indians
+66460,1359538,2023-05-17,Punjab Kings,Delhi Capitals
+66467,1359539,2023-05-18,Sunrisers Hyderabad,Royal Challengers Bengaluru
+66477,1359540,2023-05-19,Punjab Kings,Rajasthan Royals
+66481,1359541,2023-05-20,Delhi Capitals,Chennai Super Kings
+66488,1359542,2023-05-20,Kolkata Knight Riders,Lucknow Super Giants
+66495,1359543,2023-05-21,Mumbai Indians,Sunrisers Hyderabad
+66505,1359544,2023-05-21,Royal Challengers Bengaluru,Gujarat Titans
+69557,1370350,2023-05-23,Gujarat Titans,Chennai Super Kings
+69561,1370351,2023-05-24,Lucknow Super Giants,Mumbai Indians
+69568,1370352,2023-05-26,Gujarat Titans,Mumbai Indians
+72622,1370353,2023-05-29,Chennai Super Kings,Gujarat Titans
+89654,1422119,2024-03-22,Chennai Super Kings,Royal Challengers Bengaluru
+89665,1422121,2024-03-23,Kolkata Knight Riders,Sunrisers Hyderabad
+89661,1422120,2024-03-23,Punjab Kings,Delhi Capitals
+89675,1422123,2024-03-24,Gujarat Titans,Mumbai Indians
+89668,1422122,2024-03-24,Rajasthan Royals,Lucknow Super Giants
+89682,1422124,2024-03-25,Royal Challengers Bengaluru,Punjab Kings
+89689,1422125,2024-03-26,Chennai Super Kings,Gujarat Titans
+89693,1422126,2024-03-27,Sunrisers Hyderabad,Mumbai Indians
+89700,1422127,2024-03-28,Rajasthan Royals,Delhi Capitals
+89703,1422128,2024-03-29,Royal Challengers Bengaluru,Kolkata Knight Riders
+89710,1422129,2024-03-30,Lucknow Super Giants,Punjab Kings
+89724,1422131,2024-03-31,Delhi Capitals,Chennai Super Kings
+89717,1422130,2024-03-31,Gujarat Titans,Sunrisers Hyderabad
+89731,1422132,2024-04-01,Mumbai Indians,Rajasthan Royals
+89738,1422133,2024-04-02,Royal Challengers Bengaluru,Lucknow Super Giants
+89745,1422134,2024-04-03,Delhi Capitals,Kolkata Knight Riders
+89749,1422135,2024-04-04,Gujarat Titans,Punjab Kings
+89752,1422136,2024-04-05,Sunrisers Hyderabad,Chennai Super Kings
+89756,1422137,2024-04-06,Rajasthan Royals,Royal Challengers Bengaluru
+89770,1422139,2024-04-07,Lucknow Super Giants,Gujarat Titans
+89763,1422138,2024-04-07,Mumbai Indians,Delhi Capitals
+91380,1426260,2024-04-08,Chennai Super Kings,Kolkata Knight Riders
+91389,1426261,2024-04-09,Punjab Kings,Sunrisers Hyderabad
+91393,1426262,2024-04-10,Rajasthan Royals,Gujarat Titans
+91398,1426263,2024-04-11,Mumbai Indians,Royal Challengers Bengaluru
+91407,1426264,2024-04-12,Lucknow Super Giants,Delhi Capitals
+91416,1426265,2024-04-13,Punjab Kings,Rajasthan Royals
+91420,1426266,2024-04-14,Kolkata Knight Riders,Lucknow Super Giants
+91425,1426267,2024-04-14,Mumbai Indians,Chennai Super Kings
+91434,1426268,2024-04-15,Royal Challengers Bengaluru,Sunrisers Hyderabad
+91443,1426269,2024-04-16,Kolkata Knight Riders,Rajasthan Royals
+91452,1426270,2024-04-17,Gujarat Titans,Delhi Capitals
+91461,1426271,2024-04-18,Punjab Kings,Mumbai Indians
+91470,1426272,2024-04-19,Lucknow Super Giants,Chennai Super Kings
+91474,1426273,2024-04-20,Delhi Capitals,Sunrisers Hyderabad
+91479,1426274,2024-04-21,Kolkata Knight Riders,Royal Challengers Bengaluru
+91488,1426275,2024-04-21,Punjab Kings,Gujarat Titans
+91497,1426276,2024-04-22,Rajasthan Royals,Mumbai Indians
+91506,1426277,2024-04-23,Chennai Super Kings,Lucknow Super Giants
+91515,1426278,2024-04-24,Delhi Capitals,Gujarat Titans
+91524,1426279,2024-04-25,Sunrisers Hyderabad,Royal Challengers Bengaluru
+91528,1426280,2024-04-26,Kolkata Knight Riders,Punjab Kings
+91533,1426281,2024-04-27,Delhi Capitals,Mumbai Indians
+91542,1426282,2024-04-27,Lucknow Super Giants,Rajasthan Royals
+91555,1426284,2024-04-28,Chennai Super Kings,Sunrisers Hyderabad
+91551,1426283,2024-04-28,Gujarat Titans,Royal Challengers Bengaluru
+91564,1426285,2024-04-29,Kolkata Knight Riders,Delhi Capitals
+91569,1426286,2024-04-30,Lucknow Super Giants,Mumbai Indians
+91578,1426287,2024-05-01,Chennai Super Kings,Punjab Kings
+91587,1426288,2024-05-02,Sunrisers Hyderabad,Rajasthan Royals
+91596,1426289,2024-05-03,Mumbai Indians,Kolkata Knight Riders
+91600,1426290,2024-05-04,Royal Challengers Bengaluru,Gujarat Titans
+91618,1426292,2024-05-05,Lucknow Super Giants,Kolkata Knight Riders
+91609,1426291,2024-05-05,Punjab Kings,Chennai Super Kings
+91623,1426293,2024-05-06,Mumbai Indians,Sunrisers Hyderabad
+91632,1426294,2024-05-07,Delhi Capitals,Rajasthan Royals
+91641,1426295,2024-05-08,Sunrisers Hyderabad,Lucknow Super Giants
+91645,1426296,2024-05-09,Punjab Kings,Royal Challengers Bengaluru
+91650,1426297,2024-05-10,Gujarat Titans,Chennai Super Kings
+91654,1426298,2024-05-11,Kolkata Knight Riders,Mumbai Indians
+91663,1426299,2024-05-12,Chennai Super Kings,Rajasthan Royals
+91668,1426300,2024-05-12,Royal Challengers Bengaluru,Delhi Capitals
+91681,1426302,2024-05-14,Delhi Capitals,Lucknow Super Giants
+91686,1426303,2024-05-15,Rajasthan Royals,Punjab Kings
+91699,1426305,2024-05-17,Mumbai Indians,Lucknow Super Giants
+91704,1426306,2024-05-18,Royal Challengers Bengaluru,Chennai Super Kings
+91713,1426307,2024-05-19,Sunrisers Hyderabad,Punjab Kings
+91722,1426309,2024-05-21,Kolkata Knight Riders,Sunrisers Hyderabad
+91731,1426310,2024-05-22,Rajasthan Royals,Royal Challengers Bengaluru
+91735,1426311,2024-05-24,Sunrisers Hyderabad,Rajasthan Royals
+91740,1426312,2024-05-26,Kolkata Knight Riders,Sunrisers Hyderabad
+114960,1473438,2025-03-22,Kolkata Knight Riders,Royal Challengers Bengaluru
+114976,1473440,2025-03-23,Chennai Super Kings,Mumbai Indians
+114967,1473439,2025-03-23,Sunrisers Hyderabad,Rajasthan Royals
+114985,1473441,2025-03-24,Delhi Capitals,Lucknow Super Giants
+114987,1473442,2025-03-25,Gujarat Titans,Punjab Kings
+114996,1473443,2025-03-26,Rajasthan Royals,Kolkata Knight Riders
+115005,1473444,2025-03-27,Sunrisers Hyderabad,Lucknow Super Giants
+115012,1473445,2025-03-28,Chennai Super Kings,Royal Challengers Bengaluru
+115014,1473446,2025-03-29,Gujarat Titans,Mumbai Indians
+115021,1473447,2025-03-30,Delhi Capitals,Sunrisers Hyderabad
+115030,1473448,2025-03-30,Rajasthan Royals,Chennai Super Kings
+115032,1473449,2025-03-31,Mumbai Indians,Kolkata Knight Riders
+115039,1473450,2025-04-01,Lucknow Super Giants,Punjab Kings
+115048,1473451,2025-04-02,Royal Challengers Bengaluru,Gujarat Titans
+115050,1473452,2025-04-03,Kolkata Knight Riders,Sunrisers Hyderabad
+115059,1473453,2025-04-04,Lucknow Super Giants,Mumbai Indians
+115068,1473454,2025-04-05,Chennai Super Kings,Delhi Capitals
+115075,1473455,2025-04-05,Punjab Kings,Rajasthan Royals
+115093,1473457,2025-04-06,Sunrisers Hyderabad,Gujarat Titans
+115095,1473458,2025-04-07,Mumbai Indians,Royal Challengers Bengaluru
+115084,1473456,2025-04-08,Kolkata Knight Riders,Lucknow Super Giants
+115102,1473459,2025-04-08,Punjab Kings,Chennai Super Kings
+115104,1473460,2025-04-09,Gujarat Titans,Rajasthan Royals
+115111,1473461,2025-04-10,Royal Challengers Bengaluru,Delhi Capitals
+115113,1473462,2025-04-11,Chennai Super Kings,Kolkata Knight Riders
+115122,1473463,2025-04-12,Lucknow Super Giants,Gujarat Titans
+115129,1473464,2025-04-12,Sunrisers Hyderabad,Punjab Kings
+115140,1473466,2025-04-13,Delhi Capitals,Mumbai Indians
+115138,1473465,2025-04-13,Rajasthan Royals,Royal Challengers Bengaluru
+115149,1473467,2025-04-14,Lucknow Super Giants,Chennai Super Kings
+115156,1473468,2025-04-15,Punjab Kings,Kolkata Knight Riders
+115165,1473469,2025-04-16,Delhi Capitals,Rajasthan Royals
+115167,1473470,2025-04-17,Mumbai Indians,Sunrisers Hyderabad
+115174,1473471,2025-04-18,Royal Challengers Bengaluru,Punjab Kings
+115176,1473472,2025-04-19,Gujarat Titans,Delhi Capitals
+115183,1473473,2025-04-19,Rajasthan Royals,Lucknow Super Giants
+115201,1473475,2025-04-20,Mumbai Indians,Chennai Super Kings
+115192,1473474,2025-04-20,Punjab Kings,Royal Challengers Bengaluru
+115210,1473476,2025-04-21,Kolkata Knight Riders,Gujarat Titans
+115212,1473477,2025-04-22,Lucknow Super Giants,Delhi Capitals
+115221,1473478,2025-04-23,Sunrisers Hyderabad,Mumbai Indians
+115230,1473479,2025-04-24,Royal Challengers Bengaluru,Rajasthan Royals
+115239,1473480,2025-04-25,Chennai Super Kings,Sunrisers Hyderabad
+115248,1473481,2025-04-26,Kolkata Knight Riders,Punjab Kings
+115257,1473483,2025-04-27,Delhi Capitals,Royal Challengers Bengaluru
+115255,1473482,2025-04-27,Mumbai Indians,Lucknow Super Giants
+115266,1473484,2025-04-28,Rajasthan Royals,Gujarat Titans
+115275,1473485,2025-04-29,Delhi Capitals,Kolkata Knight Riders
+115282,1473486,2025-04-30,Chennai Super Kings,Punjab Kings
+115291,1473487,2025-05-01,Rajasthan Royals,Mumbai Indians
+115300,1473488,2025-05-02,Gujarat Titans,Sunrisers Hyderabad
+115302,1473489,2025-05-03,Royal Challengers Bengaluru,Chennai Super Kings
+115309,1473490,2025-05-04,Kolkata Knight Riders,Rajasthan Royals
+115318,1473491,2025-05-04,Punjab Kings,Lucknow Super Giants
+115327,1473492,2025-05-05,Sunrisers Hyderabad,Delhi Capitals
+115336,1473493,2025-05-06,Mumbai Indians,Gujarat Titans
+115345,1473494,2025-05-07,Kolkata Knight Riders,Chennai Super Kings
+118829,1473498,2025-05-18,Delhi Capitals,Gujarat Titans
+118820,1473497,2025-05-18,Rajasthan Royals,Punjab Kings
+118838,1473499,2025-05-19,Lucknow Super Giants,Sunrisers Hyderabad
+118847,1473500,2025-05-20,Chennai Super Kings,Rajasthan Royals
+118853,1473501,2025-05-21,Mumbai Indians,Delhi Capitals
+118862,1473502,2025-05-22,Gujarat Titans,Lucknow Super Giants
+118865,1473503,2025-05-23,Royal Challengers Bengaluru,Sunrisers Hyderabad
+118874,1485779,2025-05-24,Punjab Kings,Delhi Capitals
+118880,1473504,2025-05-25,Gujarat Titans,Chennai Super Kings
+118883,1473505,2025-05-25,Sunrisers Hyderabad,Kolkata Knight Riders
+118892,1473506,2025-05-26,Punjab Kings,Mumbai Indians
+118898,1473507,2025-05-27,Lucknow Super Giants,Royal Challengers Bengaluru
+118907,1473508,2025-05-29,Punjab Kings,Royal Challengers Bengaluru
+118916,1473509,2025-05-30,Gujarat Titans,Mumbai Indians
+118919,1473510,2025-06-01,Punjab Kings,Mumbai Indians
+118928,1473511,2025-06-03,Royal Challengers Bengaluru,Punjab Kings
 149618,1527674,2026-03-28,Royal Challengers Bengaluru,Sunrisers Hyderabad
 149629,1527675,2026-03-29,Mumbai Indians,Kolkata Knight Riders
 149640,1527676,2026-03-30,Rajasthan Royals,Chennai Super Kings

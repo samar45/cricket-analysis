@@ -64,3 +64,14 @@ def test_inside_edging_and_leg_lined():
 def test_truncated_fragment_kept_as_ball():
     r = parse_item(item("even Dube is playing the reverse. He premeditated the shot and Arshdeep", 5.5, 1, 1))
     assert r is not None and r["runs_total"] == 1 and r["length"] is None
+
+
+def test_seed2_rule_fixes():
+    r = parse_item(item(A + "no run, 136.2kph, dabs this short of a good length ball straight to short third man", 5.1))
+    assert r["length"] == "short of length"
+    r = parse_item(item(A + "1 run, fullish delivery on leg, Dube punches the air, then pats it", 5.2, 1, 1))
+    assert r["length"] == "full" and r["line"] == "leg" and r["shot"] == "block"
+    r = parse_item(item(A + "2 runs, full and straight, driven firmly and long-off does well to cut it off", 5.3, 2, 2))
+    assert r["shot"] == "drive"
+    r = parse_item(item(A + "SIX, a finely connected shot", 5.4, 6, 6))
+    assert r["contact"] == "middle"

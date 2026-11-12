@@ -64,17 +64,17 @@ def _first(rules, text):
 LENGTH = [
     ("full toss", r"full[- ]toss"), ("yorker", r"yorker"),
     ("bouncer", r"bouncer|banged in short|short and (?:at|into|rising)|short ball"),
-    ("short of length", r"short of (?:a )?length"), ("back of a length", r"back of (?:a )?length"),
+    ("short of length", r"short of (?:a )?(?:good )?length"), ("back of a length", r"back of (?:a )?length"),
     ("short", r"\bshortish|\bfraction shorter|\bshort\b(?! (?:third|mid|fine|leg|cover|midwicket|extra|square|backward|fielder))"),
     ("length", r"\blength and|\b(?:good )?length (?:ball|delivery)|\bgood length|\blength delivery|\bon a length"),
-    ("full", r"\bfull\b|\bfuller\b|half[- ]volley"),
+    ("full", r"\bfull\b|\bfullish|\bfuller\b|half[- ]volley|pitched up"),
 ]
 LINE = [
     ("outside off", r"outside off|outside the off|wide of off|around off|off stump|on off|outside the line of off"),
-    ("leg", r"down (?:the )?leg|leg[- ]lined|leg stump|on the pads|on the legs|leg side|into the pads"),
-    ("wide", r"wide(?! (?:long|mid|third|fine|cover|deep|square|backward|point|slip|gully|of the))|called as a wide"),
+    ("leg", r"\bon leg\b|down (?:the )?leg|leg[- ]lined|leg stump|on the pads|on the legs|leg side|into the pads"),
+    ("wide", r"\bwide\b(?! (?:long|mid|third|fine|cover|deep|square|backward|point|slip|gully|of the))|called as a wide"),
     ("body", r"at the body|into the body|at the hips|at the ribs|at the throat|at the left-hander|at the batter|at the batsman|at the head|at the helmet"),
-    ("middle", r"middle stump|middle and|on middle|on the stumps|at the stumps|stumps"),
+    ("middle", r"middle stump|\bmiddle and|on middle|on the stumps|at the stumps|\bstumps\b"),
 ]
 DELIVERY = [
     ("slower ball", r"slower (?:ball|one|delivery)|\bslower\b"), ("knuckle ball", r"knuckle"),
@@ -89,15 +89,15 @@ CONTACT = [
     ("bottom edge", r"bottom[- ]?edg"), ("edge", r"\bedge[sd]?\b|\bnick"),
     ("miss", r"swings? and (?:a )?miss|\bmisses\b|\bmissed\b|beaten|no contact|not make contact|does not connect|fails to connect"),
     ("mistimed", r"mistime|not off the middle|not middled|didn'?t middle|toe[- ]end|bottom of the bat"),
-    ("middle", r"off the middle|middled|\bsweet\b|timed|well[- ]timed|connects"),
+    ("middle", r"off the middle|middled|\bconnected\b|\bsweet\b|timed|well[- ]timed|connects"),
 ]
 SHOT = [
     ("reverse sweep", r"reverse[- ]sweep|reverse[- ]?scoop"), ("scoop", r"scoop|ramp|dilscoop"),
-    ("sweep", r"sweep"), ("hook", r"\bhook"), ("pull", r"\bpull"), ("cut", r"\bcut(?:s)?\b|upper[- ]?cut|\bslaps\b"),
+    ("sweep", r"sweep"), ("hook", r"\bhook"), ("pull", r"\bpull"), ("cut", r"\bcuts?\b(?! (?:it )?off\b)|upper[- ]?cut|\bslaps\b|\bchop"),
     ("drive", r"\bdr(?:ive|ives|ove)\b|\bdriv"), ("flick", r"flick|whip"), ("glance", r"glanc|tickle"),
     ("slog", r"slog|\bheav"), ("loft", r"\bloft|\bover the (?:top|rope)|clears? the rope|hoick"),
-    ("punch", r"punch|\bswat"), ("steer", r"steer|dab|guide|deflect|\bnudge|\bpaddle|\blap\b|\bclip"),
-    ("block", r"\bblock|\bdefend|\bpush|\bpat\b"), ("leave", r"\bleaves?\b|lets? (?:it|the ball) (?:go|pass)|shoulders arms"),
+    ("punch", r"punch(?!es the air)|\bswat"), ("steer", r"steer|dab|guide|deflect|\bnudge|\bpaddle|\blap\b|\bclip"),
+    ("block", r"\bblock|\bdefen[ds]|\bpush|\bpats?\b|\bprod|digs? it out"), ("leave", r"\bleaves?\b|left alone|lets? (?:it|the ball) (?:go|pass)|shoulders arms"),
 ]
 LAPSE = [
     ("drop", r"dropped(?! (?:in front|short|just|towards|it))|puts down|spilled|can'?t hold on|fails to hold|grassed"),
@@ -161,7 +161,7 @@ def join_cricsheet(rows: list[dict], cricsheet_id: str, db="data/cricket_analyti
 
     con = duckdb.connect(db, read_only=True)
     cs = con.sql(
-        "select innings, over_num, ball_num, batter, bowler, runs_total from deliveries "
+        "select innings, over_num, ball_num, batter, bowler, runs_total, ball_seq from deliveries "
         "where match_id=? order by innings, ball_seq", params=[cricsheet_id]).fetchall()
     con.close()
     by_inn: dict[int, list] = {}
@@ -180,6 +180,30 @@ def join_cricsheet(rows: list[dict], cricsheet_id: str, db="data/cricket_analyti
     return pairs, st
 
 
+def series_ids(sid: int, slug: str, db="data/cricket_analytics.duckdb"):
+    """Cricbuzz series /matches page -> rows mapped to Cricsheet by IST date + team pair. Returns (mapped, unmatched)."""
+    import datetime as dt
+    import duckdb
+
+    t = fetch(f"https://www.cricbuzz.com/cricket-series/{sid}/{slug}/matches").replace('\\"', '"')
+    seen = {}
+    for m in re.finditer(r'"matchInfo":\{"matchId":(\d+),"seriesId":(\d+).*?"startDate":"?(\d+).*?"team1":\{"teamId":\d+,"teamName":"([^"]+)".*?"team2":\{"teamId":\d+,"teamName":"([^"]+)"', t):
+        if int(m[2]) == sid:
+            d = (dt.datetime.fromtimestamp(int(m[3]) / 1000, dt.timezone.utc) + dt.timedelta(hours=5.5)).date().isoformat()
+            seen[m[1]] = (d, m[4], m[5])
+    con = duckdb.connect(db, read_only=True)
+    cs = con.sql("select match_id, date, team1, team2 from matches where competition='ipl' and year(date)=? ",
+                 params=[int(slug[-4:])]).fetchall()
+    con.close()
+    key = lambda d, a, b: (str(d), frozenset((a.split()[0].lower(), b.split()[0].lower())))
+    idx = {key(d, a, b): mid for mid, d, a, b in cs}
+    mapped, unmatched = [], []
+    for cb, (d, a, b) in sorted(seen.items(), key=lambda kv: kv[1]):
+        mid = idx.get(key(d, a, b))
+        (mapped if mid else unmatched).append((cb, mid, d, a, b))
+    return mapped, unmatched, len(cs)
+
+
 IDS = Path(__file__).parents[1] / "reference" / "cricbuzz_ids.csv"
 
 
@@ -192,10 +216,16 @@ def series_run(season: int, limit: int, only=None, out=None, db="data/cricket_an
         todo = [r for r in todo if r["cricbuzz_id"] in only]
     allrows = []
     for m in todo[:limit]:
-        rs = parse_match(m["cricbuzz_id"])
+        try:
+            rs = parse_match(m["cricbuzz_id"])
+        except Blocked:
+            raise
+        except Exception as e:  # abandoned / no commentary: skip and list
+            print("SKIP", m["cricbuzz_id"], m["cricsheet_match_id"], type(e).__name__, e, flush=True)
+            continue
         pairs, st = join_cricsheet(rs, m["cricsheet_match_id"], db)
         for r, d in pairs:
-            r.update(match_id=m["cricsheet_match_id"], cricbuzz_id=m["cricbuzz_id"], cs_ball_num=d[2])
+            r.update(match_id=m["cricsheet_match_id"], cricbuzz_id=m["cricbuzz_id"], cs_ball_num=d[2], ball_seq=d[6])
         print(m["cricbuzz_id"], m["cricsheet_match_id"], "paired", st["paired"], "/", st["cricsheet"],
               "runs_ok", st["runs"], "bowler_ok", st["bowler"], "batter_ok", st["batter"],
               "reqs", requests_made[0], flush=True)
@@ -209,11 +239,33 @@ def series_run(season: int, limit: int, only=None, out=None, db="data/cricket_an
     return allrows
 
 
+PARSED = Path("data/external/commentary/parsed_ipl_2023_2026.csv")
+
+
+def load_parsed(path=PARSED):
+    """Parsed commentary, one row per ball. Join to deliveries on (match_id, innings, ball_seq)."""
+    import pandas as pd
+
+    return pd.read_csv(path, dtype={"match_id": str, "cricbuzz_id": str})
+
+
+def pull_all(seasons=(2023, 2024, 2025, 2026), out=PARSED):
+    """Fetch (cache-aware, resumable) + parse every mapped IPL match of the seasons into one CSV, no raw text."""
+    import pandas as pd
+
+    rows = []
+    for y in seasons:
+        rows += series_run(y, 10**6)
+    pd.DataFrame(rows).drop(columns=["text"]).to_csv(out, index=False)
+    print("wrote", out, len(rows), "balls; requests", requests_made[0], flush=True)
+
+
 if __name__ == "__main__":
     import argparse
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--match", help="Cricbuzz match id")
+    ap.add_argument("--all", action="store_true", help="pull_all IPL 2023-2026")
     ap.add_argument("--series", choices=["ipl"], help="fetch mapped matches of a series")
     ap.add_argument("--season", type=int, default=2026)
     ap.add_argument("--limit", type=int, default=10)
@@ -221,6 +273,9 @@ if __name__ == "__main__":
     ap.add_argument("--out", help="parsed CSV path (no raw text)")
     ap.add_argument("--cricsheet", help="Cricsheet match_id to join to")
     a = ap.parse_args()
+    if a.all:
+        pull_all()
+        raise SystemExit
     if a.series:
         series_run(a.season, a.limit, set(a.ids.split(",")) if a.ids else None, a.out)
         raise SystemExit
