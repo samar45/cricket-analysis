@@ -14,3 +14,5 @@ MILESTONE: S5p1 validate.py written; head-to-head, bias, noise, tails, curves do
 MILESTONE: S4b done: G1 (level-relative season-level target + no season_year + conformal) bias -4.4 to -0.6, cov80 0.76 to 0.815; E4 dropped; results in ML_PREDICTION.md section 9 (2026-11-13)
 MILESTONE: S5 part 1 written to ML_PREDICTION.md section 9 (incl. G1, ens-G1 = best; sim-B/G1 tie; plots ml_s5_*, ml_curve_*) (2026-11-13)
 MILESTONE: S5p2 holdout.py written; starting fit (2026-11-13)
+MILESTONE: S5p2 fit done (G0,G1,sim-B 1000 paths,baseline on <=2025 -> 2026 preds cached); running report
+MILESTONE: S5p2 holdout results written to ML_PREDICTION.md section 9 (ens-G1 FAIL: ECE 0.117 > 0.08; 4 of 5 criteria pass); ML tests 27 pass

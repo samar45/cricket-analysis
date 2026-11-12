@@ -85,6 +85,8 @@ Keep rule for every addition: it must beat the best previous model on the rollin
   - match_id is text in `balls.parquet` and the prediction caches but int in some other tables: join with care (a first version of the freak-over check silently matched nothing).
   - Bias flags at 2 s.e. produce about 5% false alarms (1-2 of 33 groups); a single flagged venue is not evidence unless several models agree (Chepauk +10 runs is flagged for all of them).
 
+- 2026-11-13 (S5 part 2, holdout): No bug hit; the holdout was run once (fit, then report). Two things to remember: (1) the pre-registration said "ECE" without saying pooled or mean-of-4; I used the head-to-head form (mean of the 4 checkpoints) as the literal reading and also printed the pooled one; both fail the 0.08 limit, so the choice did not matter. (2) The "season" bias group is constant (all 2026) and was dropped from the audit.
+
 ## 9. Status (newest at bottom)
 - 2026-11-13: plan written; S0 started.
 
@@ -475,3 +477,79 @@ The curve is flat: more history does not help or hurt (differences of 0.1 runs a
   - This matches the S5 bias flag "220+ targets over-rated by +0.10".
 - **Fix for v2** (after the holdout, not before, because the models are frozen): LightGBM monotone constraints on the chase model. Win probability must fall as runs_needed and wickets rise, and rise as balls_left rises. Also add a "required minus expected" feature built from the scoring level.
 - The last-over defence finding (direct models too kind to the defending side) is the same problem at the other end. Monotone constraints should help there too.
+
+### 2026-11-13 (S5 part 2): IPL 2026 holdout results
+The holdout was opened once, exactly as pre-registered. Models were frozen (commit 918d89e) and refit on seasons up to 2025 with the same procedure (inner fold 2025; the tuning chose config 2 for score and config 0 for win; sim-B 56 boosting rounds); the simulator used **1000 paths** per state. Code: `src/cricket_analytics/ml/holdout.py` (`fit`, `report`); caches `data/external/ml/holdout_*.parquet`; plots `docs/img/ml_holdout_*.png`. IPL 2026 has 74 matches; 3 are reduced (rain) and excluded as in all earlier work, leaving **71 first innings and 70 chases** at the 0/6/10/15-over checkpoints: 284 first-innings states and 274 chase states (65-70 per checkpoint; fewer late because some chases are already decided). This is small: about 70 matches, so intervals are wide.
+
+**1. Head-to-head, same states, mean of the 4 checkpoints** (MAE in runs; bias = predicted median minus actual; cov80 = share of totals inside the 10-90% range, target 0.80; ECE = calibration error of the chase probability):
+
+| model | MAE | pinball | cov80 | bias | win log loss | Brier | ECE |
+|---|---|---|---|---|---|---|---|
+| resource-ipl | 23.83 | 7.56 | 0.673 | -15.6 | 0.593 | 0.191 | 0.257 |
+| G0 | 20.84 | 6.49 | 0.750 | -6.5 | 0.428 | 0.138 | 0.183 |
+| G1 | 20.94 | 6.47 | 0.718 | -2.9 | 0.389 | 0.125 | 0.166 |
+| sim-B | 20.14 | 6.37 | 0.757 | +6.5 | 0.315 | 0.098 | 0.081 |
+| **ens-G1** | 20.23 | **6.27** | 0.764 | +1.8 | 0.344 | 0.107 | 0.117 |
+
+MAE by checkpoint (0/6/10/15 ov): ens-G1 30.7 / 20.7 / 17.7 / 11.9; sim-B 29.7 / 21.0 / 17.6 / 12.4; G1 33.0 / 21.1 / 18.1 / 11.6; G0 34.3 / 20.5 / 17.4 / 11.2; baseline 38.0 / 26.0 / 19.2 / 12.2. Chase log loss by checkpoint: ens-G1 0.533 / 0.324 / 0.303 / 0.216; sim-B 0.506 / 0.282 / 0.274 / 0.198; G1 0.591 / 0.381 / 0.342 / 0.243; baseline 1.043 / 0.576 / 0.468 / 0.287. Plot: `docs/img/ml_holdout_h2h.png`.
+
+Paired bootstrap over matches (5-95%, negative = first model better):
+
+| comparison | MAE | pinball | win log loss | Brier |
+|---|---|---|---|---|
+| ens-G1 - resource-ipl | -3.60 [-6.15, -0.97] | -1.30 [-2.09, -0.51] | -0.249 [-0.355, -0.151] | -0.084 [-0.116, -0.054] |
+| ens-G1 - sim-B | +0.09 [-0.77, +0.97] | -0.11 [-0.33, +0.13] | **+0.029 [+0.010, +0.049]** | +0.009 [+0.002, +0.017] |
+| G1 - sim-B | +0.80 [-0.94, +2.53] | +0.10 [-0.36, +0.58] | **+0.074 [+0.035, +0.115]** | +0.027 [+0.011, +0.044] |
+| ens-G1 - G1 | -0.71 [-1.59, +0.17] | -0.21 [-0.45, +0.04] | -0.045 [-0.066, -0.025] | -0.018 [-0.027, -0.009] |
+
+**2. Pass rule, applied literally to ens-G1:**
+
+| criterion | value | result |
+|---|---|---|
+| beats resource-ipl on first-innings MAE, interval excludes 0 | -3.60 [-6.15, -0.97] | PASS |
+| beats resource-ipl on chase log loss, interval excludes 0 | -0.249 [-0.355, -0.151] | PASS |
+| 80% coverage between 0.72 and 0.88 | 0.764 | PASS |
+| bias under 5 runs | +1.79 | PASS |
+| ECE under 0.08 | 0.117 (pooled over checkpoints 0.091) | **FAIL** |
+
+**Overall: FAIL** (4 of 5 pass). The chase win probability of ens-G1 is not calibrated well enough on 2026 by the pre-registered ECE limit.
+
+Plain reading. Every model is clearly better than the old baseline, and the score forecast is good: the ensemble is about 3.6 runs better than the baseline with a small bias. The failure is calibration of the chase win probability. In 2026 chasers won 64% of the time (at all four checkpoints) and every model gives them too little: ens-G1 is 8-10 points too pessimistic about the chasing team at 0 and 6 overs and 6-7 points at 10 and 15 overs. The direct model (G1) is worse (bias -0.09 to -0.18, 11 of 21 groups flagged) than the simulator (3 flagged). The simulator alone passes ECE on the pooled measure (0.055) and just misses on the mean-of-4 form (0.081 vs limit 0.08). **On the win side this contradicts the S5 part 1 ranking:** sim-B is clearly better than both G1 and ens-G1 on win log loss (intervals exclude zero), whereas in 2022-25 all three tied. On first-innings score the three are still tied (all intervals contain zero); ens-G1 is lowest on pinball (6.27) but not by a provable margin. So the ensemble's "never worse" claim does not hold for win probability in 2026: averaging a good simulator with a worse direct model dilutes it. Reported as it came; nothing is changed after the fact (rule: no peeking and re-picking). Which model to use is Samar's decision, to be made as a new pre-registered version judged on future data (2027).
+
+**3. Bias audit** (2026; flag = |bias| > 2 s.e.; about 5% of groups are flagged by chance: about 1 of 17 score groups, 1 of 21 win groups; venues need 8+ matches, so only Narendra Modi Stadium qualifies; teams have only 5-10 matches each, so team results are noisy). Plot: `docs/img/ml_holdout_bias.png`.
+
+| model | score groups flagged (of 17) | win groups flagged (of 21) |
+|---|---|---|
+| resource-ipl | 9 (all too low, -4 to -28) | 14 |
+| G1 | 3 (SRH -14, 0 ov -9.4, 15 ov +3.2) | 11 |
+| sim-B | 6 (all too high: +5 to +8.5 at every checkpoint, CSK +8.3, toss winner fields first +6.5) | 3 |
+| **ens-G1** | **1** (15 ov +4.4, s.e. 1.5) | **7** |
+
+Score, ens-G1: bias by checkpoint -0.5 / +1.3 / +1.9 / +4.4 runs at 0/6/10/15 overs; the single flag is the 15-over checkpoint. The blend works partly by cancellation: sim-B is 8.5 runs too high at 0 overs and G1 is 9.4 too low, so the average is near zero (-0.5); that is opposite errors cancelling, not two accurate models. Team biases are large in size but not flagged (LSG +14.9, RCB -12.9, PBKS -11.0, DC +10.1, s.e. 4-15; 5-9 matches each). Narendra Modi Stadium +3.5 (s.e. 5.1), not flagged; Chepauk, flagged in 2022-25, did not have the 8 matches needed. Coverage of the 80% range by checkpoint, ens-G1: 0.72 / 0.77 / 0.79 / 0.77 (a little narrow but in the allowed band); G1 alone 0.69 / 0.73 / 0.69 / 0.76 (guess: its conformal widening was fitted on 2025 only and 2026 is more spread out).
+Win, ens-G1: flagged are the 0, 6 and 15-over checkpoints (bias -0.10, -0.08, -0.07), "toss winner bats first" (-0.20, 12 matches), Punjab Kings chasing (-0.22, 8 matches), RCB chasing (-0.14, 8 matches) and chases of a target under 160 (-0.11; all 12 of these chases were won, so any probability below 1 is "too low", a mild flag). By target: 160-189 -0.12, 190-219 -0.02, 220+ -0.09 (the 2022-25 problem of over-rating the chaser of 220+ did not recur; the sign is opposite). All flags point the same way: chasers underrated.
+
+**4. Tails and upsets** (checkpoint states; surprise = chase won from < 10% or lost from > 90%; expected = sum of probabilities):
+
+| model | p < 10%: states (matches), chase won, expected | p > 90%: states (matches), chase lost, expected |
+|---|---|---|
+| ens-G1 | 25 (16), 0, 0.9 | 58 (30), 0, 2.6 |
+| G1 | 33 (18), 0, 1.6 | 44 (27), 0, 2.2 |
+| sim-B | 24 (15), 0, 0.6 | 83 (35), 1, 3.0 |
+| G0 | 19 (13), 0, 1.1 | 26 (18), 0, 1.7 |
+
+No chase was won from below 10% at a checkpoint, and only sim-B had one lost from above 90% (1 seen vs 3.0 expected). On the tails the models are, if anything, slightly under-confident at the top (0 seen vs 2.6 expected for ens-G1). The 2022-25 sim-B over-confidence at the top (10 vs 5.1) did not repeat. Counts are tiny; weak evidence either way.
+**Last-over defence:** 11 chases entered the 20th over needing 1-10 runs; the defence held in 0 (G0 expected 1.4, G1 0.7). Small n; chasers again did better than the models thought.
+
+**5. Win-probability curves** (chasing team's view; G0, G1, sim-B every over):
+- 1529278, 2026-04-25, Delhi Capitals 264 v Punjab Kings 265, chase won: the biggest successful chase of 2026. G1 range 0.13 to 0.96, sim-B 0.19 to 0.98. sim-B was far more optimistic early (0.84 after 6 overs vs G1 0.48); all three agree from over 16. Plot `docs/img/ml_holdout_curve_1529278.png`.
+- 1529284, 2026-04-29, Mumbai Indians 243 v Sunrisers Hyderabad 249, chase won: the biggest swing (largest G1 max minus min among the other matches; chosen by rule). G1 0.21 to 0.97, sim-B 0.31 to 0.99. Plot `docs/img/ml_holdout_curve_1529284.png`.
+Both chasers won, consistent with the models underrating chasers.
+
+**6. Sanity check: scoring level.** The 2026 first-innings average is 195.8 (71 non-reduced innings; 193.0 including the 3 reduced ones). Mean forecast at 0 overs for the same 71 states: resource-ipl 167.9, G0 177.3, G1 186.3, **ens-G1 195.3**, sim-B 204.3 (mean of paths 203.9). So the ensemble matches the 2026 level (-0.5 runs); the baseline is 28 low, G0 18 low, G1 9 low (the level-relative target helps but still lags a record-high season) and sim-B is 8.5 high (a model characteristic; cause not investigated).
+
+**Verdict (2026 evidence only, about 70 matches).**
+- ens-G1 **fails the pre-registered rule on one of five criteria (ECE 0.117 vs the 0.08 limit)**; it passes the other four, including a clear win over the baseline on MAE and log loss. Reported as FAIL.
+- First innings: ens-G1, sim-B and G1 are statistically tied; the ensemble's low bias comes from opposite errors cancelling.
+- Chase win probability: sim-B is best and beats both G1 and ens-G1 with intervals clear of zero; every model underrates chasers in 2026 (64% won), the direct models most.
+- Limits: 71 matches; teams and venues have 5-10 matches each; one season's chasing share may be a quirk, not a trend. The holdout was evaluated once; nothing was tuned on 2026.
+- Not done, per the pre-registration: nothing was changed after seeing 2026; the GRU step stays skipped. Possible next version (to be judged on future data): use sim-B for win probability, or recalibrate the direct model's win output on the latest season.
