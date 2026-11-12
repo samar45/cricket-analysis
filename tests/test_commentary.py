@@ -37,7 +37,7 @@ def test_very_full_miss():
 
 def test_short_byes():
     r = parse_item(item(A + "byes, 1 run, banged in short and at the left-hander - Dube swings and misses, they run through for a bye.", 19.1, 1, 0))
-    assert r["extra"] == "byes" and r["length"] == "bouncer" and r["line"] == "body" and r["contact"] == "miss"
+    assert r["extra"] == "byes" and r["length"] == "short" and r["line"] == "body" and r["contact"] == "miss"
 
 
 def test_non_ball_ignored():
@@ -86,3 +86,10 @@ def test_ids_csv_covers_ipl_2015_2026():
     n = Counter(r["date"][:4] for r in rows)
     assert [n[y] for y in "2015 2016 2017 2018 2019 2020 2021 2022 2023 2024 2025 2026".split()] == [59, 60, 59, 60, 60, 60, 60, 74, 74, 71, 73, 74]
     assert len({r["cricsheet_match_id"] for r in rows}) == len(rows)
+
+
+def test_bouncer_explicit_only_and_angled_in_not_swing():
+    a = parse_item(item(A + "no run, short ball outside off, left alone", 1.1))
+    b = parse_item(item(A + "no run, that is a proper bouncer, Dube ducks under it", 1.2))
+    c = parse_item(item(A + "no run, angled in on the stumps, defended", 1.3))
+    assert a["length"] == "short" and b["length"] == "bouncer" and c["delivery"] is None

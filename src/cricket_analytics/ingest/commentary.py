@@ -69,7 +69,7 @@ def _first(rules, text):
 
 LENGTH = [
     ("full toss", r"full[- ]toss"), ("yorker", r"yorker"),
-    ("bouncer", r"bouncer|banged in short|short and (?:at|into|rising)|short ball"),
+    ("bouncer", r"bouncer|bumper"),  # explicit only: "short ball" / "banged in short" are just "short" (spinners bowl those too)
     ("short of length", r"short of (?:a )?(?:good )?length"), ("back of a length", r"back of (?:a )?length"),
     ("short", r"\bshortish|\bfraction shorter|\bshort\b(?! (?:third|mid|fine|leg|cover|midwicket|extra|square|backward|fielder))"),
     ("length", r"\blength and|\b(?:good )?length (?:ball|delivery)|\bgood length|\blength delivery|\bon a length"),
@@ -88,7 +88,7 @@ DELIVERY = [
     ("googly", r"googly|wrong[- ]?'?un"), ("carrom", r"carrom"), ("flipper", r"flipper"),
     ("doosra", r"doosra"), ("arm ball", r"arm ball"), ("topspinner", r"top[- ]?spinner"),
     ("leg break", r"leg[- ]?(?:break|spin)"), ("off break", r"off[- ]?(?:break|spin)"),
-    ("inswinger", r"in[- ]?swing|swinging in|angled in"), ("outswinger", r"out[- ]?swing|swinging away|away swing"),
+    ("inswinger", r"in[- ]?swing|swinging in"), ("outswinger", r"out[- ]?swing|swinging away|away swing"),
 ]
 CONTACT = [
     ("inside edge", r"inside[- ]edg"), ("top edge", r"top[- ]?edg"), ("leading edge", r"leading[- ]?edg"),
