@@ -15,7 +15,7 @@ import pandas as pd
 
 from .ball_model import MODEL_DIR, RUNS, BallModel, load_balls
 from .dataset import OUT_DIR, load
-from .sim_eval import test_keys
+from .sim_eval import CHECK, test_keys
 from .simulate import fill_missing_batter, simulate, start_states, summarize
 
 LOCK = pd.Timestamp("2026-01-01")
@@ -133,6 +133,60 @@ def lastover(cands, n=1000, years=YEARS):
     return pd.concat(rows, ignore_index=True)
 
 
+def predict_checkpoints(keys, model="ball_B_men_fresh", n=1000, seed=0):
+    """sim-B predictions for given states. keys: DataFrame with match_id, innings, balls_bowled (any checkpoints).
+    Returns match_id, innings, balls_bowled, target, q10, q50, q90, mean, sd, win (chase win prob, innings 2), wk_mean.
+    Reads the ball table for those matches only; the caller is responsible for what it asks for (no lock check here)."""
+    m = pickle.load(open(MODEL_DIR / f"{model}.pkl", "rb"))
+    balls = load_balls()
+    balls = balls[balls.match_id.isin(keys.match_id.unique())]
+    out = []
+    for k, kk in keys.groupby("balls_bowled"):
+        st = fill_missing_batter(start_states(balls, kk[["match_id", "innings"]].to_numpy(), int(k)), m)
+        res = simulate(m, st, n=n, seed=seed + int(k))
+        d = pd.concat([st[["match_id", "innings", "balls_bowled", "target"]], summarize(res["final"])], axis=1)
+        d["win"], d["wk_mean"] = res["win"], res["wickets"].mean(1)
+        out.append(d)
+    return pd.concat(out, ignore_index=True)
+
+
+def fit_fresh():
+    """sim-B (defaults) on the men's pool: matches dated < 2026-01-01 plus IPL 2026 (allowed). Saved as ball_B_men_fresh."""
+    raw = load_balls()
+    m = fit("B", 2027, raw, "men")  # inner early-stopping fold = IPL 2026; train = everything usable before
+    m.save("ball_B_men_fresh")
+    return m
+
+
+def nonipl(years=(2024, 2025), n=300, log=print):
+    """Rolling non-IPL men's league checkpoints (train < Y, men's pool): s2_preds_B_men_nonipl.parquet. Test matches
+    dated >= 2026-01-01 are dropped (BBL 2025/26 has season_year 2025)."""
+    states, _ = load()
+    raw = load_balls()
+    bt = raw[~raw.reduced & raw.lvl_slow.notna() & (raw.competition != "ipl") & (raw.competition != "hundred") & (raw.match_date < LOCK)]
+    out = []
+    for Y in years:
+        t0 = time.time()
+        m = fit("B", Y, raw, "men")
+        m.save(f"ball_B_men_{Y}_nonipl")
+        b = bt[bt.season_year == Y]
+        t = states[(states.season_year == Y) & states.match_id.isin(b.match_id.unique()) & ~states.reduced]
+        t = t[t.balls_bowled.isin([6 * o for o in CHECK]) & (t.balls_left > 0) & (t.wickets < 10)]
+        t = t[(t.innings == 1) | (t.chase_won.notna() & (t.runs_needed > 0))]
+        for k, kk in t.groupby("balls_bowled"):
+            st = fill_missing_batter(start_states(b, kk[["match_id", "innings"]].to_numpy(), int(k)), m)
+            res = simulate(m, st, n=n, seed=int(k))
+            d = pd.concat([st[["match_id", "innings", "balls_bowled", "target"]], summarize(res["final"])], axis=1)
+            d["win"], d["wk_mean"] = res["win"], res["wickets"].mean(1)
+            out.append(d.assign(year=Y, variant="B", pool="men"))
+        log(f"nonipl {Y}: {len(t)} states, {time.time() - t0:.0f}s")
+    r = pd.concat(out, ignore_index=True)
+    meta = states[["match_id", "innings", "balls_bowled", "final_total", "chase_won", "competition"]].drop_duplicates(["match_id", "innings", "balls_bowled"])
+    r = r.merge(meta, on=["match_id", "innings", "balls_bowled"])
+    r.to_parquet(OUT_DIR / "s2_preds_B_men_nonipl.parquet", index=False)
+    return r
+
+
 def load_cand(c):
     """Predictions of candidate c (2022-25 rolling + 2026 seen), same columns for every candidate. B comes from the
     S2 cache (2022-25, 400 paths) and the S5 holdout cache (2026, 1000 paths)."""
@@ -183,6 +237,10 @@ if __name__ == "__main__":
         r.to_csv(OUT_DIR / "simfix_screen.csv", index=False)
         print(r.pivot(index="cand", columns="year", values="runs_per_inn").round(1).to_string())
         print(r.groupby("cand")[["PP", "mid", "death"]].apply(lambda g: g.abs().mean()).round(2).to_string())
+    elif sys.argv[1] == "fresh_fit":
+        print("fitted, iters", fit_fresh().best_iter)
+    elif sys.argv[1] == "nonipl":
+        nonipl()
     elif sys.argv[1] == "lastover":
         r = lastover(sys.argv[2].split(","))
         r.to_csv(OUT_DIR / "simfix_lastover.csv", index=False)

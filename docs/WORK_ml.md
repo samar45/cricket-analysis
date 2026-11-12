@@ -22,3 +22,4 @@ MILESTONE: simfix: cause = batter-strength features carry the era (bat_rpb 1.35-
 MILESTONE: v2 dev folds done (IPL 2022-26, leagues 2024-25); C1 monotone small gain, C2 no gain, C3 linear stack ties on 2022-25 and helps 2026; report + fresh CLI next (2026-11-13)
 MILESTONE: simfix done: no fix beats sim-B on 2022-25 (Bsn_adj cuts 2026 overshoot 8.1->5.4 but ties/worse elsewhere); sim-B2 not adopted; docs written (2026-11-13)
 MILESTONE: v2 results written to ML_PREDICTION.md section 9; fresh CLI rehearsed on dev data, not run on locked data (2026-11-13)
+MILESTONE: sim-B men-pool fresh model + non-IPL 2024-25 cache + predict_checkpoints done (2026-11-13)

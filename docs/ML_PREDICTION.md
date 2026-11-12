@@ -683,3 +683,15 @@ Score, mean of 4 (v2 ens equals v1 ens by construction, except G1's small 2026 d
 
 **Command for the lead (opens the locked data once):**
 `.venv\Scripts\python -m cricket_analytics.ml.v2 fresh` (optional `--sims 600`). It trains v1 and v2 on data < 2026-01-01 + IPL 2026, scores the 9 franchise leagues, prints the pre-registered adoption rule, and writes `data/external/ml/v2_fresh_report.md` and `docs/img/ml_v2_fresh_reliability.png`.
+
+### 2026-11-13: sim-B for non-IPL leagues (for the v2 fresh holdout; `ml/simfix.py`)
+**What was made.** (1) `data/external/ml/models/ball_B_men_fresh.pkl`: sim-B (defaults, variant B) fitted on the men's pool (all men's T20 except the Hundred), training only matches dated before 2026-01-01 plus IPL 2026 (allowed). Early stopping on IPL 2026, 204 boosting rounds. No non-IPL row dated 2026-01-01 or later was read (the training filter asserts it). (2) Sanity cache `data/external/ml/s2_preds_B_men_nonipl.parquet`: rolling (train before the test year, men's pool) non-IPL checkpoints 0/6/10/15 for 2024 and 2025, 300 paths; columns as `s2_preds_B_ipl.parquet` plus `competition`. Test matches dated 2026 (BBL 2025/26 January games) are excluded; the latest match in the file is 2025-12-31. Models `ball_B_men_{2024,2025}_nonipl.pkl`. (3) `simfix.predict_checkpoints(keys, model="ball_B_men_fresh", n=1000)` takes a DataFrame with `match_id, innings, balls_bowled` and returns `target, q10, q50, q90, mean, sd, win, wk_mean`; CLI `python -m cricket_analytics.ml.simfix fresh_fit` refits the model, `... nonipl` rebuilds the cache. The function does not check the lock; the caller decides which matches to ask for.
+
+**Sanity check** (13,050 states: 7,109 T20I, 1,846 Blast, 764 ILT20, 749 BPL, 512 SA20, 501 PSL, 496 CPL, 440 BBL, 391 MLC, 178 LPL, 64 SMAT; chase states 3,382 in 2024 and 2,922 in 2025). First innings, mean forecast minus actual (bias) / MAE / 80% coverage by checkpoint:
+
+| year | 0 ov | 6 ov | 10 ov | 15 ov |
+|---|---|---|---|---|
+| 2024 (n 918 / 918 / 915 / 898) | +2.5 / 30.5 / 0.73 | +1.1 / 21.8 / 0.71 | +0.1 / 17.2 / 0.73 | -1.1 / 10.7 / 0.76 |
+| 2025 (n 777 / 777 / 777 / 766) | +3.5 / 30.7 / 0.70 | +1.6 / 21.8 / 0.73 | +1.4 / 16.3 / 0.77 | +0.3 / 10.9 / 0.77 |
+
+Chase win probability (mean of 4 checkpoints): 2024 log loss 0.394, Brier 0.130, ECE 0.039 (mean p 0.481 vs actual 0.502); 2025 log loss 0.376, Brier 0.121, ECE 0.038 (0.508 vs 0.506). By competition in 2025, bias at all checkpoints: T20I +5.1 (n 1,741), Blast -4.5 (492), ILT20 -3.5, MLC -5.6, SA20 -1.8, CPL +1.5, BBL +1.3, PSL -1.5, BPL +14.7 (only 24 states). Plain reading: on non-IPL leagues the men's-pool sim-B is well calibrated for chases (ECE under 0.04, better than its IPL ECE) and has a small score bias (+0.3 to +3.5 runs); ranges are a little narrow at 0-10 overs (coverage 0.70-0.77, the same weakness as in the IPL). T20I runs about 5 runs high and the Blast about 4 low, so league-level effects exist (small samples for BPL, BBL). Not compared with the old baselines or G1 here.
