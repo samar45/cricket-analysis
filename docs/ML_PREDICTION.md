@@ -1164,3 +1164,69 @@ Reason: `docs/REVIEW_external_2026-11-13.md` HIGH 2 and recommendations 1 and 5.
 **Rule 2, score production.** Candidates, in order of simplicity: (1) F-score, (2) mean(F-score, G1) (mean of quantiles, then sorted), (3) G1, (4) v1 ens-G1. "Best" = the candidate with the lowest dev MAE. **Score production = the simplest candidate whose dev MAE is within 0.2 runs of the best AND whose dev cov80 (share of finals inside q10-q90) is between 0.75 and 0.85.** If a simpler candidate fails the coverage condition, the next-simplest that meets both conditions is chosen. If none qualifies, v1 ens-G1 stays. G2, b2, the zoo models and sim-B are reported but are not candidates (they were chosen with these folds in view).
 
 **What changes if the rule fires.** `ml/predict.py`: `predict_state` and `predict_match_curve` get a `model` argument, default the rule's outcome, `model="v1"` keeps the old path; same signatures and output keys otherwise. The dashboard model notes are updated to match.
+
+### 2026-11-13 (fair-baseline worker): results of the fair-baseline comparison and the pre-registered production rule (`ml/baselines.py` F-score / F-chase, `ml/fair_report.py`)
+**Plain summary.** A DLS-style table that is told the current scoring level (F-score) is a much harder baseline than the old one. On the IPL it **ties G1 and the blend on the first-innings score** (G1 minus F-score: -0.40 runs [-0.97, +0.22]; G1 is ahead in all 4 seasons, but not outside noise). On non-IPL leagues the ML is clearly better (-1.65 runs [-2.01, -1.31]; season-block interval [-2.40, -0.05]). For the chase, a 7-input logistic regression (F-chase) **ties or beats every ML model on the IPL** and loses to them by 0.02-0.03 log loss on non-IPL leagues. Applying the rule fixed in the entry above (commit `a2c05be`, written before anything was computed): **score = G1 alone, chase stays v1 ens-G1** (sim-B missed the +0.005 limit by 0.00004). The review's check was reproduced first: on the 33,873 IPL 2022-25 states, old table MAE 18.12, level-scaled F-score **16.40**, G1 16.30, G1 minus F-score -0.09 [-0.55, +0.37].
+
+**Set-up (as registered).** Folds as before (IPL 2022-25; men's non-IPL 2024-25, trained on earlier seasons). Rows = checkpoints 0/6/10/15 overs, identical for the models compared; "mean 4" = mean of the 4 checkpoint values, pooled over both scopes ("dev" = 1,979 first innings / 1,964 decided chases at 0 overs). b2 only exists at 6/10/15 overs, so it is shown on "mean 3". F-score: `k = lvl_ew / mean training first-innings total` (IPL table for IPL, all-men's for non-IPL), conformal widening fitted on the inner fold. F-chase: logistic on log(needed / level-scaled expected left), that ratio, wickets in hand, balls left, level and two interactions, per fold. Intervals: match bootstrap two-sided 95%; "block" = season-block bootstrap over competition x season (24 blocks on dev; 4 for the IPL alone, where per-season signs are given instead). Caches `data/external/ml/fair_*.parquet`, `fair_tables.csv`, `fair_paired.csv`.
+
+**Old baseline restated (IPL 2022-25, checkpoints):** resource table MAE 20.95, bias -11.99, cov80 0.716 -> F-score 18.77 (bias -5.09, cov80 0.832): the level correction is worth **2.18 runs [1.45, 2.85]**; G1 18.37, ens-G1 18.28, G2 18.43, sim-B 18.42, mean(F,G1) 18.33. Of the old "G1 beats the baseline by 2.6 runs", 2.2 was the level.
+
+**First-innings score, mean of 4 checkpoints (MAE / pinball / cov80 / bias):**
+| model | dev pooled | IPL 22-25 | non-IPL 24-25 | IPL 2026 (spent) | non-IPL 2026 (spent) |
+|---|---|---|---|---|---|
+| F-score | 20.88 / 6.66 / 0.820 / -1.3 | 18.77 / 5.92 / 0.832 / -5.1 | 21.23 / 6.79 / 0.818 / -0.7 | 20.15 / 6.28 / 0.757 / -2.2 | 19.46 / 6.11 / 0.871 / +1.6 |
+| mean(F,G1) | 19.74 / 6.28 / 0.816 / -0.4 | 18.33 / 5.81 / 0.837 / -3.0 | 19.97 / 6.36 / 0.813 / +0.1 | 20.46 / 6.32 / 0.750 / -2.6 | 19.16 / 5.96 / 0.835 / +1.9 |
+| G1 | 19.41 / 6.18 / 0.787 / +0.6 | 18.37 / 5.86 / 0.829 / -0.9 | 19.58 / 6.24 / 0.780 / +0.9 | 20.94 / 6.47 / 0.718 / -2.9 | 19.19 / 5.99 / 0.781 / +2.3 |
+| G2 | 19.30 / 6.13 / 0.816 / +0.4 | 18.43 / 5.85 / 0.833 / -1.8 | 19.44 / 6.18 / 0.813 / +0.8 | 20.36 / 6.27 / 0.806 / +0.8 | - |
+| sim-B | 19.76 / 6.30 / 0.743 / +0.8 | 18.42 / 5.80 / 0.777 / -1.5 | 19.98 / 6.39 / 0.737 / +1.2 | 20.14 / 6.37 / 0.757 / +6.5 | 19.49 / 6.06 / 0.754 / +1.9 |
+| v1 ens-G1 | 19.36 / 6.16 / 0.767 / +0.7 | 18.28 / 5.77 / 0.810 / -1.2 | 19.54 / 6.22 / 0.760 / +1.0 | 20.23 / 6.27 / 0.764 / +1.8 | 19.23 / 5.98 / 0.771 / +2.1 |
+| b2 (MAE, mean 3: 6/10/15 ov) | 16.10 (F 17.64, G1 16.28, ens 16.14) | 15.33 (F 15.98, G1 15.47) | 16.23 (F 17.92, G1 16.42) | - | - |
+
+MAE by checkpoint 0 / 6 / 10 / 15 overs, dev pooled: F-score 30.6 / 22.9 / 18.2 / 11.9; G1 28.8 / 21.2 / 16.7 / 11.0; ens-G1 29.0 / 21.1 / 16.6 / 10.7; mean(F,G1) 29.2 / 21.5 / 17.0 / 11.2.
+
+**Paired differences, score MAE (model minus F-score; negative = better than the fair baseline), 95%:**
+| set | G1 | v1 ens-G1 | b2 (6/10/15) | G2 |
+|---|---|---|---|---|
+| dev pooled, match | -1.47 [-1.81, -1.14]* | -1.52 [-1.79, -1.25]* | -1.54 [-1.80, -1.28]* | -1.58 [-1.94, -1.24]* |
+| dev pooled, season-block | -1.47 [-2.20, -0.13]* | -1.52 [-2.24, -0.27]* | -1.54 [-2.17, -0.46]* | -1.58 [-2.37, -0.17]* |
+| IPL 22-25, match | -0.40 [-0.97, +0.22] (4/4 seasons better) | -0.49 [-0.97, +0.03] (4/4) | -0.65 [-1.18, -0.06]* (4/4) | -0.34 [-0.86, +0.21] (3/4) |
+| non-IPL 24-25, match | -1.65 [-2.01, -1.31]* | -1.69 [-1.98, -1.41]* | -1.69 [-1.98, -1.42]* | -1.79 [-2.18, -1.43]* |
+| IPL 2026 (spent) | +0.80 [-0.24, +1.78] | +0.08 [-0.89, +1.00] | - | +0.21 [-0.74, +1.15] |
+| non-IPL 2026 (spent) | -0.27 [-0.73, +0.20] | -0.23 [-0.61, +0.15] | - | - |
+
+Dev pooled: G1 minus ens-G1 MAE +0.05 [-0.07, +0.16] (tie; block [-0.14, +0.23]); mean(F,G1) minus ens-G1 +0.38 [+0.25, +0.50]*. On pinball (range quality) the ML models are ahead of F-score by 0.48-0.53 on dev (*, also by blocks) and tie it on the IPL alone (G1 -0.07 n.s., ens-G1 -0.16*).
+
+**Chase win probability, mean of 4 checkpoints (log loss / Brier / accuracy):**
+| model | dev pooled | IPL 22-25 | non-IPL 24-25 | IPL 2026 (spent) | non-IPL 2026 (spent) |
+|---|---|---|---|---|---|
+| F-chase | 0.416 / 0.136 / 0.804 | 0.462 / 0.150 / 0.779 | 0.408 / 0.134 / 0.808 | 0.365 / 0.115 / 0.848 | 0.436 / 0.144 / 0.776 |
+| G1 | 0.404 / 0.130 / 0.815 | 0.485 / 0.157 / 0.787 | 0.390 / 0.126 / 0.820 | 0.389 / 0.125 / 0.812 | 0.440 / 0.146 / 0.780 |
+| G2 | 0.398 / 0.130 / 0.814 | 0.477 / 0.156 / 0.783 | 0.384 / 0.125 / 0.819 | 0.357 / 0.114 / 0.837 | - |
+| sim-B | 0.399 / 0.130 / 0.810 | 0.477 / 0.154 / 0.764 | 0.385 / 0.126 / 0.818 | 0.315 / 0.098 / 0.870 | 0.432 / 0.140 / 0.779 |
+| v1 ens-G1 | 0.394 / 0.128 / 0.814 | 0.469 / 0.153 / 0.781 | 0.381 / 0.124 / 0.820 | 0.344 / 0.107 / 0.851 | 0.428 / 0.141 / 0.784 |
+| b2 (log loss, mean 3) | 0.349 (F 0.373, ens 0.352) | 0.430 (F 0.427) | 0.335 (F 0.364) | - | - |
+
+Log loss by checkpoint 0 / 6 / 10 / 15 overs, dev pooled: F-chase 0.545 / 0.445 / 0.384 / 0.291; G1 0.526 / 0.424 / 0.375 / 0.290; ens-G1 0.521 / 0.414 / 0.364 / 0.278; sim-B 0.534 / 0.425 / 0.364 / 0.273.
+
+**Paired differences, chase log loss (model minus F-chase; negative = better than the fair baseline), 95%:**
+| set | G1 | v1 ens-G1 | sim-B | b2 (6/10/15) |
+|---|---|---|---|---|
+| dev pooled, match | -0.012 [-0.021, -0.004]* | -0.022 [-0.029, -0.015]* | -0.017 [-0.025, -0.008]* | -0.024 [-0.031, -0.017]* |
+| dev pooled, season-block | -0.012 [-0.024, +0.003] | -0.022 [-0.032, -0.006]* | -0.017 [-0.028, +0.003] | -0.024 [-0.031, -0.013]* |
+| IPL 22-25, match | +0.023 [+0.001, +0.046]* (F-chase better) | +0.007 [-0.008, +0.022] | +0.015 [-0.009, +0.045] | +0.003 [-0.012, +0.018] |
+| non-IPL 24-25, match | -0.019 [-0.028, -0.010]* | -0.027 [-0.035, -0.020]* | -0.023 [-0.031, -0.014]* | -0.029 [-0.037, -0.021]* |
+| IPL 2026 (spent) | +0.024 [+0.003, +0.046]* | -0.021 [-0.044, +0.003] | -0.050 [-0.091, -0.008]* | - |
+| non-IPL 2026 (spent) | +0.003 [-0.015, +0.022] | -0.008 [-0.023, +0.006] | -0.005 [-0.023, +0.017] | - |
+
+**Rule 1 (chase).** v1 ens-G1 dev log loss **0.39416**, sim-B **0.39920**, difference **+0.00504 [-0.000, +0.010]** (block [-0.002, +0.013]) against the limit +0.005. **Not within the limit, by 0.00004: chase production stays v1 ens-G1.** This is a knife-edge, not a finding: the difference is zero within noise. For information only (spent sets play no part): sim-B minus ens-G1 is -0.029 [-0.052, -0.006]* on IPL 2026 and +0.004 [-0.010, +0.025] on non-IPL 2026; IPL 2022-25 +0.008 [-0.009, +0.030].
+
+**Rule 2 (score).** Dev MAE: F-score 20.877, mean(F,G1) 19.736, G1 19.406, ens-G1 19.358 (best). Within 0.2 of the best: G1 (+0.048) and ens-G1 only. cov80: F-score 0.820, mean(F,G1) 0.816, **G1 0.787**, ens-G1 0.767 (both in 0.75-0.85). **Score production = G1 (simplest qualifying candidate).** F-score is rejected on accuracy (+1.5 runs), mean(F,G1) on accuracy (+0.38 against the best).
+
+**What changed.** `ml/predict.py`: `PRODUCTION = {"score": "G1", "chase": "ens-G1"}`; `predict_state(..., model="auto")` and `predict_match_curve(..., model="auto")`: the first-innings score range (and `ens_q10/q50/q90` in the curve) is G1 alone; the win probability and everything else are unchanged; `model="v1"` restores the old blend for the score. The dashboard notes are updated. At 5 overs, 60/2 (IPL, Wankhede, MI v CSK) the median total moves from 203.6 to 198.2 and the range from 168.9-239.2 to 161.8-238.3. The simulator still runs (the chase probability needs it), so nothing gets faster.
+
+**Reading.**
+1. The "ML beats the baseline" story is real only outside the IPL (non-IPL score -1.7 runs, chase -0.02 to -0.03 log loss, both with the season-block interval excluding 0) and on score pinball (better ranges). In the IPL, with the level given to the baseline, the score is a tie and the chase is a tie (F-chase is nominally better than G1, G2 and sim-B on 2022-25 and ties the blend).
+2. Why the IPL chase is hard to beat: 70 chases per season give a very noisy target and F-chase has only 7 coefficients. Reading, not tested.
+3. On the spent IPL 2026 set sim-B stands out (log loss 0.315 vs F-chase 0.365, -0.050 [-0.091, -0.008]*), but it is a single season and was seen; the dev folds do not reproduce it (+0.015 vs F-chase). No decision rests on it.
+4. Caveats. F-score / F-chase pools follow the old `resource-ipl` / `resource-all` convention (IPL table for IPL; all men's for non-IPL), men's only; a global-pool F-chase for the IPL was not tried (no tuning of the baseline). "Mean 4" weights each checkpoint equally, so ball 0 (MAE about 29) dominates MAE. About 110 variants have been scored on these folds; the two F-* baselines were pre-registered, but differences inside the ML family are still tie-sized.

@@ -1,4 +1,5 @@
-"""Match predictor: inference on the trained models (production = v1 ens-G1, see docs/ML_PREDICTION.md section 9).
+"""Match predictor: inference on the trained models (production per the pre-registered rule of commit a2c05be, docs/ML_PREDICTION.md
+section 9: first-innings score = G1 alone, chase win probability = v1 blend ens-G1; `model="v1"` gives the old all-blend path).
 
   predict_state(...)       one live state -> score range, win probabilities, per-model parts, simulated finals
   predict_match_curve(id)  a past match -> prediction after every over (for replay)
@@ -10,6 +11,8 @@ Models (read-only, data/external/ml/models/):
        first-innings only; so the chase score range comes from the simulator alone.
   sim-B  ball-by-ball Monte Carlo (ball_B_men_fresh.pkl, men's pool). Players it does not know get the average batter / bowler.
 Blend (ens-G1): score = mean of the two quantile sets, win = mean of the two probabilities.
+Production (`PRODUCTION`): score range of a first innings = G1 only (the fair-baseline comparison showed the blend with sim-B adds nothing
+measurable: dev MAE 19.41 vs 19.36, difference +0.05 [-0.07, +0.16]); win probability = the blend (sim-B missed the +0.005 log-loss rule by 0.00004).
 
 All features are built "as of" `date` from earlier matches only (same code paths as training: features.innings_features,
 ball_model.match_levels, the shrunk career strengths). Never writes a .duckdb. Men's competitions only, 20-over games.
@@ -38,6 +41,8 @@ MAX_BALLS = 120
 LIVE = "__live__"
 EXCLUDE = ("hundred",)  # 100-ball format: not modelled
 QC = ["q10", "q50", "q90"]
+PRODUCTION = {"score": "G1", "chase": "ens-G1"}  # outcome of the pre-registered rule (commit a2c05be, results in docs/ML_PREDICTION.md section 9)
+MODELS = ("auto", "v1")  # "auto" = PRODUCTION; "v1" = the previous production (score and win both blended)
 LEVEL_COLS = ["lvl_ew", "lvl_season", "venue_eff", "venue_n", "bat_team_eff", "bowl_team_eff"]
 
 
@@ -318,17 +323,27 @@ def _chase_grid(fin, lv, ball_lv, date, comp, sy, n=100, seed=1):
 
 
 # ---------- public: one live state ----------
+def _blend_score(model: str) -> bool:
+    """True when the first-innings score range is the G1 / sim-B blend (the v1 path, or if PRODUCTION says so)."""
+    if model not in MODELS:
+        raise ValueError(f"model must be one of {MODELS}, got {model!r}")
+    return model == "v1" or PRODUCTION["score"] == "ens-G1"
+
+
 def predict_state(competition, venue, batting_team, bowling_team, innings, runs, wickets, overs, target=None,
                   striker=None, non_striker=None, bowler=None, date=None, n_sims=1000, seed=0,
-                  striker_faced=None, non_striker_faced=None, runs_last30=None, wickets_last30=None) -> dict:
+                  striker_faced=None, non_striker_faced=None, runs_last30=None, wickets_last30=None, model="auto") -> dict:
     """Predict from a live state. `overs` like 10.3 (10 overs 3 balls). Innings 2 needs `target` (first-innings total + 1).
     Optional: striker / non_striker / bowler names (average players if omitted or unknown), date (default today; features use only
     earlier matches), balls faced so far by the two batters, runs / wickets in the last 30 balls (default: scaled from the totals).
 
-    Returns dict: score {q10,q50,q90} (innings 1: blend of G1 and sim-B; innings 2: sim-B only, a chase stops at the target),
+    model: "auto" (production: innings-1 score = G1 only, win = blend) or "v1" (score and win both the G1 / sim-B blend).
+
+    Returns dict: score {q10,q50,q90} (innings 1: G1, or the G1 / sim-B blend with model="v1"; innings 2: sim-B only, a chase stops at the target),
     win {bat, bowl} (blend), g1 {q10,q50,q90 (innings 1), win_bat}, sim {q10,q50,q90,mean,win_bat, wickets_mean}, sims (final totals),
     plus balls, balls_left, target, players_known, date, season_year, level (lvl_season)."""
     comp = competition
+    blend_score = _blend_score(model)
     if comp not in competitions():
         raise ValueError(f"unknown competition {comp!r}")
     if innings not in (1, 2):
@@ -351,7 +366,7 @@ def predict_state(competition, venue, batting_team, bowling_team, innings, runs,
     w30 = wickets_last30 if wickets_last30 is not None else wickets * l30
     out = {"competition": comp, "venue": venue, "batting_team": batting_team, "bowling_team": bowling_team, "innings": innings,
            "runs": runs, "wickets": wickets, "balls": balls, "balls_left": MAX_BALLS - balls, "target": None if innings == 1 else int(target),
-           "date": str(d.date()), "season_year": sy, "level": float(lv.loc[innings, "lvl_season"])}
+           "date": str(d.date()), "season_year": sy, "level": float(lv.loc[innings, "lvl_season"]), "model": model}
     bs, bw = _sim_strength(striker, bowler, d)
     ns, _ = _sim_strength(non_striker, None, d)
     out["players_known"] = {"striker": bs is not None, "non_striker": ns is not None, "bowler": bw is not None}
@@ -376,7 +391,7 @@ def predict_state(competition, venue, batting_team, bowling_team, innings, runs,
     if innings == 1:
         gq = np.sort([g.q10, g.q50, g.q90])
         sq = np.array([sim[k] for k in QC])
-        out["score"] = dict(zip(QC, (gq + sq) / 2))
+        out["score"] = dict(zip(QC, (gq + sq) / 2 if blend_score else gq))
         out["g1"] = dict(zip(QC, map(float, gq)))
         pg, ps = _chase_grid(fin, lv, ball_lv, d, comp, sy)
         out["g1"]["win_bat"], sim["win_bat"] = pg, ps
@@ -392,12 +407,13 @@ def predict_state(competition, venue, batting_team, bowling_team, innings, runs,
 
 
 # ---------- public: replay a past match ----------
-def predict_match_curve(match_id, n_sims=200, seed=0) -> tuple[pd.DataFrame, dict]:
+def predict_match_curve(match_id, n_sims=200, seed=0, model="auto") -> tuple[pd.DataFrame, dict]:
     """Prediction at the start of every over of a past match, from the real state (real players and score).
     Returns (curve, meta). curve rows: innings, over, balls, runs, wickets, and
-      innings 1: g1_q10/q50/q90, sim_q10/q50/q90, ens_q10/q50/q90 (projected total);
+      innings 1: g1_q10/q50/q90, sim_q10/q50/q90, ens_q10/q50/q90 (projected total: the production score model, G1 alone; the G1 / sim-B blend with model="v1");
       innings 2: win_g1, win_sim, win_ens = P(chasing team wins), sim_q10/q50/q90 (projected score; a chase stops at the target).
     meta: teams, scores, winner, target, venue, date, competition, reduced, in_sample (the models saw this match in training)."""
+    blend_score = _blend_score(model)
     mid = str(match_id)
     inn = _inn()
     mi = inn[inn.match_id == mid]
@@ -446,7 +462,7 @@ def predict_match_curve(match_id, n_sims=200, seed=0) -> tuple[pd.DataFrame, dic
     c = pd.DataFrame({"innings": s.innings, "over": s.balls_bowled // 6, "balls": s.balls_bowled, "runs": s.runs, "wickets": s.wickets,
                       "g1_q10": g.q10, "g1_q50": g.q50, "g1_q90": g.q90, "win_g1": g.p})
     c = c.merge(sq, on=["innings", "balls"], how="left")
-    e = np.sort(np.stack([(c[f"g1_{k}"] + c[f"sim_{k}"]) / 2 for k in QC], 1), axis=1)
+    e = np.sort(np.stack([(c[f"g1_{k}"] + c[f"sim_{k}"]) / 2 if blend_score else c[f"g1_{k}"] for k in QC], 1), axis=1)
     for j, k in enumerate(QC):
         c[f"ens_{k}"] = e[:, j]
     c["win_ens"] = (c.win_g1 + c.win_sim) / 2

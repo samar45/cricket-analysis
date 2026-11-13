@@ -1,6 +1,6 @@
 """Match predictor page: live state forecast, replay of a past match, pre-match forecast.
 
-All numbers come from `cricket_analytics.ml.predict` (G1 direct model + sim-B ball simulator, blended 50/50) and, for the
+All numbers come from `cricket_analytics.ml.predict` (first-innings score range = G1 direct model alone; win probability = G1 and the sim-B ball simulator averaged 50/50; see docs/ML_PREDICTION.md section 9) and, for the
 Pre-match tab, `cricket_analytics.ml.prematch`. Every computation sits behind a Run button.
 """
 
@@ -108,7 +108,7 @@ def _live_result(r: dict, p: dict):
     g, s = r["g1"], r["sim"]
     rows = [{"model": "G1 (direct model)", "q10": g.get("q10"), "median": g.get("q50"), "q90": g.get("q90"), f"{p['batting_team']} win": g.get("win_bat")},
             {"model": "Simulator (sim-B)", "q10": s["q10"], "median": s["q50"], "q90": s["q90"], f"{p['batting_team']} win": s["win_bat"]},
-            {"model": "Blend (shown above)", "q10": q["q10"], "median": q["q50"], "q90": q["q90"], f"{p['batting_team']} win": r["win"]["bat"]}]
+            {"model": "Shown above (score: G1 in the first innings, simulator in a chase; win: blend)", "q10": q["q10"], "median": q["q50"], "q90": q["q90"], f"{p['batting_team']} win": r["win"]["bat"]}]
     t = pd.DataFrame(rows)
     st.dataframe(t, hide_index=True, width="stretch", column_config={
         "q10": st.column_config.NumberColumn("10%", format="%.0f"), "median": st.column_config.NumberColumn("median", format="%.0f"),
@@ -165,7 +165,7 @@ def _replay_result(c: pd.DataFrame, meta: dict):
     fig2 = go.Figure()
     fig2.add_scatter(x=f.over, y=f.ens_q90, mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip")
     fig2.add_scatter(x=f.over, y=f.ens_q10, mode="lines", line=dict(width=0), fill="tonexty", fillcolor="rgba(76,155,232,0.25)", name="10-90% range")
-    fig2.add_scatter(x=f.over, y=f.ens_q50, mode="lines+markers", line=dict(width=3, color="#e0a800"), marker=dict(size=5), name="predicted total (blend)")
+    fig2.add_scatter(x=f.over, y=f.ens_q50, mode="lines+markers", line=dict(width=3, color="#e0a800"), marker=dict(size=5), name="predicted total (G1)")
     fig2.add_hline(y=meta["score1"], line_color="#e5534b", annotation_text=f"actual {meta['score1']}", annotation_position="bottom right")
     fig2.update_layout(height=330, yaxis_title=f"{t1} projected total", xaxis_title="overs bowled in the 1st innings",
                        title=dict(text=f"{t1} batting first: projected final score after each over"))
@@ -262,12 +262,12 @@ def luck_tab():
         st.markdown("**Most swingy matches:** the most total movement in win probability.")
         st.dataframe(_match_table(sw, {"swing": "swing (sum of moves)", "lead_changes": "lead changes"}), hide_index=True, width="stretch",
                      column_config={"swing (sum of moves)": st.column_config.NumberColumn(format="%.2f")})
-        st.caption("Probabilities are out-of-sample (the models had not seen the match). Decided chases only. Curve = direct model per over; start = blend with the simulator.")
+        st.caption("Probabilities are out-of-sample (the models had not seen the match). Decided chases only. Curve = direct model per over; start = blend with the simulator. Predicted total = G1 alone.")
 
 
 def page():
     st.title("Match predictor")
-    st.caption("Direct model (G1) and ball-by-ball simulator (sim-B), averaged. Men's 20-over cricket only. Nothing runs until you click.")
+    st.caption("First-innings score range: direct model (G1) alone (about 1.5 runs better on average than a level-scaled DLS-style table); win probability: G1 and the ball-by-ball simulator (sim-B), averaged. Men's 20-over cricket only. Nothing runs until you click.")
     live, replay, pre, lk = st.tabs(["Live state", "Replay a match", "Pre-match", "Luck & surprises"])
     with live:
         live_tab()

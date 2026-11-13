@@ -66,3 +66,24 @@ def test_lists():
     assert "ipl" in P.competitions() and "hundred" not in P.competitions()
     assert "Wankhede Stadium" in P.venues("ipl") and "Mumbai Indians" in P.teams("ipl")
     assert "V Kohli" in P.players("ipl", "Royal Challengers Bengaluru", "bat")
+
+
+def test_production_score_is_g1_and_v1_path_kept():
+    """Rule a2c05be: innings-1 score = G1 alone; model="v1" is the old G1 / sim-B blend; the win blend is the same on both paths."""
+    a = P.predict_state(innings=1, runs=60, wickets=2, overs=5.0, **BASE)
+    v = P.predict_state(innings=1, runs=60, wickets=2, overs=5.0, model="v1", **BASE)
+    assert a["model"] == "auto" and v["model"] == "v1"
+    assert all(abs(a["score"][k] - a["g1"][k]) < 1e-9 for k in ("q10", "q50", "q90"))
+    assert all(abs(v["score"][k] - (v["g1"][k] + v["sim"][k]) / 2) < 1e-9 for k in ("q10", "q50", "q90"))
+    assert a["win"] == v["win"] and set(a) >= set(v) - {"model"}  # same output keys, same win probability
+    with pytest.raises(ValueError):
+        P.predict_state(innings=1, runs=60, wickets=2, overs=5.0, model="nope", **BASE)
+
+
+def test_match_curve_models():
+    c, _ = P.predict_match_curve(1426280, n_sims=30)
+    v, _ = P.predict_match_curve(1426280, n_sims=30, model="v1")
+    f, fv = c[c.innings == 1], v[v.innings == 1]
+    assert ((f.ens_q50 - f.g1_q50).abs() < 1e-9).all()
+    assert ((fv.ens_q50 - (fv.g1_q50 + fv.sim_q50) / 2).abs() < 1e-9).all()
+    assert list(c.columns) == list(v.columns)
