@@ -7,8 +7,10 @@
       "runtimeArgs": [
         "run",
         "dashboard/app.py",
-        "--server.port", "8503",
-        "--server.headless", "true"
+        "--server.port",
+        "8503",
+        "--server.headless",
+        "true"
       ],
       "port": 8503
     },
@@ -18,15 +20,35 @@
       "runtimeArgs": [
         "run",
         "dashboard/app.py",
-        "--server.port", "8501",
-        "--server.headless", "true"
+        "--server.port",
+        "8501",
+        "--server.headless",
+        "true"
       ],
       "port": 8501
     },
     {
+      "name": "cricket-api",
+      "runtimeExecutable": ".venv\\Scripts\\python.exe",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "cricket_analytics.web.app:app",
+        "--port",
+        "8600"
+      ],
+      "port": 8600
+    },
+    {
       "name": "ui-mockup",
       "runtimeExecutable": ".venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "http.server", "8510", "--directory", "frontend/mockup"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8510",
+        "--directory",
+        "frontend/mockup"
+      ],
       "port": 8510
     },
     {
@@ -38,6 +60,17 @@
         "modules"
       ],
       "port": 0
+    },
+    {
+      "name": "cricket-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "frontend/app",
+        "run",
+        "dev"
+      ],
+      "port": 5173
     }
   ]
 }
