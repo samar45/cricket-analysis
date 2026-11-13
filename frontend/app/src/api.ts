@@ -16,7 +16,7 @@ export interface Prediction {
 }
 export interface OverUnder { p_over: number; p_under: number; sim_over?: number }
 export interface MatchRow { match_id: string; date: string; team1: string; team2: string; winner: string | null; venue: string }
-export interface CurvePoint { innings: number; ball: number; over: number; runs: number; wickets: number; p_bat_first_win: number; q10?: number; q50?: number; q90?: number }
+export interface CurvePoint { innings: number; ball: number; over: number; runs: number; wickets: number; p_bat_first_win: number | null; q10?: number; q50?: number; q90?: number }
 export interface MatchCurve { match: Partial<MatchRow> & Record<string, unknown>; in_sample: boolean; points: CurvePoint[]; caveats?: string[] }
 export interface PaperSummary {
   start: number; final: number; roi: number; roi_lo: number; roi_hi: number

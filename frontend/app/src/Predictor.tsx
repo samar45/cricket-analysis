@@ -68,13 +68,13 @@ function Replay({ meta, comp }: { meta?: Meta; comp: string }) {
   const pts = c?.points ?? []
   const opt = c && {
     ...base(),
-    tooltip: { ...base().tooltip, formatter: (a: { dataIndex: number }[]) => { const r = pts[a[0].dataIndex]; return `Inn ${r.innings}, over ${r.over.toFixed(1)}: ${r.runs}/${r.wickets}<br>1st-batting side win ${pc(r.p_bat_first_win)}` } },
-    xAxis: { type: 'category', data: pts.map((r) => `${r.innings}:${r.over.toFixed(1)}`), name: 'innings : over', nameLocation: 'middle', nameGap: 24, ...ax({ axisLabel: { color: C.mut, interval: Math.max(0, Math.ceil(pts.length / 8) - 1), hideOverlap: true } }) },
+    tooltip: { ...base().tooltip, formatter: (a: { dataIndex: number }[]) => { const r = pts[a[0].dataIndex]; return `Inn ${r.innings}, over ${r.over.toFixed(1)}: ${r.runs}/${r.wickets}<br>${r.p_bat_first_win == null ? 'win % starts at the chase' : '1st-batting side win ' + pc(r.p_bat_first_win)}` } },
+    xAxis: { type: 'category', data: pts.map((r) => `I${r.innings} ${Math.floor(r.over)}`), name: 'innings / over', nameLocation: 'middle', nameGap: 24, ...ax({ axisLabel: { color: C.mut, interval: Math.max(0, Math.ceil(pts.length / 8) - 1), hideOverlap: true } }) },
     yAxis: { type: 'value', min: 0, max: 100, ...ax({ axisLabel: { color: C.mut, formatter: '{value}%' } }) },
     series: [
-      { type: 'line', data: pts.map((r) => +(r.p_bat_first_win * 100).toFixed(1)), showSymbol: false, lineStyle: { color: C.acc, width: 2 }, areaStyle: { color: C.acc, opacity: 0.06 },
+      { type: 'line', data: pts.map((r) => (r.p_bat_first_win == null ? null : +(r.p_bat_first_win * 100).toFixed(1))), showSymbol: false, lineStyle: { color: C.acc, width: 2 }, areaStyle: { color: C.acc, opacity: 0.06 },
         markLine: { symbol: 'none', silent: true, data: [{ yAxis: 50, lineStyle: { color: C.mut, type: 'dotted' }, label: { show: false } }] } },
-      { type: 'scatter', data: pts.map((r, i) => (i && r.innings === pts[i - 1].innings && r.wickets > pts[i - 1].wickets ? [i, +(r.p_bat_first_win * 100).toFixed(1)] : null)).filter(Boolean),
+      { type: 'scatter', data: pts.map((r, i) => (i && r.p_bat_first_win != null && r.innings === pts[i - 1].innings && r.wickets > pts[i - 1].wickets ? [i, +(r.p_bat_first_win * 100).toFixed(1)] : null)).filter(Boolean),
         symbolSize: 9, itemStyle: { color: C.dn, borderColor: '#000', borderWidth: 1 }, tooltip: { show: false }, z: 5 },
     ],
   }
@@ -88,7 +88,7 @@ function Replay({ meta, comp }: { meta?: Meta; comp: string }) {
       <Err msg={ms.err ?? cv.err} />
       {(ms.loading || cv.loading) && <div className="mut px-3 pb-2">Loading replay (the backend simulates the match, can take a few seconds)...</div>}
       {opt && <Chart option={opt} h={230} />}
-      {c && <div className="note" style={c.in_sample ? undefined : { borderColor: 'var(--line)' }}>{c.in_sample ? 'This match was in the training data, so the curve flatters the model.' : 'Out-of-sample match: not in the training data.'} Line = win chance of the side batting first; red dots = wickets.</div>}
+      {c && <div className="note" style={c.in_sample ? undefined : { borderColor: 'var(--line)' }}>{c.in_sample ? 'This match was in the training data, so the curve flatters the model.' : 'Out-of-sample match: not in the training data.'} Line = win chance of the side batting first; red dots = wickets.{pts.some((r) => r.p_bat_first_win == null) && ' Win % starts at the chase (innings 1 is left blank).'}</div>}
       {c?.caveats?.map((t) => <Note key={t}>{t}</Note>)}
     </Panel>
   )
