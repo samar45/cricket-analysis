@@ -128,6 +128,83 @@ class Resource:
         return pd.Series([_p_ge(self.res[o], n - zi) for zi, o, n in zip(z, _over(s), s.runs_needed)], index=s.index)
 
 
+class LevelResource(Resource):
+    """F-score: the resource table with its remaining runs scaled by a PRIOR-ONLY level ratio k = lvl_ew / den.
+    den = mean first-innings total of the (non-reduced) training innings, i.e. the scoring level the table was anchored to.
+    `lvl_ew` (features.innings_features) uses only earlier matches, so no test-fold information enters.
+    fit(train) needs men's rows (the caller filters); score(s) needs an `lvl_ew` column. q10 / q90 can be widened by
+    `calibrate(val)` (split conformal per over bucket, same as G1): val = states of a later season, table fitted before it."""
+
+    def __init__(self, pool="ipl"):
+        super().__init__(pool)
+        self.name, self.delta = "F-score", {}
+
+    def fit(self, train):
+        super().fit(train)
+        t = train[train.competition == "ipl"] if self.pool == "ipl" else train
+        f = t[(t.innings == 1) & (t.balls_bowled == 0) & ~t.reduced]
+        self.den = float(f.final_total.mean())
+        return self
+
+    def k(self, s):
+        return s.lvl_ew.to_numpy(float) / self.den
+
+    def expected_left(self, s):
+        """Level-scaled expected remaining runs (used by F-chase as the yardstick for runs needed)."""
+        return np.maximum(self.mean_remaining(s) * self.k(s), 1.0)
+
+    def raw(self, s):
+        q = np.array([np.quantile(self.res[o], [0.1, 0.5, 0.9]) for o in _over(s)])
+        rem = np.maximum((self.mean_remaining(s)[:, None] + q) * self.k(s)[:, None], 0.0)
+        return rem + s.runs.to_numpy()[:, None]
+
+    def score(self, s):
+        from . import direct as D
+
+        q = self.raw(s)
+        lo, hi = D.conformal_apply(q[:, 0], q[:, 1], q[:, 2], D.over_bucket(s.balls_bowled), self.delta)
+        return pd.DataFrame({"q10": np.asarray(lo), "q50": q[:, 1], "q90": np.asarray(hi)}, index=s.index)
+
+    def calibrate(self, val):
+        """Conformal deltas from `val` (first-innings states with final_total) scored by THIS table (fitted before val)."""
+        from . import direct as D
+
+        q = self.raw(val)
+        self.delta = D.conformal_delta(val.final_total.to_numpy(), q[:, 0], q[:, 2], D.over_bucket(val.balls_bowled))
+        return self
+
+
+class FChase:
+    """F-chase: logistic regression of the chase result on level-scaled quantities (prior-only, fitted per fold).
+    Inputs: log(runs needed / level-scaled expected runs left), that ratio, wickets in hand, balls left / 120, lvl_ew / 150,
+    and two interactions (log ratio x balls left, log ratio x wickets in hand). `table` = a fitted LevelResource."""
+
+    name = "F-chase"
+
+    def __init__(self, table):
+        self.table = table
+
+    def _x(self, s):
+        r = s.runs_needed.to_numpy(float) / self.table.expected_left(s)
+        lr = np.log(np.clip(r, 0.02, 50.0))
+        wk = 10.0 - s.wickets.to_numpy(float)
+        bl = s.balls_left.to_numpy(float) / 120.0
+        return np.column_stack([lr, np.clip(r, 0, 10), wk, bl, s.lvl_ew.to_numpy(float) / 150.0, lr * bl, lr * wk])
+
+    def fit(self, train, stride=2):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler
+
+        d = usable(train[train.innings == 2])
+        d = d[d.chase_won.notna() & (d.runs_needed > 0) & (d.balls_bowled % stride == 0)]
+        self.m = make_pipeline(StandardScaler(), LogisticRegression(C=1.0, max_iter=1000)).fit(self._x(d), d.chase_won.to_numpy(int))
+        return self
+
+    def win(self, s):
+        return pd.Series(self.m.predict_proba(self._x(s))[:, 1], index=s.index)
+
+
 class Const:
     """Win probability = share of chases won in train (reference line)."""
 
