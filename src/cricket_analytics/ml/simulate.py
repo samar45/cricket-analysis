@@ -40,9 +40,12 @@ def _features(p, i):
     return f
 
 
-def simulate(model, states, n=2000, seed=0, record_overs=False):
+def simulate(model, states, n=2000, seed=0, record_overs=False, plan=None):
     """Returns dict: final (S, n) runs, wickets (S, n), win (S,) P(win) (innings 2 states; NaN for innings 1),
-    over_runs (S*n, 21) cumulative runs at each over end (if record_overs)."""
+    over_runs (S*n, 21) cumulative runs at each over end (if record_overs).
+    plan (sim-R, default None = sim-B unchanged): dict with `bat_q` (S, 11, 3) the batters still to come, in order, as
+    (rpb, out, exp) and `bow_s` (S, 20, 2) the bowler (rpb, wk) for each over index; NaN rows fall back to the generic
+    tables. The n-th wicket after the start brings in bat_q[n-1] (the queue is the same for every path of a state)."""
     rng = np.random.default_rng(seed)
     st = states.reset_index(drop=True)
     S = len(st)
@@ -56,6 +59,7 @@ def simulate(model, states, n=2000, seed=0, record_overs=False):
     p["lvl_extra"] = [c for c in getattr(model, "lvl_cols", ()) if c not in ("lvl_slow", "lvl_fast")]
     for c in p["lvl_extra"]:
         p[c] = rep(c)
+    sidx, wk0 = np.arange(P) // n, p["wk"].copy()
     gb, go = np.asarray(model.gen_bat, float), np.asarray(model.gen_bowl, float)
     wk_runs, ex_extra = getattr(model, "wk_runs", 0.0), getattr(model, "ex_extra", 0.0)
 
@@ -82,13 +86,20 @@ def simulate(model, states, n=2000, seed=0, record_overs=False):
         wi = i[w]
         p["wk"][wi] += 1
         g = gb[np.minimum(p["wk"][wi], 10)]
+        if plan is not None:
+            q = plan["bat_q"][sidx[wi], np.minimum(p["wk"][wi] - wk0[wi] - 1, 10)]
+            g = np.where(np.isnan(q), g, q)
         p["S"][wi] = np.column_stack([g, np.zeros(len(wi))])
         p["balls"][i] += legal
         end = legal & (p["balls"][i] % 6 == 0)
         _swap(p, i[swap])
         _swap(p, i[end])
         ei = i[end]
-        p["bowl"][ei] = go[np.minimum(p["balls"][ei] // 6, 19)]  # next over: unknown bowler
+        nb = go[np.minimum(p["balls"][ei] // 6, 19)]  # next over: unknown bowler
+        if plan is not None:
+            q = plan["bow_s"][sidx[ei], np.minimum(p["balls"][ei] // 6, 19)]
+            nb = np.where(np.isnan(q), nb, q)
+        p["bowl"][ei] = nb
         if record_overs:
             over_runs[ei, p["balls"][ei] // 6] = p["runs"][ei]
         alive = i[~finished()[i]]
@@ -144,3 +155,51 @@ def summarize(final, qs=(0.1, 0.5, 0.9)):
     """Quantiles of the simulated final totals, one row per state."""
     q = np.quantile(final, qs, axis=1).T
     return pd.DataFrame(q, columns=["q10", "q50", "q90"]).assign(mean=final.mean(1), sd=final.std(1))
+
+
+# ---------- sim-R: real batters still to come and real bowlers' overs left ----------
+DEATH_FROM = 16  # over index where the "best bowlers first" rule starts (overs 17-20)
+P_BOWL_MIN = 0.25  # a XI member counts as a bowler if he has bowled in this innings or his prior bowls-in-a-match share is at least this
+
+
+def schedule_bowlers(pool, cap, cur, k, max_balls=120):
+    """Who bowls each future over (index 0..19), as an (20, 2) array of (bow_rpb, bow_wk); NaN = no one eligible (generic bowler).
+    pool: {name: (rpb, wk)}; cap: {name: overs left incl. the over now starting}; cur: bowler of the over now starting (or None);
+    k: legal balls bowled. Rule (documented in ML_PREDICTION.md): nobody exceeds his cap (so never > 4 overs), nobody bowls two overs in a row;
+    the death overs (index >= 16) go first, to the cheapest (lowest rpb) eligible bowlers; the other future overs are then filled one by one by
+    whoever has the most overs left (ties: cheaper first)."""
+    out = np.full((20, 2), np.nan)
+    cap = dict(cap)
+    o, last = k // 6, 19 if max_balls >= 120 else max_balls // 6 - 1
+    first = o + 1
+    if cur is not None and k % 6 == 0 and cur in cap:
+        cap[cur] -= 1  # the current over is played by the state's bowler
+    plan = {}
+    prev_over = {o: cur}  # who bowled the previous over, for the "not twice in a row" rule
+
+    def pick(j, key):
+        nxt = plan.get(j + 1, prev_over.get(j + 1))
+        pv = plan.get(j - 1, prev_over.get(j - 1))
+        ok = [b for b in cap if cap[b] > 0.99 and b != pv and b != nxt and b in pool]
+        return min(ok, key=key) if ok else None
+
+    death = [j for j in range(max(first, DEATH_FROM), last + 1)]
+    for j in death:
+        b = pick(j, lambda b: (pool[b][0], -cap[b]))
+        if b is not None:
+            plan[j], cap[b] = b, cap[b] - 1
+    for j in range(first, min(DEATH_FROM, last + 1)):
+        b = pick(j, lambda b: (-cap[b], pool[b][0]))
+        if b is not None:
+            plan[j], cap[b] = b, cap[b] - 1
+    for j, b in plan.items():
+        out[j] = pool[b]
+    return out, plan
+
+
+def order_batters(left):
+    """left: {name: (typical position, (rpb, out, exp))} -> (11, 3) array, ordered by prior typical position (NaN padded)."""
+    q = np.full((11, 3), np.nan)
+    for i, (_, v) in enumerate(sorted(left.items(), key=lambda kv: kv[1][0])[:11]):
+        q[i] = v[1]
+    return q

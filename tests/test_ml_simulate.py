@@ -82,3 +82,93 @@ def test_ball_model_probabilities_sum_to_one_and_level_effect():
 
 
 BM_COLS = ["bat_faced", "bat_rpb", "bat_out", "bat_exp", "bow_rpb", "bow_wk", "ball_in_over", "balls_bowled", "wickets", "innings", "crr", "target", "runs_needed", "rrr"]
+
+
+# ---------- sim-R: real batters still to come, real bowlers' overs left ----------
+from types import SimpleNamespace  # noqa: E402
+
+from cricket_analytics.ml import resources as R  # noqa: E402
+from cricket_analytics.ml import simfix as SF  # noqa: E402
+from cricket_analytics.ml.simulate import order_batters, schedule_bowlers  # noqa: E402
+
+
+class Spy(Fixed):
+    """Every ball a wicket; records the striker's bat_rpb and the bowler's bow_rpb seen at each ball of path 0."""
+
+    def __init__(self):
+        super().__init__([0, 0, 0, 0, 0, 0, 1, 0])
+        self.bat, self.bowl = [], []
+
+    def proba(self, f):
+        self.bat.append(float(f["bat_rpb"][0]))
+        self.bowl.append(float(f["bow_rpb"][0]))
+        return super().proba(f)
+
+
+def test_wickets_bring_in_the_queue_in_order():
+    q = np.full((1, 11, 3), np.nan)
+    q[0, :4] = [[5, .1, 1], [6, .1, 1], [7, .1, 1], [8, .1, 1]]
+    m = Spy()
+    simulate(m, state(wickets=3, s_rpb=2.0), n=1, plan={"bat_q": q, "bow_s": np.full((1, 20, 2), np.nan)})
+    assert m.bat[:5] == [2.0, 5.0, 6.0, 7.0, 8.0]  # then the generic batter (1.0) once the queue is empty
+
+
+def test_plan_none_is_the_old_simulator():
+    a = simulate(one_run(), state(runs=3), n=5, seed=2)
+    b = simulate(one_run(), state(runs=3), n=5, seed=2, plan={"bat_q": np.full((1, 11, 3), np.nan), "bow_s": np.full((1, 20, 2), np.nan)})
+    assert (a["final"] == b["final"]).all()
+
+
+def test_bowler_schedule_respects_four_overs_and_no_back_to_back():
+    pool = {c: (1.0 + i / 10, 0.05) for i, c in enumerate("ABCDE")}
+    for k, cur, done in ((0, "A", {}), (60, "C", {"A": 2, "B": 3, "C": 1, "D": 3, "E": 1}), (90, "E", {"A": 4, "B": 3, "C": 2, "D": 3, "E": 3})):
+        cap = {c: 4 - done.get(c, 0) for c in pool}
+        out, plan = schedule_bowlers(pool, cap, cur, k)
+        seq = [cur] + [plan.get(j) for j in range(k // 6 + 1, 20)]
+        used = {c: seq.count(c) + done.get(c, 0) for c in pool}
+        assert max(used.values()) <= 4
+        assert all(a != b for a, b in zip(seq, seq[1:]) if a and b)
+        assert not np.isnan(out[k // 6 + 1:]).all(axis=1).any() or sum(cap.values()) < 20 - k // 6
+
+
+def test_simulated_innings_uses_scheduled_bowlers():
+    pool = {c: (1.0 + i, 0.05) for i, c in enumerate("ABCDE")}
+    out, plan = schedule_bowlers(pool, {c: 4 for c in pool}, "A", 0)
+    m = Spy()
+    m.p = np.array([0, 1, 0, 0, 0, 0, 0, 0.0])
+    simulate(m, state(), n=1, plan={"bat_q": np.full((1, 11, 3), np.nan), "bow_s": out[None]})
+    per_over = [m.bowl[i * 6] for i in range(1, 20)]
+    assert per_over == [out[j, 0] for j in range(1, 20)]
+
+
+def test_batter_order_ignores_insertion_order():
+    left = {"x": (9.0, (1, 1, 1)), "y": (4.0, (2, 2, 2)), "z": (6.5, (3, 3, 3))}
+    assert order_batters(left)[:3, 0].tolist() == [2, 3, 1] and order_batters(dict(reversed(left.items())))[:3, 0].tolist() == [2, 3, 1]
+
+
+def test_build_plan_reads_only_the_state_so_far():
+    """Shuffling who bats / bowls AFTER the checkpoint must not change the plan (XI and prior strengths are what count)."""
+    rows = []
+    bats = ["a", "b", "c", "d", "e", "f"]
+    for j in range(60):
+        rows.append(dict(match_id="m", innings=1, ball_seq=j, balls_bowled=j, legal=1, batter=bats[0 if j < 40 else 2], non_striker=bats[1],
+                         bowler="pq"[(j // 6) % 2], bat_rpb=1.0, bat_out=.05, bat_exp=3.0, bow_rpb=1.2, bow_wk=.05, match_date=pd.Timestamp("2025-04-01")))
+    old = [dict(rows[0], match_id="m0", batter=x, non_striker=x, ball_seq=i, match_date=pd.Timestamp("2025-03-01")) for i, x in enumerate("def")]
+    b = pd.concat([pd.DataFrame(rows), pd.DataFrame(old)], ignore_index=True)
+    ctx = SF.PlanCtx.__new__(SF.PlanCtx)
+    ctx.R, ctx.dates = R, {"m": pd.Timestamp("2025-04-01")}
+    ctx.S = SimpleNamespace(bat=lambda k, d: (0.5, 1.0, {"c": 5.0, "d": 4.0, "e": 8.0, "f": 7.0}.get(k[0], 3.0)), bowl=lambda k, d: (1, 1, 1, 0.9))
+    ctx.teams = pd.DataFrame({"batting_team": ["T1"], "bowling_team": ["T2"]}, index=pd.MultiIndex.from_tuples([("m", 1)]))
+    ctx.side = {("m", "T1"): pd.DataFrame({"player": bats}), ("m", "T2"): pd.DataFrame({"player": ["p", "q", "r", "s", "t"]})}
+    ctx.bat0 = SF.PlanCtx._first(b.assign(batter=b.batter), "batter", ["bat_rpb", "bat_out", "bat_exp"])
+    ctx.bowl0 = SF.PlanCtx._first(b, "bowler", ["bow_rpb", "bow_wk"])
+    st = pd.DataFrame({"match_id": ["m"], "innings": [1], "balls_bowled": [30]})
+    p1 = SF.build_plan(ctx, st, b[b.match_id == "m"])
+    # at ball 30: a (striker) and b are in; c batted from ball 40 on (future) -> still "to come", and d, e, f too, ordered by prior position (d, c, f, e)
+    assert int((~np.isnan(p1["bat_q"][0, :, 0])).sum()) == 4
+    b2 = b.copy()
+    b2.loc[(b2.match_id == "m") & (b2.balls_bowled > 30), "batter"] = "f"  # change the future batting
+    b2.loc[(b2.match_id == "m") & (b2.balls_bowled > 30), "bowler"] = "r"
+    p2 = SF.build_plan(ctx, st, b2[b2.match_id == "m"])
+    assert np.allclose(p1["bat_q"], p2["bat_q"], equal_nan=True)
+    assert np.isnan(p1["bat_q"][0, 4:]).all()
