@@ -24,6 +24,12 @@
       "port": 8501
     },
     {
+      "name": "ui-mockup",
+      "runtimeExecutable": ".venv\\Scripts\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8510", "--directory", "frontend/mockup"],
+      "port": 8510
+    },
+    {
       "name": "Cricket CLI (modules)",
       "runtimeExecutable": ".venv\\Scripts\\python.exe",
       "runtimeArgs": [
