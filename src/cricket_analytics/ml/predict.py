@@ -6,7 +6,7 @@ section 9: first-innings score = G1 alone, chase win probability = v1 blend ens-
   competitions() / venues() / teams() / players() / matches()   lists for a UI
 
 Models (read-only, data/external/ml/models/):
-  G1   direct LightGBM, "final" files in v2/: trained on matches < 2026-01-01 + IPL 2026 (v1 recipe: level-relative target,
+  G1   direct LightGBM, "final" files in v2/: refit on all data up to the cutoff in models/production_meta.json (v1 recipe: level-relative target,
        no season feature, conformal-widened q10/q90; chase classifier = the unconstrained w0 model). Score model is
        first-innings only; so the chase score range comes from the simulator alone.
   sim-B  ball-by-ball Monte Carlo (ball_B_men_fresh.pkl, men's pool). Players it does not know get the average batter / bowler.
@@ -16,7 +16,7 @@ measurable: dev MAE 19.41 vs 19.36, difference +0.05 [-0.07, +0.16]); win probab
 
 All features are built "as of" `date` from earlier matches only (same code paths as training: features.innings_features,
 ball_model.match_levels, the shrunk career strengths). Never writes a .duckdb. Men's competitions only, 20-over games.
-Replays of matches before 2026 / IPL 2026 are in-sample (the models were trained on them).
+Replays of matches on or before the training cutoff (production_meta.json) are in-sample (the models were trained on them).
 """
 
 import json
@@ -427,6 +427,14 @@ def predict_state(competition, venue, batting_team, bowling_team, innings, runs,
     return out
 
 
+def is_in_sample(date, comp) -> bool:
+    """True if the models were trained on a match of this date. Cutoff = production_meta.json; old rule if the file is missing."""
+    try:
+        return bool(pd.Timestamp(date) <= pd.Timestamp(json.loads((MODEL_DIR / "production_meta.json").read_text())["cutoff"]))
+    except (OSError, KeyError, ValueError):
+        return bool(pd.Timestamp(date) < pd.Timestamp("2026-01-01") or comp == "ipl")
+
+
 # ---------- public: replay a past match ----------
 def predict_match_curve(match_id, n_sims=200, seed=0, model="auto") -> tuple[pd.DataFrame, dict]:
     """Prediction at the start of every over of a past match, from the real state (real players and score).
@@ -451,7 +459,7 @@ def predict_match_curve(match_id, n_sims=200, seed=0, model="auto") -> tuple[pd.
     meta = {"match_id": mid, "competition": comp, "date": str(d.date()), "venue": first.venue, "team1": first.batting_team, "team2": second.batting_team,
             "score1": int(first.final_total), "wk1": int(first.final_wickets), "score2": int(second.final_total), "wk2": int(second.final_wickets),
             "target": None if pd.isna(second.target) else int(second.target), "winner": first.winner, "result": first.result,
-            "reduced": bool(first.reduced), "in_sample": bool(d < pd.Timestamp("2026-01-01") or comp == "ipl")}
+            "reduced": bool(first.reduced), "in_sample": is_in_sample(d, comp)}
     frames = []
     for i in (1, 2):
         s = st[(st.innings == i) & (st.balls_bowled % 6 == 0) & (st.balls_bowled < st.max_balls)].copy()
