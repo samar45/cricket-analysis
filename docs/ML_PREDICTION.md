@@ -1359,3 +1359,33 @@ B on BBL11-15 only (n = 228 / 226 / 203):
 | 15 | 4+ | >10 | 101 | 0.2599 | 0.2074 | +0.0525 | [+0.017, +0.092] | 0.039 | **yes** |
 
 Cell counts sum to 283 / 280 / 254 (checked in the code). **Findings (Holm p < 0.05): two.** (1) 10 overs, 0-1 wickets down, required rate < 8 (n = 29): model worse by +0.052. (2) 15 overs, 4+ wickets down, required rate > 10 (n = 101): model worse by +0.053. Cell (2) is the one big cell and its Holm p (0.039) is close to the line; cell (1) rests on 29 matches. The cells where the model looks better than the market (negative diffs) are small and none is significant. These are descriptive; no decision follows and nothing is adopted. Reading, not tested: both are lopsided states (far ahead of the rate, or far behind it) where the market may price information we lack (team news, pitch, dew).
+
+### 2026-11-13 (lead): PRE-REGISTRATION of test 3 (wicket overreaction) and test 4 (does player information explain the market gap?), before any computation
+Data: Betfair BBL10-15 CSVs (snapshots at first ball and 4/6/10/15 overs of each innings), joined to Cricsheet as in `market.py`. Market p de-vigged as before. No row on or after 2026-10-15.
+
+**Test 3: does the market overreact to wickets?** (Norton, Gray & Faff 2015 found this for ODI first innings.)
+- Rows: for each innings and each consecutive snapshot pair (4->6, 6->10, 10->15 overs), the market probability for the **batting team** at the later snapshot, and W = wickets that fell between the two snapshots (from Cricsheet).
+- Model: logistic regression of "batting team won" on logit(market p) as an offset, plus beta x W, with match-clustered errors and a match bootstrap.
+- beta > 0 means that after wickets the market is too pessimistic about the batting team (overreaction). beta < 0 means underreaction.
+- **Primary:** first innings, pooled over the 3 pairs. **Secondary:** second innings pooled, and each pair alone.
+- A finding needs the 95% interval to exclude 0 on both the match bootstrap and the season-block bootstrap.
+- Paper P&L, reported **only if the primary is a finding**: back the batting team at the later snapshot when W >= 2. Flat 100 stake, 5% commission on winnings, the lower of the two listed prices, with a bootstrap range. Research only, no betting use.
+
+**Test 4: does the market use player information that our model misses?**
+- Rows: the chase at 6/10/15 overs (benchmark rows).
+- Residual r = logit(market p) - logit(ens-G1 p).
+- Regress r on 4 player features, all prior-only shrunk career rates (as in `resources.py`) using the real XI from `xi.parquet`:
+  1. strength of the two batters at the crease;
+  2. strength of the chasing team's batters not yet in;
+  3. bowling strength of the fielding team's remaining overs;
+  4. a keeper/finisher flag is NOT used (no reliable source).
+- Each feature is standardised. The four slopes are judged with the match bootstrap plus the season-block bootstrap, Holm over the 4.
+- A slope that survives means the market prices player information our model under-uses. That is the new reason needed to retry player features (see `ML_LEARNINGS.md` §5). If none survive, the gap is not player information we can measure from free data.
+- **No decision follows directly.** A follow-up would be pre-registered separately.
+
+**Goal tests, frozen before code:**
+- Market p for the batting team is in (0,1) and the two teams' values sum to 1.
+- W equals the Cricsheet wickets between the two snapshot balls, and is 0 to 10.
+- Player features use only matches dated before the match.
+- The test 4 rows equal the benchmark rows.
+- No row dated 2026-10-15 or later.
