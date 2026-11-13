@@ -1081,3 +1081,61 @@ Versus the **v1 blend** (G1 + sim-B at the 3 checkpoints): b2 IPL dMAE -0.13 [-0
   4. cov80 is between 0.72 and 0.88.
 - **Also reported:** the collapse event bias (3 wickets in 12 balls), and T20I (full members) vs leagues separately.
 - **Small sample:** about 1 month of matches. If fewer than 80 decided chases, the result counts as **indicative only** and is confirmed on live BBL data.
+
+### 2026-11-13: model zoo benchmark (`ml/model_zoo.py`, `ml/model_zoo_report.py`; exploratory only, nothing frozen)
+**Plain summary.** Every model family on the same bench as the drawing board (identical over-end states: IPL 2022-25 = 284 first innings / 283 chases, non-IPL men's 2024-25 = 1695 matches; trained on earlier seasons, tuned on an inner fold = the last training season, never the test season; same G2 columns and level-relative target). **No new family beats G2 by a margin that matters, and none beats b2 / b23.** XGBoost, HistGradientBoosting and ExtraTrees tie G2 on average; RandomForest is worse; CatBoost is slightly better on non-IPL score (MAE -0.10*, pinball -0.043*) but not in the IPL. All tree families keep the shock bias (collapse +4.8 to +8.2 runs vs G2 +7.3). The GRU, like the GAM and MLP, has a small shock bias but is clearly worse on the non-IPL average. Per the lead, this is a family comparison only: **no winner is frozen for fresh set #3**.
+
+**What was scored.** 6 new models (Z1-Z6) and 3 blends = 9 new rows; 11 inner-fold tuning arms in total (2 configs each for XGB / Cat / RF / ET / HGB, 1 GRU recipe; early stopping on season Y-1). Reference rows (G2, G1, M1-M3, b2, b23, resource) come from the drawing-board caches on the same states; sim-B and the v1 blend exist only at 6/10/15 overs, so they are in a separate checkpoint table. Picking CatBoost as the blend partner was done after seeing results, so blend margins are optimistic. Folds 2024-25 have far more test rows than 2022-23 (18,485 and 15,933 vs 1,397 and 1,347 first-innings rows) because they include every non-IPL competition by design; checked: identical row counts for g2oe, Z1 and Z6, so this is not a GRU bug.
+
+**Recipes.** Z1 XGBoost 3.4.1 hist, `reg:quantileerror` alpha 0.1/0.5/0.9 in one model, eta 0.05, lambda 10, depth 4 or 6, early stopping 40; chase `binary:logistic`. Z2 CatBoost 1.2.10 `MultiQuantile:alpha=0.1,0.5,0.9`, depth 4 or 6, lr 0.08, l2 10, early stopping 50; chase Logloss. Z3/Z4 sklearn RandomForest / ExtraTrees, 120 trees, max_features 0.5, min_samples_leaf 100/400 (RF) or 50/200 (ET), RF row subsample 0.5; mean (L2) model of remaining/level with weights s^2, quantiles = residual quantiles by state bucket (8 buckets) on the inner validation; chase = classifier probability. Z5 HistGradientBoosting quantile loss per quantile (15 or 31 leaves), iterations picked by staged predictions on the inner validation (sklearn's internal early-stopping split is random and leaks across balls of a match); chase classifier. Quantile-objective models (Z1, Z2, Z5, Z6) get the same conformal widening as G2. Z6 GRU: 1 layer, 48 hidden, per-delivery inputs (runs, wicket, extra, legal, balls/120, wickets/10, runs/level) + static (level, target/level, competition one-hot), separate nets for first-innings quantiles (ordered outputs, pinball loss) and the chase (BCE), Adam 3e-3, batch 128 innings, patience 4 on the inner fold (stopped at 5-9 epochs), CPU 4 threads, trained on every even-ball state of seasons < Y; 11 minutes for all 4 folds.
+
+**Main table** (identical over-end states; IPL columns = IPL 2022-25; acc = share of chases where p > 0.5 matches the result; collapse = 3 wkts in 12 balls, non-IPL first-innings excess bias in runs; events = mean |excess| over about 20 events, innings 1 in runs / chase in pp, average of IPL and non-IPL; train = seconds per fold including tuning and both models; pred = microseconds per state; the G2 time is one LightGBM fold re-timed; `-` = not logged).
+
+| model | MAE@6 | @10 | @15 | pinball | cov80 | acc@10 | acc@15 | chase LL | ECE | non-IPL MAE | non-IPL LL | collapse | events inn1 / chase | train s | pred us |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Resource table | 23.18 | 18.04 | 11.26 | 5.703 | 0.717 | 0.778 | 0.838 | 0.482 | 0.111 | 19.41 | 0.372 | +8.0 | 4.67 / 5.34 | - | - |
+| G1 LightGBM | 20.20 | 16.16 | 10.04 | 5.157 | 0.819 | 0.796 | 0.861 | 0.442 | 0.028 | 17.31 | 0.339 | +9.4 | 4.48 / 4.62 | - | - |
+| **G2 LightGBM (control)** | 20.47 | 16.14 | 10.04 | 5.151 | 0.833 | 0.799 | 0.853 | 0.431 | 0.031 | 17.15 | 0.331 | +7.3 | 3.88 / 3.47 | 16 | - |
+| k-NN (M1) | 20.92 | 16.15 | 10.03 | 5.114 | 0.837 | 0.796 | 0.831 | 0.420 | 0.027 | 18.26 | 0.344 | +8.3 | 3.04 / 1.86 | - | - |
+| Spline GAM (M2) | 20.80 | 15.66 | 9.92 | 5.088 | 0.825 | 0.792 | 0.831 | 0.418 | 0.017 | 17.83 | 0.333 | +4.3 | 1.92 / 1.47 | - | - |
+| MLP (M3) | 20.97 | 15.85 | 9.87 | 5.156 | 0.819 | 0.799 | 0.827 | 0.418 | 0.012 | 17.98 | 0.335 | +2.4 | 1.47 / 1.36 | - | - |
+| b2 = G2 + GAM | 20.41 | 15.75 | 9.84 | 5.053 | 0.839 | 0.796 | 0.846 | 0.419 | 0.018 | 17.20 | 0.328 | +5.8 | 2.52 / 2.18 | - | - |
+| b23 = G2 + GAM + MLP | 20.46 | 15.71 | 9.74 | 5.049 | 0.835 | 0.796 | 0.835 | 0.417 | 0.017 | 17.35 | 0.329 | +4.7 | 1.99 / 1.72 | - | - |
+| Z1 XGBoost | 21.17 | 16.50 | 10.17 | 5.163 | 0.845 | 0.781 | 0.853 | 0.422 | 0.030 | 17.11 | 0.327 | +6.6 | 3.84 / 3.40 | 43 | 3.3 |
+| Z2 CatBoost | 20.87 | 16.45 | 10.08 | 5.156 | 0.816 | 0.774 | 0.853 | 0.432 | 0.033 | 17.05 | 0.335 | +4.8 | 2.84 / 3.84 | 87 | 0.8 |
+| Z3 RandomForest | 20.49 | 16.36 | 10.66 | 5.232 | 0.867 | 0.789 | 0.857 | 0.438 | 0.028 | 17.25 | 0.332 | +8.2 | 3.44 / 4.83 | 61 | 4.2 |
+| Z4 ExtraTrees | 20.50 | 16.27 | 10.25 | 5.165 | 0.870 | 0.785 | 0.861 | 0.430 | 0.040 | 17.12 | 0.332 | +5.5 | 2.52 / 3.59 | 48 | 5.5 |
+| Z5 HistGradientBoosting | 20.51 | 16.32 | 10.05 | 5.168 | 0.829 | 0.789 | 0.850 | 0.433 | 0.026 | 17.12 | 0.331 | +6.7 | 3.65 / 3.52 | 126 | 2.4 |
+| Z6 GRU | 21.12 | 16.18 | 10.03 | 5.100 | 0.809 | 0.781 | 0.850 | 0.430 | 0.034 | 17.86 | 0.367 | +3.8 | 2.04 / 2.41 | 162 | 9.1 |
+| Z7a CatBoost + G2 | 20.63 | 16.30 | 10.02 | 5.135 | 0.825 | 0.778 | 0.853 | 0.428 | 0.028 | 17.05 | 0.331 | +6.0 | 3.34 / 3.65 | - | - |
+| Z7b CatBoost + b2 | 20.62 | 16.08 | 9.93 | 5.087 | 0.833 | 0.785 | 0.850 | 0.422 | 0.022 | 17.03 | 0.329 | +5.3 | 2.65 / 2.97 | - | - |
+| Z7c CatBoost + G2 + GAM | 20.54 | 15.97 | 9.89 | 5.072 | 0.835 | 0.789 | 0.850 | 0.420 | 0.023 | 17.06 | 0.329 | +5.5 | 2.59 / 2.69 | - | - |
+
+Checkpoint-only (6/10/15 overs, adds the models that exist only there): G2 pinball 4.965 / chase LL 0.434 / ECE 0.048; b2 4.862 / 0.423 / 0.027; sim-B 4.947 / 0.440 / 0.031 (cov80 0.779); v1 ens-G1 4.913 / 0.429 / 0.023. Paired vs G2 at checkpoints: v1 blend IPL pinball -0.054*, non-IPL tie; sim-B IPL tie, non-IPL pinball +0.070*.
+
+**Paired difference vs G2** (model minus G2, bootstrap over matches, 1000 resamples). Each cell: difference, 5-95% interval, and the two-sided 95% interval (2.5-97.5%); `*` = excludes 0 in that interval; n.s. = neither interval excludes 0 (see `zoo_paired2.csv` for all numbers).
+
+| model | IPL dMAE | IPL dpinball | IPL dLL | non-IPL dMAE | non-IPL dpinball | non-IPL dLL |
+|---|---|---|---|---|---|---|
+| Z1 XGBoost | +0.16 n.s. | +0.011 n.s. | -0.009 [-0.014, -0.003]* / [-0.016, -0.002]* | -0.03 n.s. | -0.010 n.s. | -0.004 [-0.006, -0.002]* / [-0.006, -0.002]* |
+| Z2 CatBoost | +0.07 n.s. | +0.005 n.s. | +0.002 n.s. | -0.10 [-0.17, -0.03]* / [-0.19, -0.02]* | -0.043 [-0.065, -0.022]* / [-0.069, -0.017]* | +0.004 [0.000, +0.007]* / [-0.000, +0.007] |
+| Z3 RandomForest | +0.02 n.s. | +0.081 [+0.006, +0.151]* / [-0.013, +0.163] | +0.007 n.s. | +0.11 [+0.03, +0.19]* / [+0.01, +0.21]* | +0.076 [+0.051, +0.101]* / [+0.046, +0.105]* | +0.001 n.s. |
+| Z4 ExtraTrees | -0.20 [-0.46, +0.07] / [-0.53, +0.13] n.s. | +0.014 n.s. | -0.001 n.s. | -0.02 n.s. | +0.034 [+0.006, +0.060]* / [+0.001, +0.067]* | +0.001 n.s. |
+| Z5 HGB | +0.06 n.s. | +0.018 n.s. | +0.002 n.s. | -0.02 n.s. | -0.008 n.s. | 0.000 n.s. |
+| Z6 GRU | -0.14 n.s. | -0.051 [-0.141, +0.036] / [-0.160, +0.055] n.s. | -0.002 n.s. | +0.71 [+0.50, +0.93]* / [+0.47, +0.97]* | +0.212 [+0.149, +0.274]* / [+0.139, +0.285]* | +0.036 [+0.027, +0.046]* / [+0.025, +0.047]* |
+| b2 (drawing board, 5-95% only) | -0.32 [-0.52, -0.14]* | -0.097 [-0.149, -0.048]* | -0.012 [-0.020, -0.004]* | +0.06 n.s. | +0.029 n.s. | -0.003 [-0.006, -0.000]* |
+| Z7b CatBoost + b2 | -0.16 [-0.34, +0.01] / [-0.38, +0.04] n.s. | -0.064 [-0.110, -0.021]* / [-0.118, -0.012]* | -0.009 [-0.016, -0.002]* / [-0.017, -0.001]* | -0.12 [-0.19, -0.05]* / [-0.20, -0.04]* | -0.042 [-0.057, -0.025]* / [-0.060, -0.021]* | -0.002 n.s. |
+| Z7c CatBoost + G2 + GAM | -0.22 [-0.40, -0.05]* / [-0.44, -0.02]* | -0.078 [-0.125, -0.034]* / [-0.133, -0.027]* | -0.011 [-0.018, -0.004]* / [-0.019, -0.003]* | -0.08 [-0.16, -0.00]* / [-0.17, +0.02] | -0.025 [-0.045, -0.005]* / [-0.048, -0.002]* | -0.003 [-0.005, -0.000]* / [-0.006, +0.000] |
+
+With 9 new rows x 6 comparisons (54 intervals) about 3 would exclude 0 by chance at 95%, so single starred cells are weak evidence.
+
+**Verdict (plain language).**
+1. **Best family.** On average-state accuracy the gradient-boosted trees (LightGBM, XGBoost, CatBoost, HistGradientBoosting) are indistinguishable; ExtraTrees is close; RandomForest is worse. XGBoost's chase log loss is a little better than G2 (-0.009 IPL, -0.004 non-IPL, both excluding 0 at 95%); CatBoost's non-IPL score is a little better. Changing tree library is worth about as much as these small gaps.
+2. **Trees vs smooth models on shocks.** Every tree model keeps the collapse bias (+4.8 to +8.2 runs after 3 wickets in 12 balls). The smooth models (GAM +4.3, MLP +2.4, GRU +3.8) have much smaller event biases (innings-1 events 1.5-2.0 runs vs trees 2.5-3.9) but are worse on ordinary states, most visibly non-IPL (MAE +0.7 to +1.1). Reading, not proven: a tree answers with the average of a bucket of past states, so a rare combination (many wickets, few balls left, slow last 12 balls) is blurred into its neighbours; a smooth model bends continuously with wickets and balls left, so shocks move the forecast, but it cannot capture the sharp competition-specific differences that matter on average. Averaging the two (b2, b23) keeps most of both.
+3. **GRU.** Reading the ball order did not help beyond the state features: it behaves like the MLP (about 17,700 innings of training data; stopped after 5-9 epochs).
+4. **Nothing beats G2/b2 for free.** b2 / b23 keep the best IPL numbers and low event biases; CatBoost-based blends match them on non-IPL but not on shocks. **b2 (G2 + GAM) stays the best candidate**; extra families add at most about 0.05 pinball. Not frozen and not added to the fresh-set #3 list.
+5. **Cost** per fold (score + chase, tuning included): XGBoost 43 s, ExtraTrees 48 s, RF 61 s, CatBoost 87 s, HGB 126 s, GRU 162 s, LightGBM about 16 s (4 threads). Prediction 1-9 microseconds per state for all.
+
+**Caveats.** Over-end states only; the GRU trains on every even ball, trees on every 4th ball, GAM/MLP/k-NN on over ends; RF/ET use one-hot competition, HGB a numeric code, RF row subsample 0.5; RF/ET ranges are looser (cov80 0.87). The test seasons were seen in earlier experiments; the tuning grids used inner folds only, but the choice of CatBoost as the blend partner did not.
+**Packages installed into `.venv`.** xgboost 3.4.1 (about 57 MB on disk), catboost 1.2.10 (about 330 MB on disk; pulls graphviz 0.21), torch 2.15.0+cpu (wheel 126.6 MB; pulls networkx 3.7, fsspec 2026.9.0). scikit-learn 1.9.1 and lightgbm 4.7.0 as before.
+**Where things are.** Code `ml/model_zoo.py` (`python -m cricket_analytics.ml.model_zoo z1 z2 z3 z4 z5 z6 | blend z2 | report`), `ml/model_zoo_report.py`; caches `db_z*_{S,W}.parquet`, `zoo_table.csv`, `zoo_table_ckpt.csv`, `zoo_paired*.csv`, `zoo_battery.csv`, `zoo_times.json` in `data/external/ml/`; plot `docs/img/ml_zoo.png`; tests `tests/test_ml_zoo.py` (6).

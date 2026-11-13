@@ -65,6 +65,13 @@ Locked test sets so far:
 | 13 Nov | Fresh set #3 built (`data/external/ml/fresh3/`) | Only **6 matches** qualify (all men's T20I: India v West Indies 1, India v New Zealand 5), 5 chases. No league data since 15 Oct. Counts only, no results opened. | **Saved, not run** (Samar). Far below the 80-chase bar. Keep the lock and let the set grow (BBL from mid-Dec, more T20Is); run once when it is big enough. |
 | 13 Nov | WAR or 1–100 ratings as player strength | No better than simple shrunk career rates | Use simple rates for the model; 1–100 is for display only |
 
+| 13 Nov | Model zoo Z1 XGBoost (depth 4/6 grid, quantile objective, conformal) | IPL MAE@6/10/15 21.17/16.50/10.17, pinball 5.163, chase LL 0.422; non-IPL MAE 17.11, LL 0.327; collapse +6.6. Vs G2: IPL tie, non-IPL tie, chase LL better (IPL -0.009*, non -0.004*) | Ties G2 on score; shock bias not fixed. Trees of any brand behave the same. |
+| 13 Nov | Z2 CatBoost (MultiQuantile, depth 4/6) | IPL pinball 5.156, chase LL 0.432; non-IPL MAE 17.05 (vs G2 -0.10*), pinball -0.043*; collapse +4.8; chase events worse (3.84 pp vs 3.47) | Best single new model on non-IPL score; no IPL gain; shock bias partly lower. |
+| 13 Nov | Z3 RandomForest (mean + residual quantiles) | IPL pinball 5.232 (+0.081*), cov80 0.867, chase LL 0.438; non-IPL MAE +0.11*; collapse +8.2 | Worse than G2. Drop. |
+| 13 Nov | Z4 ExtraTrees (mean + residual quantiles) | IPL pinball 5.165, chase LL 0.430; non-IPL MAE 17.12 (tie), pinball +0.034*; collapse +5.5, events inn1 2.52 | Tie overall, smoother (events better than G2) but ranges looser. Optional blend member only. |
+| 13 Nov | Z5 HistGradientBoosting (sklearn, 15/31 leaves) | Matches LightGBM within noise on every column (IPL pinball 5.168, non-IPL MAE 17.12, LL 0.331; collapse +6.7) | Confirms the LightGBM G2 result is not a library artefact. No reason to switch. |
+| 13 Nov | Z6 GRU on the ball-by-ball sequence (1 layer, 48 hidden, early stopped at 5-9 epochs) | IPL pinball 5.100 (-0.051, n.s.), cov80 0.809, chase LL 0.430; **non-IPL clearly worse** (MAE +0.71*, LL +0.036*); collapse +3.8, events 2.04 | Like the MLP/GAM: small shock bias, worse average. Ball order adds nothing over the over-end state features. Drop. |
+| 13 Nov | Zoo blends Z7a/b/c (CatBoost + G2; CatBoost + b2; CatBoost + G2 + GAM) | Z7b IPL pinball -0.064*, non-IPL MAE -0.12*, pinball -0.042*; Z7c IPL pinball -0.078*; but IPL MAE and collapse bias (5.3-5.5) no better than b2 / b23 (5.8 / 4.7) | **Nothing beats b2/b23 clearly.** CatBoost in the mix helps non-IPL slightly; choosing CatBoost was done after seeing results. Exploratory only, not frozen. |
 | 13 Nov | Outside review (Opus, no context; `docs/REVIEW_external_2026-11-13.md`) | Scores: rigour 5, honesty 7, progress 4, effort 3, usefulness 6. Lead re-ran 2 checks: (a) **a level-scaled DLS table gets MAE 16.40, so G1 ties it (−0.09 [−0.55, +0.37]) and G0 is worse**; (b) IPL chase rate was 0.61 in 2019 and 0.63 in 2021, so 2026's 0.63 is not unusual. Also: ECE < 0.08 fails for a perfectly calibrated model about 98% of the time at n ≈ 70; about 100 variants on one bench; the bootstrap ignores season clustering. | **Accepted.** The old baseline was a strawman, and the "chase surge" story is withdrawn. Fix the test statistics (power, calibration test, season-block bootstrap) before fresh set #3 runs. The zoo is exploratory only, with no winner hook. |
 
 ## 4. What works (keep)
@@ -73,6 +80,7 @@ Locked test sets so far:
 - Averaging LightGBM with the simulator
 - Conformal widening of the 10–90% range
 - Rolling-season validation with locked, pre-registered tests
+- Averaging a tree model with a smooth model (GAM / MLP): b2 / b23 are still the best candidates after the model zoo
 
 ## 5. What failed (don't retry without a NEW reason)
 - Commentary-derived inputs for value/forecasting: length matchup, death execution, drop luck, worth_plus
@@ -85,6 +93,8 @@ Locked test sets so far:
 - Bigger tree capacity on its own
 - Real-XI simulator (pending final confirmation)
 - Pre-match team ratings for IPL 2022+
+- Switching tree library or tree family (XGBoost, CatBoost, HistGradientBoosting, ExtraTrees all tie G2; RandomForest worse): the stiffness is the tree shape, not the package
+- GRU / sequence model on the ball-by-ball data (non-IPL worse, IPL tie)
 
 ## 6. Lessons
 1. **More data beats purity.** All leagues beat IPL-only, even for IPL forecasts.
