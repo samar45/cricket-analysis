@@ -1413,3 +1413,29 @@ Run exactly as registered. Choices the registration left open: snapshot ball = o
 | strength of chasing batters not yet in | +0.390 | [+0.308, +0.475] | [+0.255, +0.550] | 0.002 | yes |
 | bowling strength of the fielding side's remaining overs (econ ratio, lower = stronger) | +0.083 | [+0.012, +0.153] | [-0.009, +0.146] | 0.042 | no (season-block interval includes 0) |
 **Verdict: two of the three slopes survive.** The market is higher than ens-G1 when the chasing side has better batters at the crease or still to come; the bowling slope does not survive. Caveat (not tested here): f_notin is also tied to wickets already lost, which the model sees, and the positive bowling slope (weaker fielding attack = higher market p) has the expected sign only if econ ratio is read as "higher = weaker". Per the registration this is the new reason needed to retry player features; a follow-up needs its own pre-registration. No decision follows directly.
+
+### 2026-11-13 (lead): PRE-REGISTRATION of (B) the "react harder" chase fix and (C) the paper-trading replay rule, before any computation
+**B. React harder to wickets and required rate (chase win probability).** This targets the flaw seen 3 times: the flaw hunt, test 2 (market wins on easy chases at 10 overs and hopeless chases at 15) and the lead's check of test 4.
+- **Candidates (only these two):**
+  - **F1** = a recalibration layer on ens-G1: a logistic regression of the chase result on [logit p_ens-G1, wickets down, required rate, balls left, wickets x balls left], fit on earlier seasons only (rolling), applied out-of-sample.
+  - **F2** = the b2-style chase average, mean(G2, spline GAM), from the drawing board.
+- **Judged on the dev folds:** IPL 2022-25 and non-IPL 2024-25, chase states at 6/10/15 overs, all men's.
+- **Adopt one only if all of these hold:**
+  - chase log loss is better than ens-G1, with both the match and the season-block 95% intervals excluding 0;
+  - the excess bias in the "rrr >= 13" and "collapse in the chase" events is smaller in size;
+  - non-IPL is not worse;
+  - `calibration_test` passes.
+  If both qualify, take the lower log loss.
+- **Reported, not used to decide:** the gap to the Betfair market on the BBL rows. Those rows were seen when the flaw was found.
+- **Final confirmation:** live BBL from December and fresh set #3.
+
+**C. Paper-trading replay rule (fake money; no real bets, ever).**
+- **Opportunity:** a (match, checkpoint) with a market price. The checkpoints are the chase at 6/10/15 overs, from the Betfair BBL rows.
+- **Price:** the lower of the two listed prices, because the columns may be swapped.
+- **Expected value per 1 unit staked on a side:** EV = p_model x (price - 1) x 0.95 - (1 - p_model), with 5% commission on winnings.
+- **Bet rule:** back a side only if EV >= 0.03. **Stake:** a quarter of the Kelly stake, capped at 5% of the bankroll. The bankroll starts at 5000 (fake).
+- **At most one bet per match:** the first qualifying checkpoint.
+- **Command "make N bets":** among the opportunities available at that moment, take the top N by EV that pass the rule. If fewer pass, place fewer and say why.
+- **Replay:** walk forward in date order through BBL10-15, with model = out-of-sample ens-G1 (already in `market_rows.parquet`). Report final bankroll, number of bets, hit rate, ROI, maximum drawdown and a bootstrap range.
+- **Expectation written beforehand:** about break-even or a small loss, because the market beat this model.
+- **The replay is a test of the engine, not evidence of an edge.**
