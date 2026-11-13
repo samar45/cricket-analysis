@@ -34,9 +34,9 @@ PAD_BOWL = (1.15, 0.8, 1.15)  # unfilled overs: part-timer econ, wk, death
 MAX_OVERS = 4.0
 CREDITED = ("bowled", "caught", "caught and bowled", "lbw", "stumped", "hit wicket")
 NOT_DISMISSAL = ("retired hurt", "retired not out")
-FIELDS = ["bat_left_n", "bat_left_str", "best_bat_left", "bat_left_top", "bowl_left_econ", "bowl_left_wk", "death_top_left"]
-BAT_COLS = FIELDS[:4]
-BOWL_COLS = FIELDS[4:]
+FIELDS = ["bat_left_n", "bat_left_str", "best_bat_left", "bat_left_top", "bat_out_str", "bowl_left_econ", "bowl_left_wk", "death_top_left"]
+BAT_COLS = FIELDS[:5]  # bat_out_str = summed exp of the batters already out (used and no longer at the crease)
+BOWL_COLS = FIELDS[5:]
 
 
 # ---------- playing XI ----------
@@ -197,7 +197,8 @@ def innings_resources(rows, bat_xi, bowl_xi, overs=20):
                 cap = MAX_OVERS - balls[p] // 6 if balls[p] > 0 else MAX_OVERS * pb
                 bl.append((max(0.0, cap), econ, wk, dth))
             bowl = bowl_features(bl, overs - k // 6)
-        out.append({**held, **bowl})
+        at = {x for x in (st, ns) if isinstance(x, str)}
+        out.append({**held, "bat_out_str": float(sum(bat_xi[p][0] for p in used - at if p in bat_xi)), **bowl})
     return out
 
 
