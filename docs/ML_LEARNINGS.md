@@ -65,6 +65,8 @@ Locked test sets so far:
 | 13 Nov | Fresh set #3 built (`data/external/ml/fresh3/`) | Only **6 matches** qualify (all men's T20I: India v West Indies 1, India v New Zealand 5), 5 chases. No league data since 15 Oct. Counts only, no results opened. | **Saved, not run** (Samar). Far below the 80-chase bar. Keep the lock and let the set grow (BBL from mid-Dec, more T20Is); run once when it is big enough. |
 | 13 Nov | WAR or 1–100 ratings as player strength | No better than simple shrunk career rates | Use simple rates for the model; 1–100 is for display only |
 
+| 13 Nov | Outside review (Opus, no context; `docs/REVIEW_external_2026-11-13.md`) | Scores: rigour 5, honesty 7, progress 4, effort 3, usefulness 6. Lead re-ran 2 checks: (a) **a level-scaled DLS table gets MAE 16.40, so G1 ties it (−0.09 [−0.55, +0.37]) and G0 is worse**; (b) IPL chase rate was 0.61 in 2019 and 0.63 in 2021, so 2026's 0.63 is not unusual. Also: ECE < 0.08 fails for a perfectly calibrated model about 98% of the time at n ≈ 70; about 100 variants on one bench; the bootstrap ignores season clustering. | **Accepted.** The old baseline was a strawman, and the "chase surge" story is withdrawn. Fix the test statistics (power, calibration test, season-block bootstrap) before fresh set #3 runs. The zoo is exploratory only, with no winner hook. |
+
 ## 4. What works (keep)
 - Global training pool with a competition input
 - Prior-only scoring level, used as a level-relative target or as a linear term in the simulator
