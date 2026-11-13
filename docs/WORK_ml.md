@@ -41,3 +41,4 @@ MILESTONE: killed thread-oversubscribed LightGBM runs, rerunning with OMP_NUM_TH
 MILESTONE: drawing board D1+D2 done: calibration slopes only mildly >1 (G2 score 1.06 IPL/1.06 non-IPL, chase ~1.0-1.1); the pure fine empirical lookup keeps ~half of the collapse bias (non-IPL 3wk/12b: emp +4.8 vs G2 +7.3 vs G1 +9.4, stationary floor ~+1) -> mixed verdict, shrinkage explains about 30-50 percent, rest is shared by the model-free table (era drift / hidden info); D3/D4/M1-M4 next (2026-11-13)
 MILESTONE: sources S2 / s1r (1-100 ratings) no better than S1; w1 tiny; waiting on w2 w3 s3 (2026-11-13)
 MILESTONE: sim-R done: DROP (worse overall, event biases not smaller; batter queue adds ~+5 runs; bowler plan neutral); non-IPL not run to completion; docs ML_PREDICTION.md updated (2026-11-13)
+MILESTONE: G3 done: resources-left features do not fix collapse bias; r3 marginal (other leagues MAE -0.13); W/S/ratings no gain; doc + plot committed (2026-11-13)
