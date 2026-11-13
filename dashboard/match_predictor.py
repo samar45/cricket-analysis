@@ -92,6 +92,16 @@ def live_tab():
         _live_result(_state(tuple(sorted(run.items()))), run)
 
 
+def _over_under(g: dict, sims):
+    st.markdown("**Over / under calculator**")
+    line = st.number_input("Score line", 0.0, 500.0, float(round(g["q50"] - 0.5) + 0.5), step=0.5, format="%.1f", key="mp_line")
+    over = P.p_over(g["q10"], g["q50"], g["q90"], line)
+    sh = P.sim_share_over(sims, line)
+    st.markdown(f"**Over {line:.1f}: {pct(over)}** (simulator: {pct(sh)})  \n**Under {line:.1f}: {pct(1 - over)}** (simulator: {pct(1 - sh)})")
+    st.caption("Model chances, not betting advice. Only the 10-90% range is checked against real matches (about 80% of totals fall inside it); "
+               "chances between those points are interpolated. Not yet tested against bookmaker lines.")
+
+
 def _live_result(r: dict, p: dict):
     chase = r["innings"] == 2
     q = r["score"]
@@ -115,13 +125,18 @@ def _live_result(r: dict, p: dict):
         "q90": st.column_config.NumberColumn("90%", format="%.0f"), f"{p['batting_team']} win": st.column_config.NumberColumn(f"{p['batting_team']} win", format="percent")})
     if chase:
         st.caption("Chase: only the simulator projects a score (the direct score model is first-innings only), and a chase stops once the target is reached.")
+    sl = P.sim_lines(r["sims"])
     fig = go.Figure(go.Histogram(x=r["sims"], xbins=dict(size=4), marker_color="#4c9be8", name="simulated final scores"))
-    for lab, x, col in (("10%", q["q10"], "#888"), ("median", q["q50"], "#e0a800"), ("90%", q["q90"], "#888")):
+    for lab, x, col in (("sim 10%", sl["q10"], "#888"), ("sim median", sl["q50"], "#e0a800"), ("sim 90%", sl["q90"], "#888")):
         fig.add_vline(x=x, line_dash="dot", line_color=col, annotation_text=lab, annotation_position="top")
+    if not chase:
+        fig.add_vline(x=g["q50"], line_dash="dash", line_color="#2fb344", annotation_text="G1 median", annotation_position="bottom")
     if chase:
         fig.add_vline(x=r["target"], line_color="#e5534b", annotation_text="target", annotation_position="top right")
-    fig.update_layout(height=300, showlegend=False, xaxis_title="final score (simulator, 1,000 paths)", yaxis_title="paths", margin=dict(t=36))
+    fig.update_layout(height=300, showlegend=False, xaxis_title="final score (simulator, 1,000 paths; lines = the simulator's own range)", yaxis_title="paths", margin=dict(t=36))
     st.plotly_chart(fig, width="stretch", theme=None)
+    if not chase:  # chase projections stop at the target, so a line is only meaningful for a first-innings total
+        _over_under(g, r["sims"])
     kn = r["players_known"]
     if any(not kn[k] for k in kn if p.get(k)):
         st.caption("A chosen player has no earlier data, so an average player was used.")

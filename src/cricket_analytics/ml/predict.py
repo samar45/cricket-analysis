@@ -20,6 +20,7 @@ Replays of matches before 2026 / IPL 2026 are in-sample (the models were trained
 """
 
 import json
+import math
 import pickle
 from functools import lru_cache
 
@@ -305,6 +306,25 @@ def _sim_rows(r: pd.DataFrame, bl: pd.DataFrame, comp: str) -> pd.DataFrame:
 
 def _q(a):
     return {k: float(v) for k, v in zip(QC, np.quantile(a, [0.1, 0.5, 0.9]))}
+
+
+_Z90 = 1.2816
+
+
+def p_over(q10, q50, q90, line) -> float:
+    """P(final total > line): two-piece normal through the 10/50/90% quantiles (median q50; separate spread below and above it)."""
+    z = _Z90
+    sd = (q50 - q10) / z if line < q50 else (q90 - q50) / z
+    return 0.5 * math.erfc((line - q50) / (sd * math.sqrt(2)))
+
+
+def sim_lines(sims) -> dict:
+    """The simulator's own 10/50/90% (for the histogram lines)."""
+    return _q(sims)
+
+
+def sim_share_over(sims, line) -> float:
+    return float(np.mean(np.asarray(sims) > line))
 
 
 def _chase_grid(fin, lv, ball_lv, date, comp, sy, n=100, seed=1):
