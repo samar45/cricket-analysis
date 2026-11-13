@@ -1389,3 +1389,27 @@ Data: Betfair BBL10-15 CSVs (snapshots at first ball and 4/6/10/15 overs of each
 - Player features use only matches dated before the match.
 - The test 4 rows equal the benchmark rows.
 - No row dated 2026-10-15 or later.
+
+### 2026-11-13 (worker): RESULTS of test 3 and test 4 (code `ml/market_t34.py`, goal tests `tests/test_market_t34_goals.py` frozen first; 27 related tests pass)
+Run exactly as registered. Choices the registration left open: snapshot ball = over-end legal count (24/36/60/90); W counts dismissals other than retired hurt/not out; rain-reduced and undecided matches dropped; an innings counts only if it was still live after the later snapshot ball; test 3 has no free intercept (offset + beta x W only; the with-intercept beta is in the CSV as a sensitivity only); test 4 features are z-scored within each checkpoint, then pooled, plain OLS with an intercept. **Registration inconsistency:** test 4 lists four features but says the 4th (keeper/finisher flag) is not used, so only 3 slopes exist. Holm was run over 4 with the 4th as p = 1 (the stricter reading).
+
+**Test 3 (market overreaction to wickets; beta > 0 = too pessimistic after wickets).** 284 matches; rows 1668 (first innings 851, second 817).
+| set | rows (= matches) | beta | match 95% | season-block 95% (6 blocks) |
+|---|---|---|---|---|
+| **PRIMARY first innings pooled** | 851 (284 matches) | -0.018 | [-0.178, +0.136] | [-0.203, +0.131] |
+| second innings pooled | 817 (283) | +0.038 | [-0.151, +0.236] | [-0.143, +0.185] |
+| inn 1, 4-6 ov | 284 | +0.217 | [-0.152, +0.494] | [-0.190, +0.570] |
+| inn 1, 6-10 ov | 284 | -0.051 | [-0.253, +0.137] | [-0.217, +0.083] |
+| inn 1, 10-15 ov | 283 | -0.052 | [-0.212, +0.098] | [-0.292, +0.082] |
+| inn 2, 4-6 ov | 283 | -0.164 | [-0.522, +0.240] | [-0.337, +0.036] |
+| inn 2, 6-10 ov | 280 | +0.087 | [-0.151, +0.318] | [-0.125, +0.280] |
+| inn 2, 10-15 ov | 254 | +0.065 | [-0.158, +0.269] | [-0.131, +0.232] |
+**Verdict: no finding.** Every interval contains 0, including the primary. No evidence that the BBL market over- or under-reacts to wickets (a wicket moves the logit by about 0.0 +/- 0.15). The paper P&L was not run (primary is not a finding).
+
+**Test 4 (r = logit market - logit ens-G1 on player features; n = 817 rows, 283 matches; slope per 1 SD).**
+| feature | slope | match 95% | season-block 95% | Holm p (over 4) | survives |
+|---|---|---|---|---|---|
+| strength of the two batters at the crease | +0.238 | [+0.157, +0.323] | [+0.132, +0.306] | 0.002 | yes |
+| strength of chasing batters not yet in | +0.390 | [+0.308, +0.475] | [+0.255, +0.550] | 0.002 | yes |
+| bowling strength of the fielding side's remaining overs (econ ratio, lower = stronger) | +0.083 | [+0.012, +0.153] | [-0.009, +0.146] | 0.042 | no (season-block interval includes 0) |
+**Verdict: two of the three slopes survive.** The market is higher than ens-G1 when the chasing side has better batters at the crease or still to come; the bowling slope does not survive. Caveat (not tested here): f_notin is also tied to wickets already lost, which the model sees, and the positive bowling slope (weaker fielding attack = higher market p) has the expected sign only if econ ratio is read as "higher = weaker". Per the registration this is the new reason needed to retry player features; a follow-up needs its own pre-registration. No decision follows directly.
