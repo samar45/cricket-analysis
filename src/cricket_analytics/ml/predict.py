@@ -20,6 +20,7 @@ Replays of matches before 2026 / IPL 2026 are in-sample (the models were trained
 """
 
 import json
+from statistics import NormalDist
 import math
 import pickle
 from functools import lru_cache
@@ -308,7 +309,7 @@ def _q(a):
     return {k: float(v) for k, v in zip(QC, np.quantile(a, [0.1, 0.5, 0.9]))}
 
 
-_Z90 = 1.2816
+_Z90 = NormalDist().inv_cdf(0.9)
 
 
 def p_over(q10, q50, q90, line) -> float:
