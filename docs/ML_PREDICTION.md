@@ -705,3 +705,10 @@ Chase win probability (mean of 4 checkpoints): 2024 log loss 0.394, Brier 0.130,
 - **League gaps (predicted minus actual chase win rate):** CPL −0.07 and PSL −0.07 under-rate chasers, again the high-chase leagues. ILT20 has n=3, too few to read.
 - **Missing:** the run did not include the resource baseline, so "beats the baseline" is not tested on this set. It was tested on IPL 2022–25 and 2026.
 - **Decision:** keep **v1 ens-G1** as the production model, because v2 is not proven better. The monotone constraint is still worth carrying into v1's chase model for sanity with huge targets (262 chase: 21% → 16%), but only as a logged, non-accuracy change.
+
+### 2026-11-13 (pre-match worker): pre-registration for the pre-match model fresh run, written BEFORE running it
+Model: `ml/prematch.py` (see the "Pre-match model" entry below once the run is done). This is a new model, so the locked set (men's non-IPL franchise leagues, dated 2026-01-01 or later) is clean for it. Development used only matches before 2026-01-01 plus the already-seen IPL 2026.
+- **Primary model:** `logit` = antisymmetric logistic on Elo difference, run-margin strength difference and home advantage; toss is NOT used (the point is a forecast before the toss). `elo` and `logit+toss` are reported as secondary.
+- **Pass rule (all must hold):** (1) log loss beats the 50% coin-flip baseline, with the paired bootstrap over matches (5%-95%) of (model minus baseline) entirely below 0; (2) ECE < 0.08 (10 bins, pooled). Score forecasts are reported but not part of the rule.
+- **Procedure:** parameters fixed from pre-2022 tuning (`models/prematch/params.json`); coefficients fitted on every match not in the locked set; test features come from the full history (earlier 2026 matches are known, prior-only). Run once with `python -m cricket_analytics.ml.prematch fresh` (a flag file refuses a second run).
+- **Expectation, stated in advance:** about 300 matches, so the bootstrap interval is about plus or minus 0.01 log loss wide; on the 2024-25 development leagues the primary model was -0.010 [-0.021, +0.001]. A FAIL on rule (1) is a likely outcome and will be reported as FAIL.
