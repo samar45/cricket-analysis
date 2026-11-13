@@ -695,3 +695,13 @@ Score, mean of 4 (v2 ens equals v1 ens by construction, except G1's small 2026 d
 | 2025 (n 777 / 777 / 777 / 766) | +3.5 / 30.7 / 0.70 | +1.6 / 21.8 / 0.73 | +1.4 / 16.3 / 0.77 | +0.3 / 10.9 / 0.77 |
 
 Chase win probability (mean of 4 checkpoints): 2024 log loss 0.394, Brier 0.130, ECE 0.039 (mean p 0.481 vs actual 0.502); 2025 log loss 0.376, Brier 0.121, ECE 0.038 (0.508 vs 0.506). By competition in 2025, bias at all checkpoints: T20I +5.1 (n 1,741), Blast -4.5 (492), ILT20 -3.5, MLC -5.6, SA20 -1.8, CPL +1.5, BBL +1.3, PSL -1.5, BPL +14.7 (only 24 states). Plain reading: on non-IPL leagues the men's-pool sim-B is well calibrated for chases (ECE under 0.04, better than its IPL ECE) and has a small score bias (+0.3 to +3.5 runs); ranges are a little narrow at 0-10 overs (coverage 0.70-0.77, the same weakness as in the IPL). T20I runs about 5 runs high and the Blast about 4 low, so league-level effects exist (small samples for BPL, BBL). Not compared with the old baselines or G1 here.
+
+### 2026-11-13 08:58 (lead): fresh holdout result (men's non-IPL franchise leagues, ≥ 2026-01-01; run once)
+- **Sample:** 316 first innings (1,262 states) and 312 chases (1,206 states). sim-B used 600 paths. The full output is in `data/external/ml/v2_fresh_report.md`.
+- **v2 ADOPTED: NO.** Chase log loss is v2 0.426 against v1 0.428, a difference of −0.002 [−0.007, +0.003], a tie. The score side is identical, because the score part of v2 is the same as v1.
+- **The bigger finding: both v1 and v2 pass calibration on unseen leagues.** ECE is 0.046 / 0.051 (mean of 4 checkpoints) and 0.033 / 0.030 pooled, against the 0.08 limit. Score MAE is 19.2, 80% coverage 0.77, and bias about +2 runs.
+  - So the IPL 2026 failure was specific to that season's chasing surge, not a general flaw. The model transfers to other leagues.
+- **Ensemble vs sim-B alone:** the ensemble is better on score (MAE −0.26 [−0.41, −0.09]) and ties on chase prediction.
+- **League gaps (predicted minus actual chase win rate):** CPL −0.07 and PSL −0.07 under-rate chasers, again the high-chase leagues. ILT20 has n=3, too few to read.
+- **Missing:** the run did not include the resource baseline, so "beats the baseline" is not tested on this set. It was tested on IPL 2022–25 and 2026.
+- **Decision:** keep **v1 ens-G1** as the production model, because v2 is not proven better. The monotone constraint is still worth carrying into v1's chase model for sanity with huge targets (262 chase: 21% → 16%), but only as a logged, non-accuracy change.
