@@ -57,3 +57,7 @@ data/runs/
 
 # Error + ask logs
 logs/
+
+# frontend
+frontend/app/node_modules
+frontend/app/dist
