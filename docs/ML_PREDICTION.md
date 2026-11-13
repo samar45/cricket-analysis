@@ -771,3 +771,43 @@ Paired MAE difference vs the competition level, 5-95%: venue -0.31 [-0.74, +0.14
 - My first version fitted one set of coefficients on all men's matches; the IPL came out worse than a coin flip. I changed to per-group / per-large-competition coefficients (the IPL still loses, so that was not the main cause). That change was made after seeing the dev folds (IPL 2022-25 included), so dev margins are slightly optimistic; the fresh set was not seen.
 - Tuning grids (pre-2022 data only): Elo K 10-30 and between-season pull-back 0.4-1.0 per group; venue shrinkage k 30-1000 and team k 2-15. The chosen venue k is 1000 (top of the grid, i.e. almost no venue effect beyond the regression coefficient) and the franchise pull-back is 1.0 (top of its range); I did not widen them. Logistic regularisation made no difference on pre-2022 IPL / BBL / Blast folds, so C = 1.
 - Women's matches are in the rolling state (own key) and a women's model is fitted, but it is not backtested.
+
+### 2026-11-13 (luck worker): Luck tracker (`ml/luck.py`, dashboard tab "Luck & surprises")
+
+**What it is.** Per decided IPL chase, from the win-probability curve of the chasing team after each over (G1 direct model, cached **out-of-sample** per-ball predictions: rolling folds IPL 2022-25 and the 2026 holdout; 353 matches, ties/no-results skipped). Not the full blend per over: sim-B per-over probabilities are not cached (replaying via `predict_match_curve` costs about 10 s/match and is in-sample for the IPL). The start-of-chase probability is the blend (G1 + sim-B) / 2 from the caches. The first innings has no win curve (G1 win is chase-only), so first-innings swings are not tracked.
+- **Surprise** = 1 - P(winner) at the start of the chase. **Comeback** = winner's lowest probability during the chase. **Swing** = sum of |change| per over (the final move to the real result is included). **Lead changes** = crossings of 50%. **Decisive over** = biggest single move, with runs/wickets from the deliveries.
+- **Luck** per team-season = wins - expected wins, with expected = sum of pre-chase probabilities (1 - p for the side batting first). Also z = luck / sqrt(sum p(1-p)), and a chase-adjusted version where the season's pre-chase logits are shifted by one constant so the mean equals the real chase win rate.
+
+**Validation.** Luck sums to 0 across teams by construction (each match gives +x to one side, -x to the other), so that is not a test. Real checks: the model's mean chase probability vs the real chase rate per season, and the spread of z (about 1 if probabilities are honest).
+
+| season | matches | real chase win rate | model mean | bias | sd of team z (raw / adjusted) |
+|---|---|---|---|---|---|
+| 2022 | 74 | 50.0% | 51.5% | -0.015 | 1.16 / 1.15 |
+| 2023 | 71 | 45.1% | 44.8% | +0.003 | 0.92 / 0.92 |
+| 2024 | 70 | 51.4% | 51.5% | -0.001 | 0.62 / 0.62 |
+| 2025 | 68 | 51.5% | 52.8% | -0.014 | 0.92 / 0.92 |
+| 2026 | 70 | 64.3% | 54.1% | +0.102 | 1.03 / 1.06 |
+
+Only 2026 has a real chase bias (+10 points). It moves individual teams by up to 0.5 wins (LSG +0.25, DC -0.66 vs raw), and the team ranking barely changes (correlation 0.97).
+Caveat (measured, not fixed): the G1 curve is noisy in the first overs (it can move 10-20 points in one ball), which inflates the swing numbers (mean swing about 1.0-1.3). Rank matches by swing, do not read the absolute value. The decisive over can be over 1 because of this noise. The curve at over 0 is G1 alone while surprise uses the blend, so the first step is not exactly the blend.
+
+**IPL 2026 team luck** (wins in decided matches only, so totals differ a little from the table):
+
+| team | matches | wins | expected | luck | luck chase-adj. | z |
+|---|---|---|---|---|---|---|
+| Royal Challengers Bengaluru | 15 | 11 | 9.3 | +1.7 | +1.7 | +1.1 |
+| Gujarat Titans | 17 | 10 | 8.9 | +1.1 | +0.9 | +0.6 |
+| Sunrisers Hyderabad | 15 | 9 | 8.0 | +1.0 | +1.6 | +0.6 |
+| Punjab Kings | 13 | 7 | 6.1 | +0.9 | +0.5 | +0.5 |
+| Delhi Capitals | 14 | 7 | 6.2 | +0.8 | +0.1 | +0.5 |
+| Rajasthan Royals | 15 | 8 | 7.3 | +0.7 | +1.1 | +0.4 |
+| Chennai Super Kings | 14 | 6 | 6.3 | -0.3 | -0.1 | -0.2 |
+| Mumbai Indians | 13 | 4 | 4.6 | -0.6 | -0.7 | -0.4 |
+| Kolkata Knight Riders | 12 | 5 | 7.4 | -2.4 | -2.5 | -1.6 |
+| Lucknow Super Giants | 12 | 3 | 6.0 | -3.0 | -2.7 | -2.1 |
+
+LSG are the only team beyond |z| 2 (one team out of ten, as expected by chance). **Top 5 surprises, IPL 2026** (winner's chance at the start of the chase): 1529278 Punjab Kings chased down Delhi Capitals (15%); 1529275 Rajasthan Royals beat LSG, who were chasing (15%); 1529299 Gujarat Titans beat SRH (22%); 1529284 SRH over Mumbai Indians (24%); 1529290 Mumbai Indians over LSG (26%). (Most swingy: 1529301 MI v PBKS, 1529269 DC v RCB, 1529297 RCB v MI.)
+
+**Top team-season luck 2022-25** (biggest +/-): 2022 Gujarat Titans +4.0 (12 wins vs 8.0 expected), CSK -2.9, MI -3.1; 2023 MI +2.8, SRH -2.8; 2024 RR +1.3, PBKS -1.4; 2025 RCB +3.1, CSK -2.5. Top surprise each season: 2022 LSG over CSK (82%), 2023 RCB over LSG (89%), 2024 Punjab Kings' 262 chase v KKR (86%, matches the famous result, a sanity check), 2025 Punjab Kings over KKR defending 111 (97%). Full tables: `luck.team_luck("ipl", season)`.
+Interpretation: this is "luck relative to this model's pre-chase view" - a strong team beating a weak one is not luck, a weak-looking team winning is. It does not know about toss, injuries or the middle of the match.
+**Scope.** IPL 2022-26 only (the only competition with cached out-of-sample curves). Tests: `tests/test_ml_luck.py` (3, synthetic curve and calibrated luck), `tests/test_dashboard_predictor.py` (+1, tab loads and runs).

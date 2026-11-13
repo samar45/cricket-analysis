@@ -21,7 +21,7 @@ def open_page() -> AppTest:
 def test_loads_and_waits_for_run():
     at = open_page()
     assert not at.exception and not at.error
-    assert at.title[0].value == "Match predictor" and len(at.tabs) == 3
+    assert at.title[0].value == "Match predictor" and len(at.tabs) == 4
     assert not at.metric and not at.dataframe
 
 
@@ -44,3 +44,12 @@ def test_replay_run():
     at.button(key="run_mp_replay").click().run()
     assert not at.exception and not at.error, [e.value for e in at.exception + at.error]
     assert any("Punjab Kings 262" in m.value for m in at.markdown)
+
+
+def test_luck_tab_run():
+    at = open_page()
+    at.selectbox(key="mp_lseason").set_value(2026).run()
+    at.button(key="run_mp_luck").click().run()
+    assert not at.exception and not at.error, [e.value for e in at.exception + at.error]
+    assert len(at.dataframe) == 3  # team luck, surprises, swingy
+    assert any("Most surprising" in m.value for m in at.markdown)

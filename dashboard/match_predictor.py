@@ -220,13 +220,60 @@ def prematch_tab():
         st.caption(r["parts"]["note"])
 
 
+# ---------- tab 4: luck & surprises ----------
+@st.cache_data(show_spinner="Reading the cached win-probability curves...")
+def _luck(comp: str, season: int):
+    from cricket_analytics.ml import luck
+
+    tl = luck.team_luck(comp, season)
+    tl["luck (chase-adjusted)"] = luck.team_luck(comp, season, adjust=True).set_index("team").luck.reindex(tl.team).to_numpy()
+    return tl, luck.top_matches(comp, season, "surprise"), luck.top_matches(comp, season, "swing")
+
+
+def _match_table(t: pd.DataFrame, cols: dict) -> pd.DataFrame:
+    out = pd.DataFrame({"date": t.date.astype(str), "match": t.chaser + " chased " + t.setter, "winner": t.winner})
+    for k, v in cols.items():
+        out[v] = t[k]
+    out["decisive over"] = [f"over {o + 1}: {w['runs']} runs, {w['wickets']} wkts" for o, w in zip(t.decisive_over, t.decisive_what)]
+    return out
+
+
+def luck_tab():
+    from cricket_analytics.ml import luck
+
+    c1, c2 = st.columns(2)
+    with c1:
+        comp = ui.select("mp_lcomp", "Competition", list(luck.COMPS), format_func=ui.comp_label)
+    with c2:
+        season = ui.select("mp_lseason", "Season", [2026, 2025, 2024, 2023, 2022])
+    run = ui.gate("mp_luck", {"comp": comp, "season": season}, "Run")
+    if run is None:
+        return
+    with st.container(key="res_mp_luck"):
+        tl, sur, sw = _luck(run["comp"], run["season"])
+        st.markdown("**Team luck:** actual wins minus the wins the model expected before each chase (+ = luckier).")
+        st.dataframe(tl, hide_index=True, width="stretch", column_config={
+            "expected": st.column_config.NumberColumn(format="%.1f"), "luck": st.column_config.NumberColumn(format="%+.1f"),
+            "luck (chase-adjusted)": st.column_config.NumberColumn(format="%+.1f"), "z": st.column_config.NumberColumn("z (luck / noise)", format="%+.1f")})
+        st.caption("Chase-adjusted removes the season's gap between how often chasers really won and how often the model expected. |z| under 2 is within normal noise.")
+        st.markdown("**Most surprising results:** the winner's chance at the start of the chase was lowest.")
+        st.dataframe(_match_table(sur, {"p_winner_start": "winner's chance at start", "comeback_low": "winner's worst moment"}), hide_index=True, width="stretch",
+                     column_config={"winner's chance at start": st.column_config.NumberColumn(format="percent"), "winner's worst moment": st.column_config.NumberColumn(format="percent")})
+        st.markdown("**Most swingy matches:** the most total movement in win probability.")
+        st.dataframe(_match_table(sw, {"swing": "swing (sum of moves)", "lead_changes": "lead changes"}), hide_index=True, width="stretch",
+                     column_config={"swing (sum of moves)": st.column_config.NumberColumn(format="%.2f")})
+        st.caption("Probabilities are out-of-sample (the models had not seen the match). Decided chases only. Curve = direct model per over; start = blend with the simulator.")
+
+
 def page():
     st.title("Match predictor")
     st.caption("Direct model (G1) and ball-by-ball simulator (sim-B), averaged. Men's 20-over cricket only. Nothing runs until you click.")
-    live, replay, pre = st.tabs(["Live state", "Replay a match", "Pre-match"])
+    live, replay, pre, lk = st.tabs(["Live state", "Replay a match", "Pre-match", "Luck & surprises"])
     with live:
         live_tab()
     with replay:
         replay_tab()
     with pre:
         prematch_tab()
+    with lk:
+        luck_tab()
