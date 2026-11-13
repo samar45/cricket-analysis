@@ -267,7 +267,7 @@ def luck_tab():
 
 def page():
     st.title("Match predictor")
-    st.caption("First-innings score range: direct model (G1) alone (about 1.5 runs better on average than a level-scaled DLS-style table); win probability: G1 and the ball-by-ball simulator (sim-B), averaged. Men's 20-over cricket only. Nothing runs until you click.")
+    st.caption("First-innings score range: direct model (G1) alone (about 1.6 runs better than a level-scaled DLS-style table in other leagues; about a tie in the IPL); win probability: G1 and the ball-by-ball simulator (sim-B), averaged. Men's 20-over cricket only. Nothing runs until you click.")
     live, replay, pre, lk = st.tabs(["Live state", "Replay a match", "Pre-match", "Luck & surprises"])
     with live:
         live_tab()
