@@ -1272,3 +1272,26 @@ Other models, same layout (diff, match boot | season-block), at 6 / 10 / 15 over
 **Secondary (reported, not part of the two questions).** First ball vs the pre-match model (fitted per season on matches before its start; n = 303): market log loss 0.664; model without toss 0.678 (diff +0.0135 [-0.003, +0.030] | [-0.002, +0.030]), with toss known 0.683 (+0.0187 [+0.002, +0.036] | [+0.003, +0.032]). Both models are near a coin flip (0.693) and the market is a little better. First innings at 6 / 10 / 15 overs vs our first-innings win probability: **not done.** `predict.py` builds it from live production models plus a bespoke chase grid per state, there is no out-of-sample version, and building one was beyond the 20 minute limit.
 
 **Caveats.** n of 254-283 chases gives intervals of about +-0.03 log loss. The Betfair back/lay pair is sometimes crossed in the files; the mid uses their mean either way. Missing 15-over snapshots (6) are mostly decided chases (reading, not checked). The tuned pre-match parameters were chosen on pre-2022 data, so BBL10-BBL11 are not strictly blind for that one secondary model. No decision follows.
+
+### 2026-11-13 (lead): PRE-REGISTRATION of market-anchored model (test 1) and state-wise diagnosis (test 2), before any computation
+Data and rows: exactly the benchmark rows in `data/external/ml/market_rows.parquet` (BBL10-15, chase at 6/10/15 overs, out-of-sample model columns). Betfair first-ball and snapshot probabilities de-vigged as in the benchmark pre-registration. No row on or after 2026-10-15.
+
+**Test 1: market as the prior.**
+- **A (primary, no fitting):** logit p_A = logit(market first-ball p for the chaser) + [logit(ens-G1 p now) - logit(pre-match model p for the chaser)]. The pre-match model is the same out-of-sample `prematch` prediction (toss unknown) used in the benchmark's secondary comparison. Meaning: start from the market's pre-match view (team news, pitch) and add only our model's in-play change.
+- **B (secondary):** logistic regression of the chase result on [logit market first-ball p, logit ens-G1 p, logit prematch p], one fit per checkpoint, **expanding window by season** (trained on earlier BBL seasons only, so BBL10 has no B prediction; BBL11-15 are scored).
+- **Compared with:** the live market at the same checkpoint (primary), and ens-G1 alone. Log loss primary, plus Brier, accuracy and `calibration_test`. Both bootstraps (match, two-sided 95%; season-block).
+- **Finding rules:** "A beats ens-G1" or "A ties or beats the market" count only if both intervals agree. Same for B on the BBL11-15 rows.
+- Expectation written beforehand: A closes part of the gap to the market but does not beat it.
+
+**Test 2: where we lose to the market (descriptive).**
+- Per checkpoint, rows are split by wickets down (0-1, 2-3, 4+) and by required rate at the checkpoint (< 8, 8-10, > 10 runs per over); 9 cells per checkpoint, 27 in all.
+- Per cell: n, log loss of ens-G1 and of the market, the difference with a match-bootstrap 95% interval, and the Holm-adjusted p-value over the 27 cells.
+- Only cells with Holm p < 0.05 are called a finding. The rest are reported as indicative. Cells with fewer than 20 matches are shown but not tested.
+- **No decision follows from test 2.** It points at what information we lack.
+
+**Goal tests, frozen before code (`test-freeze:`):**
+- A and B probabilities lie strictly in (0,1).
+- Every B prediction for season S was fit only on seasons before S.
+- Test 2 cells partition the rows: counts sum to the checkpoint n, with no row in two cells.
+- The row set equals the benchmark rows.
+- No row dated 2026-10-15 or later.
