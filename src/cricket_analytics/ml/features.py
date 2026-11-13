@@ -220,3 +220,100 @@ def add_v2(feat, inn, k_season=10.0):
     for c in V2_CHASE:
         f[c] = f[c].astype("float32")
     return f
+
+
+# ---------- flaw-hunt additions (FEATURES above stays frozen; nothing here changes v1) ----------
+MOMENTUM = ["runs_l6", "wk_l6", "runs_l12", "wk_l12", "runs_l18", "wk_l18"]  # F1 (runs_l30 / wk_l30 already exist)
+PAIR = ["pair_balls", "pair_runs", "since_set_out"]  # F2/F4: partnership so far, balls since a set batter (>30 balls faced) was dismissed
+RESOURCE = ["res_left"]  # F2: wickets in hand x balls left (a crude "resources" product)
+VENUE_RECENT = ["venue_rec_eff", "venue_rec_n"]  # F3
+SET_BALLS, SINCE_CAP = 30, 60
+
+
+def window_cols(s, windows):
+    """runs / wickets in the last w balls (PRIOR-ONLY: row t is the state before ball t+1, so a window ends at the state itself).
+    s must be sorted by (match_id, innings, balls_bowled) with one row per legal ball. Returns a dict of arrays."""
+    g = s.groupby(["match_id", "innings"], sort=False)
+    out = {}
+    for w in windows:
+        out[f"runs_l{w}"] = (s.runs - g.runs.shift(w).fillna(0)).to_numpy()
+        out[f"wk_l{w}"] = (s.wickets - g.wickets.shift(w).fillna(0)).to_numpy()
+    return out
+
+
+def dismissals(s, sf, nf):
+    """Per row t: did a wicket fall on the ball that led to this state, and had the dismissed batter faced > SET_BALLS balls?
+    The dismissed batter is the one of {striker, non-striker} of the previous row missing from this row's pair.
+    sf / nf = balls the striker / non-striker had faced before each row (see _faced). Returns (fell, set_out) boolean arrays."""
+    g = s.groupby(["match_id", "innings"], sort=False)
+    fell = (s.wickets - g.wickets.shift(1)).fillna(0).to_numpy() > 0
+    ps, pn = g.striker.shift(1).fillna("").to_numpy(), g.non_striker.shift(1).fillna("").to_numpy()
+    cs, cn = s.striker.fillna("").to_numpy(), s.non_striker.fillna("").to_numpy()
+    psf = pd.Series(sf, index=s.index).groupby([s.match_id, s.innings], sort=False).shift(1).fillna(0).to_numpy()
+    pnf = pd.Series(nf, index=s.index).groupby([s.match_id, s.innings], sort=False).shift(1).fillna(0).to_numpy()
+    s_gone = (ps != cs) & (ps != cn)
+    n_gone = (pn != cs) & (pn != cn)
+    faced = np.where(s_gone, psf, np.where(n_gone, pnf, 0))
+    return fell, fell & (faced > SET_BALLS)
+
+
+def pair_cols(s, sf, nf):
+    """Partnership balls / runs so far (since the last wicket; whole innings before the first) and balls since a set batter fell (capped)."""
+    fell, setout = dismissals(s, sf, nf)
+    key = [s.match_id, s.innings]
+    b, r = s.balls_bowled.to_numpy(float), s.runs.to_numpy(float)
+    last_b = pd.Series(np.where(fell, b, np.nan)).groupby(key, sort=False).ffill().fillna(0).to_numpy()
+    last_r = pd.Series(np.where(fell, r, np.nan)).groupby(key, sort=False).ffill().fillna(0).to_numpy()
+    so_b = pd.Series(np.where(setout, b, np.nan)).groupby(key, sort=False).ffill().to_numpy()
+    since = np.where(np.isnan(so_b), SINCE_CAP, np.minimum(b - so_b, SINCE_CAP))
+    return {"pair_balls": b - last_b, "pair_runs": r - last_r, "since_set_out": since}
+
+
+def add_flaw_features(s, windows=(6, 12, 18, 24, 36)):
+    """Add MOMENTUM, PAIR, RESOURCE columns to a build_features() table (same row order). Needs striker / non_striker columns."""
+    s = s.copy()
+    for c, v in window_cols(s, windows).items():
+        s[c] = v
+    sf, nf = s.striker_faced.to_numpy(), s.ns_faced.to_numpy()
+    for c, v in pair_cols(s, sf, nf).items():
+        s[c] = v
+    s["res_left"] = (10 - s.wickets) * s.balls_left
+    return s
+
+
+def venue_recent(inn, k_recent=10.0, days=730):
+    """F3: recent venue effect. One row per (match_id, innings): venue_rec_eff = sum of (first-innings total - competition level)
+    at the venue over the previous `days` days (strictly earlier dates), divided by (n + k_recent); venue_rec_n = n. PRIOR-ONLY."""
+    f = innings_features(inn)[["match_id", "innings", "lvl_ew"]]
+    d = inn.merge(f, on=["match_id", "innings"])
+    first = d[(d.innings == 1) & ~d.reduced].assign(res=lambda x: x.final_total - x.lvl_ew)
+    ev = {v: g.sort_values("date") for v, g in first.groupby(["gender", "venue"])}
+    eff, n = np.zeros(len(d)), np.zeros(len(d))
+    pos = {k: i for i, k in enumerate(zip(d.match_id, d.innings))}
+    for (gen, ven), g in d.groupby(["gender", "venue"]):
+        e = ev.get((gen, ven))
+        if e is None:
+            continue
+        dt, cs = e.date.to_numpy("datetime64[D]"), np.concatenate([[0.0], np.cumsum(e.res.to_numpy())])
+        q = g.date.to_numpy("datetime64[D]")
+        hi = np.searchsorted(dt, q, side="left")  # strictly earlier
+        lo = np.searchsorted(dt, q - np.timedelta64(days, "D"), side="left")
+        cnt, tot = hi - lo, cs[hi] - cs[lo]
+        idx = [pos[k] for k in zip(g.match_id, g.innings)]
+        n[idx], eff[idx] = cnt, tot / (cnt + k_recent)
+    return pd.DataFrame({"match_id": d.match_id.to_numpy(), "innings": d.innings.to_numpy(), "venue_rec_eff": eff, "venue_rec_n": n})
+
+
+def tune_k_recent(inn, year=2022, grid=(3, 10, 30, 100)):
+    """k for venue_rec_eff on season year-1 only (features there use earlier matches only): lowest MSE of lvl_ew + venue_rec_eff vs the
+    first-innings total over men's non-reduced first innings that have a recent history."""
+    val = inn[(inn.innings == 1) & (inn.gender == "male") & ~inn.reduced & (inn.season_year == year - 1)][["match_id", "innings", "final_total"]]
+    lv = innings_features(inn)[["match_id", "innings", "lvl_ew"]]
+    best = None
+    for k in grid:
+        m = val.merge(venue_recent(inn[inn.season_year < year], k), on=["match_id", "innings"]).merge(lv, on=["match_id", "innings"])
+        m = m[m.venue_rec_n > 0]
+        mse = ((m.final_total - m.lvl_ew - m.venue_rec_eff) ** 2).mean()
+        if best is None or mse < best[0]:
+            best = (mse, k, len(m))
+    return best[1], best[0], best[2]

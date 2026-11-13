@@ -28,3 +28,5 @@ MILESTONE: prematch dev backtest done (IPL: rating models worse than coin flip; 
 MILESTONE: pre-match results written to ML_PREDICTION.md section 9; fresh run FAIL (rule 1); model saved; 44 ml tests pass (2026-11-13)
 MILESTONE: luck.py, dashboard tab 4 'Luck & surprises', tests, ML_PREDICTION.md luck entry done (2026-11-13)
 MILESTONE: error report done (ml/error_report.py, docs/ML_ERRORS.md, 2 plots, 4 tests; 51 ml tests pass); Chepauk only flagged IPL venue, no team flagged (2026-11-13)
+MILESTONE: flaw hunt started: features.py additions (momentum/pair/venue-recent), flaw_fit.py runner, feature table built; g1r control running (2026-11-13)
+MILESTONE: flaw hunt part A done: event battery (flaw_tests.py), G1 under-reacts to shocks in IPL and non-IPL; part B screen running (2026-11-13)
