@@ -50,7 +50,7 @@ FROM matches WHERE gender IN ('male', 'female')
 """
 
 
-def build(write: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
+def build(write: bool = True, out_dir: Path | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return (states, innings). `innings` has one row per (match, innings)."""
     st = query(_DELIVERIES)
     m = query(_MATCHES)
@@ -93,9 +93,10 @@ def build(write: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
     s["innings"] = s.innings.astype(int)
     s = s.sort_values(["date", "match_id", "innings", "balls_bowled"], kind="stable").reset_index(drop=True)
     if write:
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
-        s.to_parquet(OUT_DIR / "states.parquet", index=False)
-        inn.to_parquet(OUT_DIR / "states_innings.parquet", index=False)
+        out = Path(out_dir) if out_dir else OUT_DIR
+        out.mkdir(parents=True, exist_ok=True)
+        s.to_parquet(out / "states.parquet", index=False)
+        inn.to_parquet(out / "states_innings.parquet", index=False)
     return s, inn
 
 
@@ -105,7 +106,9 @@ def load() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 if __name__ == "__main__":
-    s, inn = build()
+    import sys
+
+    s, inn = build(out_dir=sys.argv[1] if len(sys.argv) > 1 else None)
     print("states per competition/gender (innings 1+2):")
     print(s.groupby(["gender", "competition"]).agg(states=("runs", "size"), matches=("match_id", "nunique")).to_string())
     print("reduced innings:", int(inn.reduced.sum()), "of", len(inn))

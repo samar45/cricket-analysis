@@ -57,6 +57,24 @@ def xi_from_deliveries(d):
     return xi.groupby(["match_id", "team", "player"], as_index=False).agg(batted=("batted", "max"), bowled=("bowled", "max"))
 
 
+def xi_from_info(d, path=None):
+    """Real XI from Cricsheet info files (ingest/xi.py -> xi.parquet). Same columns as xi_from_deliveries; `batted`/`bowled` come from d
+    (False for listed players who did not bat or bowl). Matches without an info list fall back to xi_from_deliveries."""
+    from ..ingest import xi as _xi
+
+    real = pd.read_parquet(path or _xi.OUT, columns=["match_id", "team", "player"])
+    real = real[real.match_id.isin(d.match_id.unique())]
+    seen = xi_from_deliveries(d)
+    out = real.merge(seen, on=["match_id", "team", "player"], how="left")
+    out[["batted", "bowled"]] = out[["batted", "bowled"]].fillna(False).astype(bool)
+    return pd.concat([out, seen[~seen.match_id.isin(real.match_id)]], ignore_index=True)
+
+
+def xi_source(d, source="deliveries"):
+    """source 'deliveries' (default, reproduces all earlier results) or 'info' (real XI)."""
+    return xi_from_info(d) if source == "info" else xi_from_deliveries(d)
+
+
 def xi_coverage(xi):
     """Distribution of side sizes: Series size -> number of (match, side)."""
     return xi.groupby(["match_id", "team"]).size().value_counts().sort_index()

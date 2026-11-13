@@ -16,10 +16,12 @@ QS = (0.1, 0.5, 0.9)
 
 
 # ---------- splits ----------
-def rolling_splits(df, test_years=(2022, 2023, 2024, 2025), holdout=HOLDOUT, allow_holdout=False, year_col="season_year"):
+def rolling_splits(df, test_years=(2022, 2023, 2024, 2025), holdout=HOLDOUT, allow_holdout=False, year_col="season_year", allow_fresh3=False):
     """Yield (year, train, test). train = year < Y, test = year == Y. Holdout rows never appear in train."""
     if not allow_holdout and any(int(y) >= holdout for y in test_years):
         raise ValueError(f"season {holdout} is the locked holdout; pass allow_holdout=True to open it")
+    if not allow_fresh3 and {"gender", "competition", "date", "batting_team", "bowling_team"} <= set(df.columns):
+        assert_no_fresh3(df, "rolling_splits")
     for y in test_years:
         yield int(y), df[df[year_col] < y], df[df[year_col] == y]
 
@@ -198,4 +200,26 @@ def assert_no_fresh(df, what, allow_fresh=False):
     n = int(fresh_holdout_mask(df).sum())
     if n and not allow_fresh:
         raise ValueError(f"{n} rows of the locked fresh holdout (men's non-IPL, >= {FRESH_FROM}) are in the {what} set; pass allow_fresh=True only for the one pre-registered run")
+    return df
+
+
+# ---------- fresh set #3 lock (pre-registered 2026-11-13, docs/ML_PREDICTION.md section 9) ----------
+FRESH3_FROM = "2026-10-15"
+FULL_MEMBERS = ("Afghanistan", "Australia", "Bangladesh", "England", "India", "Ireland", "New Zealand", "Pakistan", "South Africa", "Sri Lanka",
+                "West Indies", "Zimbabwe")
+
+
+def fresh3_mask(df):
+    """True for rows of fresh set #3: men's, date >= 2026-10-15, and (not T20I, or both teams are full members).
+    Needs gender, competition, date, batting_team, bowling_team (states / innings tables)."""
+    full = df["batting_team"].isin(FULL_MEMBERS) & df["bowling_team"].isin(FULL_MEMBERS)
+    ok = (df["competition"] != "t20i") | full
+    return ((df["gender"] == "male") & (pd.to_datetime(df["date"]) >= pd.Timestamp(FRESH3_FROM)) & ok).to_numpy()
+
+
+def assert_no_fresh3(df, what, allow_fresh3=False):
+    """Raise if any fresh-set-#3 row is in `df` (a development split), unless allow_fresh3=True (the one pre-registered run)."""
+    n = int(fresh3_mask(df).sum())
+    if n and not allow_fresh3:
+        raise ValueError(f"{n} rows of locked fresh set #3 are in the {what} set; pass allow_fresh3=True only for the one pre-registered run")
     return df
