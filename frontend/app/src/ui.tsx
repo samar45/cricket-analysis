@@ -1,12 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import CoreMod from 'echarts-for-react/lib/core'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import * as echarts from 'echarts/core'
 import { BarChart, LineChart, ScatterChart } from 'echarts/charts'
 import { GridComponent, MarkLineComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-
-// CJS package: under bundlers the default import can be the module object itself
-const ReactEChartsCore = ((CoreMod as unknown as { default?: typeof CoreMod }).default ?? CoreMod) as typeof CoreMod
 
 echarts.use([BarChart, LineChart, ScatterChart, GridComponent, MarkLineComponent, TooltipComponent, CanvasRenderer])
 
@@ -26,7 +22,17 @@ export const base = () => ({
 export const ax = (o: object = {}) => ({ axisLine: { lineStyle: { color: C.line } }, axisLabel: { color: C.mut }, splitLine: { lineStyle: { color: C.line } }, ...o })
 
 export function Chart({ option, h }: { option: object; h: number }) {
-  return <ReactEChartsCore echarts={echarts} option={option} notMerge style={{ height: h, width: '100%' }} />
+  const el = useRef<HTMLDivElement>(null)
+  const ch = useRef<echarts.ECharts | null>(null)
+  useEffect(() => {
+    const c = echarts.init(el.current!)
+    ch.current = c
+    const ro = new ResizeObserver(() => c.resize())
+    ro.observe(el.current!)
+    return () => { ro.disconnect(); c.dispose(); ch.current = null }
+  }, [])
+  useEffect(() => { ch.current?.setOption(option as echarts.EChartsCoreOption, true) }, [option])
+  return <div ref={el} style={{ height: h, width: '100%' }} />
 }
 
 export const Panel = ({ title, right, className = '', children }: { title: ReactNode; right?: ReactNode; className?: string; children: ReactNode }) => (

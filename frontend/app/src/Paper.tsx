@@ -65,7 +65,7 @@ export default function Paper() {
             <div className="tw"><table>
               <thead><tr><th>Match</th><th>Side</th><th className="r">p</th><th className="r">Price</th><th className="r">EV</th><th className="r">Stake</th></tr></thead>
               <tbody className="num">{out.placed.map((b, i) => (
-                <tr key={i}><td style={{ fontFamily: 'Roboto' }}>{b.match}<div className="mut" style={{ fontSize: 10.5 }}>at over {b.checkpoint}</div></td>
+                <tr key={i}><td style={{ fontFamily: 'Roboto' }}>{b.match}<div className="mut" style={{ fontSize: 10.5 }}>at over {b.checkpoint / 6}</div></td>
                   <td style={{ fontFamily: 'Roboto' }}>{b.side}</td><td className="r">{b.p_model.toFixed(3)}</td>
                   <td className="r"><LongShot price={b.price} />{b.price.toFixed(2)}</td><td className="r up">{sgn(b.ev)}</td><td className="r">{b.stake.toFixed(0)}</td></tr>))}
               </tbody></table></div>
@@ -79,7 +79,7 @@ export default function Paper() {
         <div className="tw"><table>
           <thead><tr><th>Date</th><th>Match</th><th className="r">Over</th><th>Side</th><th className="r">p model</th><th className="r">Price</th><th className="r">EV</th><th className="r">Stake</th><th>Result</th><th className="r">P&amp;L</th></tr></thead>
           <tbody className="num">{(led.data ?? []).map((r, i) => { const w = r.status === 'won', c = w ? 'up' : r.status === 'lost' ? 'dn' : 'mut'
-            return <tr key={i}><td>{r.date}</td><td style={{ fontFamily: 'Roboto' }}>{r.match}</td><td className="r">{r.checkpoint}</td><td style={{ fontFamily: 'Roboto' }}>{r.side}</td>
+            return <tr key={i}><td>{r.date}</td><td style={{ fontFamily: 'Roboto' }}>{r.match}</td><td className="r">{r.checkpoint / 6}</td><td style={{ fontFamily: 'Roboto' }}>{r.side}</td>
               <td className="r">{r.p_model.toFixed(3)}</td><td className="r"><LongShot price={r.price} />{r.price.toFixed(2)}</td><td className="r">{sgn(r.ev)}</td>
               <td className="r">{r.stake.toFixed(2)}</td><td className={c}>{r.status.toUpperCase()}</td><td className={`r ${c}`}>{sgn(r.pnl)}</td></tr> })}
           </tbody></table></div>

@@ -11,10 +11,8 @@
   },
   "dependencies": {
     "echarts": "^6.1.0",
-    "echarts-for-react": "^3.0.6",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "tslib": "^2.9.1"
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

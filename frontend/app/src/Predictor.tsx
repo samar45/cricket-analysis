@@ -86,6 +86,7 @@ function Replay({ meta, comp }: { meta?: Meta; comp: string }) {
         <Select className="col-span-2" label="Match" value={mid} onChange={setMid} options={(ms.data ?? []).map((x) => ({ v: x.match_id, t: `${x.date} ${x.team1} v ${x.team2}` }))} />
       </div>
       <Err msg={ms.err ?? cv.err} />
+      {(ms.loading || cv.loading) && <div className="mut px-3 pb-2">Loading replay (the backend simulates the match, can take a few seconds)...</div>}
       {opt && <Chart option={opt} h={230} />}
       {c && <div className="note" style={c.in_sample ? undefined : { borderColor: 'var(--line)' }}>{c.in_sample ? 'This match was in the training data, so the curve flatters the model.' : 'Out-of-sample match: not in the training data.'} Line = win chance of the side batting first; red dots = wickets.</div>}
       {c?.caveats?.map((t) => <Note key={t}>{t}</Note>)}
@@ -133,7 +134,7 @@ export default function Predictor({ meta }: { meta?: Meta }) {
             </div></div>
           <Num label="Runs" value={f.runs} onChange={(v) => set('runs', v)} min={0} />
           <Num label="Wickets" value={f.wk} onChange={(v) => set('wk', v)} min={0} max={10} />
-          <Num label="Overs" value={f.ov} onChange={(v) => set('ov', v)} min={0} max={20} />
+          <Num label="Overs (10.3 = 10 ov 3 balls)" value={f.ov} onChange={(v) => set('ov', v)} min={0} max={20} />
           <Num label="Target" value={f.target} onChange={(v) => set('target', v)} min={1} disabled={f.innings === 1} />
           <Select className="col-span-2" label="Striker (optional)" value={f.striker} onChange={(v) => set('striker', v)} options={players} />
           <Select className="col-span-2" label="Non-striker (optional)" value={f.non_striker} onChange={(v) => set('non_striker', v)} options={players} />
