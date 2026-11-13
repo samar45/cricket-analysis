@@ -54,16 +54,17 @@ def test_year_maps_to_cricsheet_label():
 
 
 def test_women_and_men_are_separate():
-    counts = {}
-    for key in ("t20i", "t20i_women"):
+    # goal: men's and women's T20Is never mix. Counts only need to stay at or above the 2026-10-14 floor.
+    floor = {"t20i": 3627, "t20i_women": 2183}
+    gender = {"t20i": "male", "t20i_women": "female"}
+    ids = {}
+    for key in floor:
         where, p = Filters(competition=key).where("match")
-        counts[key] = query(f"SELECT count(*) AS n FROM matches m WHERE {where}", p, db_path=DB).n[
-            0
-        ]
-    assert counts == {
-        "t20i": 3627,
-        "t20i_women": 2183,
-    }  # measured on the 2026-10-14 build; grows with updates
+        df = query(f"SELECT m.match_id, m.gender FROM matches m WHERE {where}", p, db_path=DB)
+        assert len(df) >= floor[key], key
+        assert set(df.gender) == {gender[key]}, key  # every match is of the right gender
+        ids[key] = set(df.match_id)
+    assert not ids["t20i"] & ids["t20i_women"]  # no match in both competitions
 
 
 def test_hundred_phases_use_five_ball_sets():
