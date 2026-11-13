@@ -64,3 +64,6 @@ Then Phase 4 (update + CI), 5 (video bridge, reuses 3.5d), 6 (NLQ, reuses 3.5a a
   batting position mix (e.g. Dhoni IPL: No.3–4 in 31% of innings, No.5–6 in 52%, No.7+ in 17%), bowling phase mix (Kuldeep IPL: 3% powerplay, 81% middle, 17% death), death-overs batting share.
 - The CSV keeps the career-majority label only as a hint ("usually ..."), shown next to the full mix. Size M, after 3.5c.
 - **Samar (2026-10-24): drop two derived features.** Keeper (from stumpings/catches) and pace/spin (from stumpings, caught-behind share, over usage, no-ball rate) are not trusted as facts. Keeper, bowling type and pace/spin come only from the reviewed list (`player_overrides.csv`); everyone else is "unknown". 3.5e also expands that list to every bowler with 600+ balls (~1,000) and all regular keepers, confidence-tagged, for Samar to spot-check.
+
+## Parked (do later)
+- **Speed / Rust (2026-11-13).** Not worth a full Rust rewrite: about 47k lines, a guessed 3-6 months, and the heavy work already runs in C/C++ (DuckDB, LightGBM, NumPy). Revisit only when live paper trading needs instant predictions. Order: (1) profile the simulator; (2) Numba or vectorise its loop (expected 10-50x); (3) only then a small Rust module for the simulator inner loop, called from Python.
