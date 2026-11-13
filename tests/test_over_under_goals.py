@@ -7,7 +7,7 @@ import pytest
 
 from cricket_analytics.ml import predict as P
 
-Z = 1.2816
+Z = NormalDist().inv_cdf(0.9)
 Q = (174.0, 197.0, 223.0)
 
 
