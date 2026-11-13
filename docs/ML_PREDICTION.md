@@ -1295,3 +1295,67 @@ Data and rows: exactly the benchmark rows in `data/external/ml/market_rows.parqu
 - Test 2 cells partition the rows: counts sum to the checkpoint n, with no row in two cells.
 - The row set equals the benchmark rows.
 - No row dated 2026-10-15 or later.
+
+### 2026-11-13 (worker): RESULT of test 1 (market-anchored model) and test 2 (state-wise diagnosis), run exactly as pre-registered above
+Code `ml/market_anchor.py`, goal tests `tests/test_market_anchor_goals.py` (frozen in 8ac9d39 + f006b9b, before the code). Run: `python -m cricket_analytics.ml.market_anchor`. Per-row table `data/external/ml/market_anchor_rows.parquet` (gitignored). No new model fits except B; ens-G1, market and pre-match columns are the benchmark's (`market_rows.parquet`, `market_rows_firstball.parquet`, `market.py` unchanged). Implementation notes: the pre-match p (toss unknown) and the market first-ball p are taken from `market_rows_firstball.parquet` (team_a = alphabetically first team) and flipped to the chaser; checked that the pre-match y agrees with the chase result on every row. B = sklearn logistic regression, C = 1e6 (effectively unpenalised), one fit per checkpoint and season on earlier seasons only (BBL11 trains on about 50 rows per checkpoint). Required rate = runs_needed / overs left at the checkpoint. 817 rows = 283 / 280 / 254; B rows 228 / 226 / 203 (BBL11-15). Yardstick only, no betting use.
+
+**Test 1. Model minus reference in log loss (positive = model worse); intervals = match bootstrap | season-block bootstrap (6 blocks; 5 for B), two-sided 95%.**
+| Over | n | LL A | LL ens-G1 | LL market | A minus market | A minus ens-G1 |
+|---|---|---|---|---|---|---|
+| 6 | 283 | 0.4642 | 0.4632 | 0.4581 | +0.0061 [-0.021, +0.035] / [-0.014, +0.029] | +0.0010 [-0.012, +0.015] / [-0.009, +0.014] |
+| 10 | 280 | 0.4264 | 0.4228 | 0.3959 | +0.0305 [+0.007, +0.054] / [+0.012, +0.055] | +0.0036 [-0.009, +0.016] / [-0.007, +0.018] |
+| 15 | 254 | 0.3278 | 0.3264 | 0.2905 | +0.0373 [+0.006, +0.070] / [+0.011, +0.062] | +0.0014 [-0.011, +0.014] / [-0.010, +0.018] |
+
+B on BBL11-15 only (n = 228 / 226 / 203):
+| Over | LL B | LL ens-G1 | LL market | B minus market | B minus ens-G1 |
+|---|---|---|---|---|---|
+| 6 | 0.4806 | 0.4531 | 0.4459 | +0.0347 [-0.010, +0.082] / [-0.023, +0.086] | +0.0276 [+0.001, +0.059] / [-0.007, +0.067] |
+| 10 | 0.4544 | 0.4088 | 0.3735 | +0.0809 [+0.038, +0.128] / [+0.020, +0.168] | +0.0456 [+0.009, +0.086] / [-0.013, +0.136] |
+| 15 | 0.3823 | 0.3253 | 0.2942 | +0.0881 [+0.037, +0.139] / [+0.050, +0.129] | +0.0570 [+0.020, +0.097] / [+0.005, +0.120] |
+(A on the same BBL11-15 rows, minus market: +0.007 / +0.039 / +0.034; ens-G1 minus market there: +0.007 / +0.035 / +0.031.)
+
+| Over | Brier A / B / market | Accuracy A / B / market | Calibration A (intercept, slope, ECE vs null p95) | Calibration B |
+|---|---|---|---|---|
+| 6 | 0.1536 / 0.1583 / 0.1499 | 77.4% / 75.4% / 78.1% | +0.18, 1.08, 0.057 (0.083) pass | +0.25, 0.84, 0.076 (0.087) pass |
+| 10 | 0.1403 / 0.1470 / 0.1300 | 80.4% / 79.2% / 82.1% | +0.15, 1.04, 0.034 (0.081) pass | +0.16, 0.82, 0.071 (0.083) pass |
+| 15 | 0.1018 / 0.1171 / 0.0917 | 85.4% / 84.7% / 87.4% | +0.12, 0.99, 0.042 (0.072) pass | -0.01, 0.73, 0.058 (0.073) fail |
+(Brier and accuracy for B are on its BBL11-15 rows, so not like for like with A on all six seasons; market Brier on those rows is 0.1446 / 0.1206 / 0.0928 and accuracy 78.5% / 85.0% / 87.2%.)
+
+**Verdicts by the registered rules.**
+- **A beats ens-G1:** no at any checkpoint (both intervals include 0 each time; differences +0.001 / +0.004 / +0.001, essentially identical to ens-G1).
+- **A ties or beats the market:** at 6 overs both intervals include 0, so "tie" is allowed (nominally +0.006 worse, as is ens-G1 itself at +0.005, so this is no evidence of A closing anything). At 10 and 15 overs A is **worse than the market** on both intervals.
+- **B beats ens-G1 / ties or beats the market (BBL11-15):** no. B is never better than ens-G1 and is worse than the market at 10 and 15 overs on both intervals; at 6 overs the market-gap intervals include 0 but B is nominally the worst of all. B vs ens-G1 is worse on both intervals at 15 overs and on the match interval only at 6 and 10 (the season-block interval includes 0).
+- **Pre-written expectation** ("A closes part of the gap to the market but does not beat it"): the second half held; the first half did **not**. A is within 0.004 of ens-G1 everywhere, so the gap to the market is unchanged (+0.006 / +0.031 / +0.037 vs +0.005 / +0.027 / +0.036 for ens-G1). Reading, not tested: our pre-match p is near a coin flip, so subtracting its logit barely changes anything, and the in-play term dominates; B's three free weights fit on about 50-180 rows overfit (B calibration slope 0.73-0.84).
+
+**Test 2. ens-G1 minus market log loss by cell (positive = model worse); match bootstrap 95% (4000 resamples), two-sided bootstrap p, Holm over all 27 cells (cells with n < 20 are shown, not tested, and count as p = 1).** Wickets down at the checkpoint x required rate (runs per over).
+| Over | Wickets | RRR | n | LL model | LL market | Diff | 95% interval | Holm p | Finding |
+|---|---|---|---|---|---|---|---|---|---|
+| 6 | 0-1 | <8 | 57 | 0.2309 | 0.2265 | +0.0044 | [-0.066, +0.060] | 1.000 | no |
+| 6 | 0-1 | 8-10 | 59 | 0.6670 | 0.6410 | +0.0259 | [-0.039, +0.096] | 1.000 | no |
+| 6 | 0-1 | >10 | 18 | 0.5226 | 0.5233 | -0.0007 | not tested | | |
+| 6 | 2-3 | <8 | 38 | 0.4691 | 0.4988 | -0.0297 | [-0.097, +0.028] | 1.000 | no |
+| 6 | 2-3 | 8-10 | 58 | 0.6209 | 0.6218 | -0.0009 | [-0.062, +0.057] | 1.000 | no |
+| 6 | 2-3 | >10 | 36 | 0.2491 | 0.2321 | +0.0170 | [-0.010, +0.048] | 1.000 | no |
+| 6 | 4+ | <8 | 5 | 0.4283 | 0.4536 | -0.0253 | not tested | | |
+| 6 | 4+ | 8-10 | 5 | 0.7606 | 0.7331 | +0.0275 | not tested | | |
+| 6 | 4+ | >10 | 7 | 0.0608 | 0.0269 | +0.0339 | not tested | | |
+| 10 | 0-1 | <8 | 29 | 0.1715 | 0.1193 | +0.0523 | [+0.010, +0.122] | 0.0067 | **yes** |
+| 10 | 0-1 | 8-10 | 18 | 0.5512 | 0.4805 | +0.0707 | not tested | | |
+| 10 | 0-1 | >10 | 9 | 0.7190 | 0.7518 | -0.0328 | not tested | | |
+| 10 | 2-3 | <8 | 52 | 0.2467 | 0.2489 | -0.0022 | [-0.037, +0.031] | 1.000 | no |
+| 10 | 2-3 | 8-10 | 60 | 0.6791 | 0.6062 | +0.0729 | [+0.020, +0.127] | 0.163 | no (indicative) |
+| 10 | 2-3 | >10 | 48 | 0.4058 | 0.3917 | +0.0141 | [-0.048, +0.091] | 1.000 | no |
+| 10 | 4+ | <8 | 12 | 0.7205 | 0.7974 | -0.0768 | not tested | | |
+| 10 | 4+ | 8-10 | 18 | 0.4882 | 0.4471 | +0.0411 | not tested | | |
+| 10 | 4+ | >10 | 34 | 0.1919 | 0.1841 | +0.0078 | [-0.016, +0.025] | 1.000 | no |
+| 15 | 0-1 | <8 | 9 | 0.0383 | 0.0093 | +0.0290 | not tested | | |
+| 15 | 0-1 | 8-10 | 2 | 0.2361 | 0.1218 | +0.1144 | not tested | | |
+| 15 | 0-1 | >10 | 1 | 0.3370 | 0.2055 | +0.1315 | not tested | | |
+| 15 | 2-3 | <8 | 40 | 0.1785 | 0.2171 | -0.0386 | [-0.117, +0.018] | 1.000 | no |
+| 15 | 2-3 | 8-10 | 18 | 0.5444 | 0.5719 | -0.0275 | not tested | | |
+| 15 | 2-3 | >10 | 18 | 0.5198 | 0.5239 | -0.0042 | not tested | | |
+| 15 | 4+ | <8 | 41 | 0.3515 | 0.2571 | +0.0944 | [+0.003, +0.205] | 0.996 | no (indicative) |
+| 15 | 4+ | 8-10 | 24 | 0.6168 | 0.5562 | +0.0606 | [-0.037, +0.149] | 1.000 | no |
+| 15 | 4+ | >10 | 101 | 0.2599 | 0.2074 | +0.0525 | [+0.017, +0.092] | 0.039 | **yes** |
+
+Cell counts sum to 283 / 280 / 254 (checked in the code). **Findings (Holm p < 0.05): two.** (1) 10 overs, 0-1 wickets down, required rate < 8 (n = 29): model worse by +0.052. (2) 15 overs, 4+ wickets down, required rate > 10 (n = 101): model worse by +0.053. Cell (2) is the one big cell and its Holm p (0.039) is close to the line; cell (1) rests on 29 matches. The cells where the model looks better than the market (negative diffs) are small and none is significant. These are descriptive; no decision follows and nothing is adopted. Reading, not tested: both are lopsided states (far ahead of the rate, or far behind it) where the market may price information we lack (team news, pitch, dew).
