@@ -30,7 +30,8 @@ Locked test sets so far:
 - **IPL 2026**: used 13 Nov 2026, for v1.
 - **Non-IPL men's leagues from 2026-01-01**: used 13 Nov 2026, for v1 vs v2.
 - **The pre-match model** used the non-IPL set once as its own first test.
-- **Both sets are now spent.** The next clean test is live matches: BBL from mid-December 2026, logged before each match.
+- **Both sets are now spent.**
+- **Fresh set #3** (men's from 2026-10-15; T20Is only between the 12 full members): locked and pre-registered in `ML_PREDICTION.md` §9. On 13 Nov it held only 6 matches, so it is saved, not run. It grows as new data is pulled (BBL from mid-December 2026).
 
 ## 3. Timeline and decisions
 | Date | Step | Result (measured) | Decision and why |
@@ -60,9 +61,9 @@ Locked test sets so far:
 | 13 Nov | Drawing board, final | Shrinkage ruled out as the main cause (slope 1.06; capacity/regularisation/early stopping move collapse bias <1 run; a minimal column set is worse, so "too many columns" is not it). **Tree shape matters:** the spline GAM and MLP have almost no shock bias but are worse on average. Mean (L2) target cuts innings-1 event bias by about 1/3. k-NN worse. | **Best candidate b2 = average of G2 and the spline GAM:** IPL MAE −0.32*, chase log loss −0.012*, collapse bias +7.3 → +5.8 (non-IPL). It ties the v1 blend and needs no simulator. Needs a new locked test (seasons were seen while choosing). |
 | 13 Nov | Playing XI source | Cricsheet `_info.csv` already lists `info,player,<team>,<name>` for every player (incl. impact subs) | Use it instead of rebuilding the XI from deliveries. No scraping needed. |
 | 13 Nov | XI source built (`ingest/xi.py` -> `xi.parquet`) | 11,937 matches parsed; sides listed with 11 players: 99%+ in most leagues; 12 = IPL impact era (551 of 2,486 IPL sides) and ILT20 (199 of 268), SMAT 134, BBL 47, LPL 49; 'other' (13 etc.): 12 sides. 31 DB matches have no info file (fallback to deliveries). `resources.xi_from_info` added, default still from deliveries | Real XI is available for the next fresh-set run; not yet tested for model gain |
-| 13 Nov | Data update (`cricket update`, 30 days) | Dry run: 39 new matches (22 men's T20I, 17 women's T20I; no men's league data yet). Real run blocked: dashboard process holds the DB file | Needs the dashboard stopped before the run |
+| 13 Nov | Data update (`cricket update`, 30 days) | Real run ok: +39 matches (22 men's T20I to 2026-11-01, 17 women's T20I to 2026-10-25), 11,968 old matches unchanged, backup `_prev_2026-11-13`. Kohli IPL 9,336 (golden, unchanged). XI file rebuilt. | Done |
+| 13 Nov | Fresh set #3 built (`data/external/ml/fresh3/`) | Only **6 matches** qualify (all men's T20I: India v West Indies 1, India v New Zealand 5), 5 chases. No league data since 15 Oct. Counts only, no results opened. | **Saved, not run** (Samar). Far below the 80-chase bar. Keep the lock and let the set grow (BBL from mid-Dec, more T20Is); run once when it is big enough. |
 | 13 Nov | WAR or 1–100 ratings as player strength | No better than simple shrunk career rates | Use simple rates for the model; 1–100 is for display only |
-| 13 Nov | Drawing board (running) | Tests: is the model shrunk (regression slope)? Does even a fine historical lookup show the collapse bias (meaning the information is hidden)? Fewer columns? More capacity? Other models: k-NN analog, spline GAM, MLP, stretch recalibration. | Pending |
 
 ## 4. What works (keep)
 - Global training pool with a competition input
