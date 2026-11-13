@@ -6,6 +6,7 @@ Run: .venv\\Scripts\\streamlit.exe run dashboard/app.py
 
 import auction_room
 import health
+import match_predictor
 import module_view
 import player_page
 import streamlit as st
@@ -249,7 +250,7 @@ with st.sidebar:
     st.header("🏏 Cricket analytics")
     page = st.radio(
         "Page",
-        ["Overview", "Explore", "Ask", "Player", "IPL market", "Data health"],
+        ["Overview", "Explore", "Ask", "Player", "IPL market", "Match predictor", "Data health"],
         key="page",
         label_visibility="collapsed",
     )
@@ -259,5 +260,6 @@ with st.sidebar:
     "Ask": guarded(ask_page),
     "Player": guarded(player_page.page),
     "IPL market": guarded(auction_room.page),
+    "Match predictor": guarded(match_predictor.page),
     "Data health": guarded(health.page),
 }[page]()
