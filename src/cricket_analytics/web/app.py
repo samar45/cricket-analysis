@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .. import api, competitions
+from ..ml import evaluate as ev
 from ..ml import paper
 from ..ml import predict as P
 
@@ -144,11 +145,16 @@ def matches(competition: str = "ipl", season: int | None = None):
     if competition not in P.competitions():
         raise ValueError(f"unknown competition {competition!r}")
     m = P.matches(competition, season)
+    m = m[~ev.fresh3_mask(m.assign(gender="male", competition=competition, batting_team=m.team1, bowling_team=m.team2))]  # fresh set #3 lock
     return _j(m[["match_id", "date", "team1", "team2", "winner", "venue"]].to_dict("records"))
 
 
 @app.get("/api/match_curve/{match_id}")
 def match_curve(match_id: str):
+    inn = P._inn()
+    rows = inn[inn.match_id == str(match_id)]
+    if not rows.empty and ev.fresh3_mask(rows).any():
+        return JSONResponse({"error": "locked: fresh set #3 matches get no model output"}, status_code=403)
     c, m = P.predict_match_curve(match_id)
     first = c.innings == 1
     pts = pd.DataFrame({
