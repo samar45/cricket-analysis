@@ -23,11 +23,13 @@ import numpy as np
 import pandas as pd
 
 # shrinkage / defaults (pseudo-observations pulling toward average)
+K_WAR, RPB_REF = 120.0, 1.3  # S2: pseudo-balls toward the league average; average runs per ball (to turn runs added into a ratio)
 K_BAT_RUNS = 80.0  # pseudo expected-runs for the batting ratio
 BPI_PRIOR, K_BPI = 9.0, 4.0  # balls per innings prior (innings)
 POS_PRIOR, K_POS = 7.0, 3.0  # typical batting position prior (innings)
 K_ECON, K_WK, K_DEATH = 150.0, 3.0, 80.0
 P_BOWL_PRIOR, K_P = 0.35, 3.0
+HL_S3 = 548.0  # days (about 1.5 seasons)
 TOP_POS = 7  # "top/middle order" = typical position <= 7
 PAD_BAT = (0.5, 0.8, 9.0)  # unknown XI member: exp, ratio, position ~ tail
 PAD_BOWL = (1.15, 0.8, 1.15)  # unfilled overs: part-timer econ, wk, death
@@ -68,9 +70,12 @@ def _days(s):
 class _Cum:
     """Per-key cumulative sums sorted by date; lookup of the totals over records with date < D."""
 
-    def __init__(self, keys, dates, vals):
+    def __init__(self, keys, dates, vals, hl=None):
         o = np.lexsort((dates, keys))
         keys, dates, vals = np.asarray(keys)[o], np.asarray(dates)[o], np.asarray(vals, dtype=float)[o]
+        self.hl = hl  # half-life in days: a record of age a counts 0.5 ** (a / hl)  (S3)
+        if hl:
+            vals = vals * (2.0 ** (dates / hl))[:, None]
         self.t = {}
         starts = np.r_[0, np.flatnonzero(keys[1:] != keys[:-1]) + 1, len(keys)]
         for a, b in zip(starts[:-1], starts[1:]):
@@ -81,20 +86,23 @@ class _Cum:
         if key not in self.t:
             return np.zeros(self.w)
         dt, cs = self.t[key]
-        return cs[np.searchsorted(dt, day, side="left")]
+        v = cs[np.searchsorted(dt, day, side="left")]
+        return v * 2.0 ** (-day / self.hl) if self.hl else v
 
 
 class Strengths:
     """Prior-only player strengths. bat(player, date) -> (exp, ratio, pos); bowl(player, date) -> (econ, wk, death, p_bowl).
     `date` = the match date; only records with a strictly earlier date are used. Unknown players get the average values."""
 
-    def __init__(self, bat_cum, bowl_cum, app_cum):
-        self.b, self.w, self.a = bat_cum, bowl_cum, app_cum
+    def __init__(self, bat_cum, bowl_cum, app_cum, war=None):
+        self.b, self.w, self.a, self.war = bat_cum, bowl_cum, app_cum, war
 
     @classmethod
-    def build(cls, d, dates):
+    def build(cls, d, dates, hl_days=None, war=None):
         """d: deliveries of innings 1-2 (needs runs_batter, runs_total, wides, noballs, byes, legbyes, penalty, wicket_type, player_out,
-        over_num, ball_seq, gender); dates: Series match_id -> date. Keys are 'name|gender'."""
+        over_num, ball_seq, gender); dates: Series match_id -> date. Keys are 'name|gender'.
+        hl_days: recency half-life in days (S3, form); None = every prior record counts the same (S1).
+        war: _Cum from war_cum() (S2): batting ratio / bowling econ come from prior-season WAR runs added instead of own records."""
         d = d.copy()
         d["gender"] = d["gender"].astype(str)
         legal = (d.wides == 0) & (d.noballs == 0)
@@ -120,23 +128,27 @@ class Strengths:
         out = d[d.player_out.notna() & ~d.wicket_type.isin(NOT_DISMISSAL)].groupby(ik + ["player_out"]).size().rename("out").reset_index().rename(columns={"player_out": "p"})
         a = a.merge(bt, on=ik + ["p"], how="left").merge(out, on=ik + ["p"], how="left").fillna({"runs": 0, "balls": 0, "out": 0, "rpb": 0})
         a["key"] = a.p + "|" + a.gender
-        bat = _Cum(a.key.to_numpy(), a.day.to_numpy(), np.c_[a.runs, a.balls * a.rpb, a.balls, a.pos, np.ones(len(a))])
+        bat = _Cum(a.key.to_numpy(), a.day.to_numpy(), np.c_[a.runs, a.balls * a.rpb, a.balls, a.pos, np.ones(len(a))], hl_days)
         # bowling
         bw = d.groupby(ik + ["bowler"]).agg(balls=("legal", "sum"), runs=("conc", "sum"), wk=("cred", "sum"), dl=("dlegal", "sum"), dr=("druns", "sum"),
                                             rpb=("rpb", "first"), wpb=("wpb", "first"), drpb=("drpb", "first"), gender=("gender", "first"), day=("day", "first")).reset_index()
         bw["key"] = bw.bowler + "|" + bw.gender
-        bowl = _Cum(bw.key.to_numpy(), bw.day.to_numpy(), np.c_[bw.runs, bw.balls * bw.rpb, bw.wk, bw.balls * bw.wpb, bw.dr, bw.dl * bw.drpb])
+        bowl = _Cum(bw.key.to_numpy(), bw.day.to_numpy(), np.c_[bw.runs, bw.balls * bw.rpb, bw.wk, bw.balls * bw.wpb, bw.dr, bw.dl * bw.drpb], hl_days)
         # appearances (for the chance a player bowls)
         xi = xi_from_deliveries(d)
         g = d.groupby("match_id").gender.first()
         xi["key"] = xi.player + "|" + xi.match_id.map(g)
         xi["day"] = _days(xi.match_id.map(dates))
-        app = _Cum(xi.key.to_numpy(), xi.day.to_numpy(), np.c_[xi.bowled.astype(float), np.ones(len(xi))])
-        return cls(bat, bowl, app)
+        app = _Cum(xi.key.to_numpy(), xi.day.to_numpy(), np.c_[xi.bowled.astype(float), np.ones(len(xi))], hl_days)
+        return cls(bat, bowl, app, war)
 
     def bat(self, key, day):
         runs, exp, balls, possum, n = self.b.before(key, day)
         ratio = (runs + K_BAT_RUNS) / (exp + K_BAT_RUNS)
+        if self.war is not None:  # S2: ratio from prior-season runs added per ball (bat); unknown / women -> own-record ratio
+            ra, wb = self.war.before(key.replace("|male", "") + "|bat", day)
+            if wb > 0:
+                ratio = 1.0 + ra / (wb + K_WAR) / RPB_REF
         bpi = (balls + K_BPI * BPI_PRIOR) / (n + K_BPI)
         pos = (possum + K_POS * POS_PRIOR) / (n + K_POS)
         return ratio * bpi, ratio, pos
@@ -144,8 +156,28 @@ class Strengths:
     def bowl(self, key, day):
         runs, exp, wk, ewk, dr, dexp = self.w.before(key, day)
         bowled, apps = self.a.before(key, day)
-        return ((runs + K_ECON) / (exp + K_ECON), (wk + K_WK) / (ewk + K_WK), (dr + K_DEATH) / (dexp + K_DEATH),
+        econ = (runs + K_ECON) / (exp + K_ECON)
+        if self.war is not None:
+            ra, wb = self.war.before(key.replace("|male", "") + "|bowl", day)
+            if wb > 0:
+                econ = 1.0 - ra / (wb + K_WAR) / RPB_REF  # runs added are positive for the bowling side when good
+        return (econ, (wk + K_WK) / (ewk + K_WK), (dr + K_DEATH) / (dexp + K_DEATH),
                 (bowled + K_P * P_BOWL_PRIOR) / (apps + K_P))
+
+
+def war_cum():
+    """S2 source: runs added per (player, role) from models/war.py (v3, centred, match-adjusted), eight men's leagues pooled.
+    A record for season-year sy (calendar year the season ended) is dated 31 Dec of sy, so a match in year Y sees only sy < Y:
+    never its own season (which contains the match). Keys 'name|bat' / 'name|bowl'; values (runs added, balls)."""
+    from ..models import war
+
+    rows, _ = war.all_tables()
+    r = pd.concat(rows.values())
+    r = r[r.role.isin(["bat", "bowl"])]
+    g = r.groupby(["player", "role", "sy"], as_index=False).agg(ra=("sc", "sum"), wk=("wk", "sum"), balls=("balls", "sum"))
+    g["ra"] += g.wk
+    day = (pd.to_datetime(g.sy.astype(int).astype(str) + "-12-31")).to_numpy().astype("datetime64[D]").astype("int64")
+    return _Cum((g.player + "|" + g.role).to_numpy(), day, np.c_[g.ra, g.balls])
 
 
 # ---------- pure feature functions ----------
@@ -253,6 +285,8 @@ if __name__ == "__main__":
         print(xi_coverage(xi).to_string())
     else:
         st, _ = load()
-        r = build_resources(st, d, dates)
-        r.to_parquet(OUT_DIR / "resources.parquet")
+        src = sys.argv[2] if len(sys.argv) > 2 else "s1"  # s1 default; s2 = prior-season WAR; s3 = recency-weighted (half-life 1.5 seasons)
+        S = Strengths.build(d, dates, hl_days=HL_S3 if src == "s3" else None, war=war_cum() if src == "s2" else None)
+        r = build_resources(st, d, dates, S)
+        r.to_parquet(OUT_DIR / ("resources.parquet" if src == "s1" else f"resources_{src}.parquet"))
         print(r.shape)
