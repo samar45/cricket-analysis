@@ -1062,3 +1062,22 @@ Versus the **v1 blend** (G1 + sim-B at the 3 checkpoints): b2 IPL dMAE -0.13 [-0
 **Keep / drop.** KEEP as candidates: b2 (G2 + GAM average) for score and chase; b23 for chase probabilities; D4f as an optional score model. DROP: M1, M4b, D3, D4a-c (no event gain). M4 optional only. **All these choices were made after looking at the 2022-25 / 2024-25 test results (about 10 variants and 4 blends), so margins are optimistic; a fresh run needs a new pre-registration** (the locked set was not touched). IPL 2026 was not run for M1-M4 / D3-D4.
 **Caveats.** (1) Over-end states only (6..114 for metrics, 18..102 for events); production models see every ball. (2) GAM / MLP / k-NN train on over-end rows only; the trees on every 4th ball. (3) Event tests overlap; about 5% of rows flag by chance. (4) M2-M3 quantiles use residuals by bucket from season Y-1 (not conformal widening); coverage is 0.80-0.82 on average but not guaranteed by state. (5) Intervals are over matches pooled over 4 seasons.
 **Where things are.** Code: `ml/drawing_board.py` (D1 slopes, D2 lookups, paired tables; `python -m cricket_analytics.ml.drawing_board d1|d2`), `ml/drawing_board_fit.py` (all fits and blends: `python -m cricket_analytics.ml.drawing_board_fit g2oe d3 d4a ... m1 m2 m3 m4 b2 b23 b23f`, `... report m2 b2 ...`), `ml/drawing_board_report.py` (`python -m cricket_analytics.ml.drawing_board_report plots`). Caches `data/external/ml/db_<name>_{S,W}.parquet`; logs `db_d2.log`, `db_report1-3.log`. Tests `tests/test_ml_drawing_board.py` (4).
+
+### 2026-11-13 (lead): PRE-REGISTRATION of fresh set #3, written before any new data is downloaded
+- **Set:** all men's T20 matches dated **2026-10-15 or later** that arrive with the next `cricket update`. That covers franchise leagues, domestic T20 (e.g. SMAT), and T20Is where **both** teams are among the 12 full members (Afghanistan, Australia, Bangladesh, England, India, Ireland, New Zealand, Pakistan, South Africa, Sri Lanka, West Indies, Zimbabwe). Associate T20Is are excluded; reduced or no-result matches are excluded as before.
+- **Locked:** no model development, tuning or inspection may use these matches. Workers may only build data for them.
+- **Models**, all trained on matches dated before 2026-10-15 with their frozen recipes:
+  - v1 ens-G1 (production)
+  - G2
+  - b2 = mean(G2, spline GAM)
+  - b23 = mean(G2, GAM, MLP)
+  - resource baseline
+  - the best model from the model-family benchmark only if it is frozen before this run
+- **Checkpoints:** 0/6/10/15 overs, both innings. Paired bootstrap over matches, 5–95%.
+- **b2 replaces v1** only if all four hold:
+  1. MAE or chase log loss beats v1 with the interval excluding 0.
+  2. The other metric is not worse (interval includes or is below 0).
+  3. ECE is under 0.08.
+  4. cov80 is between 0.72 and 0.88.
+- **Also reported:** the collapse event bias (3 wickets in 12 balls), and T20I (full members) vs leagues separately.
+- **Small sample:** about 1 month of matches. If fewer than 80 decided chases, the result counts as **indicative only** and is confirmed on live BBL data.
