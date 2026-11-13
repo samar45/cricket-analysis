@@ -223,3 +223,108 @@ def assert_no_fresh3(df, what, allow_fresh3=False):
     if n and not allow_fresh3:
         raise ValueError(f"{n} rows of locked fresh set #3 are in the {what} set; pass allow_fresh3=True only for the one pre-registered run")
     return df
+
+
+# ---------- test statistics (added 2026-11-13 after the external review: HIGH 1, HIGH 3, MEDIUM 4, MEDIUM 6) ----------
+def _logit(p, eps=1e-6):
+    p = _clip(p, eps)
+    return np.log(p / (1 - p))
+
+
+def _logistic_fit(x, y, groups=None):
+    """Logistic regression y ~ a + b*x by Newton steps. Returns (coef[2], cov[2,2]); cov is cluster-robust when `groups` is given."""
+    X = np.column_stack([np.ones(len(x)), x])
+    beta = np.array([0.0, 1.0])  # start at "perfectly calibrated"
+    for _ in range(50):
+        mu = 1 / (1 + np.exp(-X @ beta))
+        H = X.T @ (X * (mu * (1 - mu))[:, None]) + 1e-9 * np.eye(2)
+        step = np.linalg.solve(H, X.T @ (y - mu))
+        beta = beta + step
+        if np.abs(step).max() < 1e-8:
+            break
+    mu = 1 / (1 + np.exp(-X @ beta))
+    Hinv = np.linalg.inv(X.T @ (X * (mu * (1 - mu))[:, None]) + 1e-9 * np.eye(2))
+    if groups is None:
+        return beta, Hinv
+    s = pd.DataFrame(X * (y - mu)[:, None]).groupby(np.asarray(groups)).sum().to_numpy()
+    return beta, Hinv @ (s.T @ s) @ Hinv
+
+
+def calibration_test(y, p, groups=None, by=None, n_sim=2000, seed=0, bins=10):
+    """Calibration test for win probabilities. PRIMARY = logistic recalibration: fit y ~ a + b*logit(p); pass if the 95% CI of the
+    intercept a (calibration-in-the-large) contains 0 AND the 95% CI of the slope b contains 1. SECONDARY = ECE against its own null:
+    outcomes y* ~ Bernoulli(p) (a perfectly calibrated model), `n_sim` draws; pass if ECE <= null 95th percentile.
+    Why: a fixed ECE limit (0.08) is failed ~98% of the time by a PERFECT model at n ~ 70 (external review, HIGH 1).
+    groups: match id per row; gives cluster-robust CIs and one shared uniform per match in the null (rows of one match are correlated).
+    by: checkpoint label per row; ECE is then the mean of per-checkpoint ECEs ("mean of 4"), otherwise pooled.
+    Returns a dict; `pass_primary` and `pass_secondary` are the two verdicts; `passes` = pass_primary."""
+    y, p = np.asarray(y, float), np.asarray(p, float)
+    g = None if groups is None else np.asarray(groups)
+    b = None if by is None else np.asarray(by)
+    z = _logit(p)
+    beta, cov = _logistic_fit(z, y, g)
+    se = np.sqrt(np.diag(cov))
+    ci_a, ci_b = (beta[0] - 1.96 * se[0], beta[0] + 1.96 * se[0]), (beta[1] - 1.96 * se[1], beta[1] + 1.96 * se[1])
+
+    def _ece(yy):
+        if b is None:
+            return ece(yy, p, bins)
+        return float(np.mean([ece(yy[b == k], p[b == k], bins) for k in np.unique(b)]))
+
+    obs = _ece(y)
+    rng = np.random.default_rng(seed)
+    if g is None:
+        codes, ng = np.arange(len(y)), len(y)
+    else:
+        codes, uniq = pd.factorize(g)
+        ng = len(uniq)
+    nulls = np.array([_ece((rng.random(ng)[codes] < p).astype(float)) for _ in range(n_sim)])
+    p95 = float(np.percentile(nulls, 95))
+    pass1 = (ci_a[0] <= 0 <= ci_a[1]) and (ci_b[0] <= 1 <= ci_b[1])
+    return {
+        "n": len(y), "n_groups": int(ng), "mean_p": float(p.mean()), "mean_y": float(y.mean()),
+        "intercept": float(beta[0]), "intercept_ci": ci_a, "slope": float(beta[1]), "slope_ci": ci_b,
+        "ece": obs, "ece_null_mean": float(nulls.mean()), "ece_null_p95": p95, "ece_p": float((nulls >= obs).mean()),
+        "pass_primary": bool(pass1), "pass_secondary": bool(obs <= p95), "passes": bool(pass1),
+    }
+
+
+def match_bootstrap(df, stat_fn, match_col="match_id", n=2000, seed=0, ci=(2.5, 97.5)):
+    """Resample whole matches (rows of a match stay together); stat_fn(df) -> float. Returns (estimate, lo, hi, n_matches).
+    Default ci is the two-sided 95% interval (2.5, 97.5)."""
+    return _block_bootstrap(df, stat_fn, [match_col], n, seed, ci)
+
+
+def season_block_bootstrap(df, stat_fn, block_cols=("season_year", "competition"), n=2000, seed=0, ci=(2.5, 97.5)):
+    """Resample whole season x competition blocks (the dominant error is season-level drift: MEDIUM 4). stat_fn(df) -> float.
+    Returns (estimate, lo, hi, n_blocks). Few blocks (4 IPL seasons) means a wide, honest interval; claims need this AND the match bootstrap."""
+    return _block_bootstrap(df, stat_fn, list(block_cols), n, seed, ci)
+
+
+def _block_bootstrap(df, stat_fn, cols, n, seed, ci):
+    df = df.reset_index(drop=True)
+    idx = list(df.groupby(cols, sort=False).indices.values())
+    rng = np.random.default_rng(seed)
+    out = np.empty(n)
+    for i in range(n):
+        pick = rng.integers(0, len(idx), len(idx))
+        out[i] = stat_fn(df.iloc[np.concatenate([idx[j] for j in pick])])
+    return float(stat_fn(df)), float(np.percentile(out, ci[0])), float(np.percentile(out, ci[1])), len(idx)
+
+
+def power_n(effect, sd_of_paired_diff, alpha=0.05, power=0.8):
+    """Matches needed to detect a mean paired difference `effect` (two-sided alpha, given power) when the per-match paired
+    differences have SD `sd_of_paired_diff`: n = ((z_{1-a/2} + z_power) * sd / effect)^2. Normal approximation."""
+    from scipy.stats import norm
+
+    return int(np.ceil(((norm.ppf(1 - alpha / 2) + norm.ppf(power)) * sd_of_paired_diff / abs(effect)) ** 2))
+
+
+def holm(pvals):
+    """Holm step-down adjusted p-values (same order as input). Count EVERY variant tried on the same bench, not just the winners."""
+    p = np.asarray(pvals, float)
+    o = np.argsort(p)
+    adj = np.maximum.accumulate((len(p) - np.arange(len(p))) * p[o])
+    out = np.empty(len(p))
+    out[o] = np.minimum(adj, 1.0)
+    return out

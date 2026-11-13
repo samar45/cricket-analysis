@@ -270,7 +270,7 @@ def summarise(S, W, years=None):
     return pd.DataFrame(rows)
 
 
-def boot_diff(A, B, kind, years=None, n=2000, seed=0):
+def boot_diff(A, B, kind, years=None, n=2000, seed=0, two_sided=False):
     """Innings-weighted loss(A) - loss(B), bootstrapped over MATCHES. kind: 'mae' / 'bias' / 'pin' / 'cov' (A,B score preds) or 'll' (win preds).
     Returns (mean, p5, p95, n_matches). Negative = A better."""
     if years is not None:
@@ -300,7 +300,8 @@ def boot_diff(A, B, kind, years=None, n=2000, seed=0):
     c = rng.multinomial(len(g), np.ones(len(g)) / len(g), size=n)
     den = c @ g.w.to_numpy()
     d = (c @ g.a.to_numpy() - c @ g.b.to_numpy()) / den
-    return float(d.mean()), float(np.percentile(d, 5)), float(np.percentile(d, 95)), len(g)
+    lo, hi = (2.5, 97.5) if two_sided else (5, 95)  # two_sided=True: 95% interval (the rule since 2026-11-13); default stays 5-95%
+    return float(d.mean()), float(np.percentile(d, lo)), float(np.percentile(d, hi)), len(g)
 
 
 # ---------- main ----------
