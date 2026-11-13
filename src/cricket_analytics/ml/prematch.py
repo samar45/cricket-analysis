@@ -354,9 +354,22 @@ def _state(stop_iso, n_matches):
     return roll(M, obj["params"], stop=pd.Timestamp(stop_iso))[1]
 
 
+def _resolve(name, values):
+    """Exact name, else the most frequent known name that contains (or is contained in) it ignoring case, else unchanged."""
+    if name is None or name in values.values:
+        return name
+    n = name.lower()
+    c = values[values.str.lower().map(lambda v: n in v or v in n)]
+    return c.value_counts().index[0] if len(c) else name
+
+
 def predict_from(M, obj, competition, venue, team_a, team_b, date=None, toss_winner=None, toss_decision=None, gender=None) -> dict:
     """Core of predict(): state is built ONLY from rows of M dated before `date` (testable prior-only)."""
     P = obj["params"]
+    mm = M[M.gender == ("female" if competition == "t20i_women" else gender or "male")]
+    teams = pd.concat([mm.a, mm.b], ignore_index=True)
+    venue, team_a, team_b = _resolve(venue, mm.venue.dropna()), _resolve(team_a, teams), _resolve(team_b, teams)
+    toss_winner = _resolve(toss_winner, teams) if toss_winner else None
     comp, g = ("t20i", "female") if competition == "t20i_women" else (competition, gender or "male")
     d = pd.Timestamp(date) if date is not None else M.date.max() + pd.Timedelta(days=1)
     S = roll(M, P, stop=d)[1]

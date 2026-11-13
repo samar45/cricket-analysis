@@ -58,3 +58,9 @@ def test_toss_moves_probability_only_when_given():
     no = pm.predict_from(M, obj, "ipl", "V1", "Alpha", "Bravo", date=d)
     yes = pm.predict_from(M, obj, "ipl", "V1", "Alpha", "Bravo", date=d, toss_winner="Alpha", toss_decision="bat")
     assert not no["parts"]["toss_used"] and yes["parts"]["toss_used"] and yes["p_a_win"] > no["p_a_win"]
+
+
+def test_names_are_resolved_loosely():
+    M, obj = _matches(), _obj()
+    d = M.date.iloc[-1]
+    assert pm.predict_from(M, obj, "ipl", "v1", "alpha", "BRAVO", date=d) == pm.predict_from(M, obj, "ipl", "V1", "Alpha", "Bravo", date=d)

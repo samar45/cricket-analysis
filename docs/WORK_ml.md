@@ -25,3 +25,4 @@ MILESTONE: v2 results written to ML_PREDICTION.md section 9; fresh CLI rehearsed
 MILESTONE: sim-B men-pool fresh model + non-IPL 2024-25 cache + predict_checkpoints done (2026-11-13)
 MILESTONE: prematch.py written, params tuned on pre-2022 data (elo k20 reg1.0; k_venue 1000, k_team 5); backtest next (2026-11-13)
 MILESTONE: prematch dev backtest done (IPL: rating models worse than coin flip; leagues -0.010 logloss); fresh pre-registered in ML_PREDICTION.md, running fresh once next (2026-11-13)
+MILESTONE: pre-match results written to ML_PREDICTION.md section 9; fresh run FAIL (rule 1); model saved; 44 ml tests pass (2026-11-13)

@@ -712,3 +712,62 @@ Model: `ml/prematch.py` (see the "Pre-match model" entry below once the run is d
 - **Pass rule (all must hold):** (1) log loss beats the 50% coin-flip baseline, with the paired bootstrap over matches (5%-95%) of (model minus baseline) entirely below 0; (2) ECE < 0.08 (10 bins, pooled). Score forecasts are reported but not part of the rule.
 - **Procedure:** parameters fixed from pre-2022 tuning (`models/prematch/params.json`); coefficients fitted on every match not in the locked set; test features come from the full history (earlier 2026 matches are known, prior-only). Run once with `python -m cricket_analytics.ml.prematch fresh` (a flag file refuses a second run).
 - **Expectation, stated in advance:** about 300 matches, so the bootstrap interval is about plus or minus 0.01 log loss wide; on the 2024-25 development leagues the primary model was -0.010 [-0.021, +0.001]. A FAIL on rule (1) is a likely outcome and will be reported as FAIL.
+
+### 2026-11-13 (pre-match worker): Pre-match model (`ml/prematch.py`) - result: small gain on leagues, none in the IPL, fresh run FAIL
+**What it is.** `cricket_analytics.ml.prematch.predict(competition, venue, team_a, team_b, date=None, toss_winner=None, toss_decision=None, xi_a=None, xi_b=None)` returns `score_a_q10/q50/q90`, `score_b_q10/q50/q90` (each side's first-innings score if it bats first), `p_a_win` and a `parts` dict (level, venue effect, Elo, attack/defence, home, which win model). Everything uses only matches dated before `date` (same-day matches do not see each other); names are matched loosely ("Wankhede Stadium" works). Rolling backtest and fresh run: `python -m cricket_analytics.ml.prematch backtest | report | fresh | fit`. Model file `data/external/ml/models/prematch/model.json` (+ `params.json`).
+- **Score:** level (decayed competition mean) + venue effect + batting-team attack + bowling-team defence (all shrunk, from first innings only), weighted OLS; the 10/50/90 range is the recent residual quantiles of the competition. Separate coefficients for national teams, franchise leagues, and any competition with 250+ earlier matches (IPL, Blast, ...).
+- **Win:** logistic with no intercept on three differences (Elo, run-margin strength, home advantage); trained on swapped copies, so swapping the teams gives exactly 1 - p when the toss is unknown. `logit+toss` adds the toss winner and decision. Elo: K and the between-season pull-back tuned on pre-2022 data only. Home comes from `reference/team_home.csv` + `venue_country.csv`.
+- **Not used:** XI strength (`xi_a`, `xi_b` are accepted and ignored). Player values are not cheaply prior-only; not tested.
+- **Tests:** `tests/test_ml_prematch.py` (prior-only: deleting later matches changes nothing; 0 <= p <= 1; swap gives 1 - p; toss; name matching). All 44 `tests/test_ml_*.py` pass.
+
+**Win probability, log loss (coin flip = 0.6931; lower is better; diff = model minus coin flip, paired bootstrap 5-95% over matches).**
+
+| set | n matches | model | log loss | Brier | accuracy | ECE | diff [5%, 95%] |
+|---|---|---|---|---|---|---|---|
+| IPL 2022-25 | 289 | coin flip | 0.6931 | 0.2500 | 0.50 | 0.002 | - |
+| | | Elo | 0.7001 | 0.2534 | 0.46 | 0.060 | +0.0069 [+0.0021, +0.0119] |
+| | | logit | 0.7103 | 0.2586 | 0.41 | 0.127 | +0.0172 [+0.0075, +0.0270] |
+| | | logit+toss | 0.7189 | 0.2626 | 0.47 | 0.086 | +0.0257 [+0.0116, +0.0406] |
+| IPL 2026 (seen) | 73 | Elo | 0.6911 | 0.2490 | 0.52 | 0.072 | -0.0021 [-0.0087, +0.0048] |
+| | | logit | 0.6925 | 0.2497 | 0.51 | 0.075 | -0.0007 [-0.0146, +0.0137] |
+| | | logit+toss | 0.6771 | 0.2420 | 0.59 | 0.086 | -0.0160 [-0.0385, +0.0067] |
+| Leagues 2024-25 (dev) | 806 | Elo | 0.6841 | 0.2455 | 0.56 | 0.036 | -0.0091 [-0.0180, +0.0002] |
+| | | logit | 0.6829 | 0.2449 | 0.56 | 0.027 | -0.0103 [-0.0211, +0.0008] |
+| | | logit+toss | 0.6823 | 0.2446 | 0.57 | 0.027 | -0.0108 [-0.0223, +0.0012] |
+| **Leagues 2026 (FRESH, run once)** | 330 | Elo | 0.6864 | 0.2465 | 0.61 | 0.105 | -0.0068 [-0.0202, +0.0059] |
+| | | **logit (primary)** | 0.6837 | 0.2451 | 0.59 | 0.069 | -0.0094 [-0.0244, +0.0047] |
+| | | logit+toss | 0.6800 | 0.2433 | 0.56 | 0.040 | -0.0131 [-0.0309, +0.0044] |
+
+(The coin flip's accuracy is 0.50 by chance because it always picks team B. Rolling folds: each season is fitted on earlier seasons only. Leagues = BBL, Blast, BPL, CPL, ILT20, LPL, MLC, PSL, SA20.)
+
+**First-innings score (runs; same matches for every row; cov80 = share inside the 10-90% range, should be 0.80).**
+
+| set | model | MAE | pinball | cov80 | bias |
+|---|---|---|---|---|---|
+| IPL 2022-25 (284) | (a) competition level | 26.85 | 8.50 | 0.75 | -7.1 |
+| | level + venue | 26.55 | 8.40 | 0.76 | -4.5 |
+| | level + venue + teams | 26.64 | 8.45 | 0.76 | -6.2 |
+| | in-play G1 at ball 0 | 27.07 | 8.49 | 0.84 | -3.9 |
+| | in-play sim-B at ball 0 | 26.62 | 8.40 | 0.77 | -2.7 |
+| IPL 2026 (71, seen) | level / +venue / +teams | 30.05 / 29.52 / 30.06 | 9.05 / 8.98 / 9.16 | 0.75 / 0.75 / 0.73 | -1.2 / +2.6 / -2.3 |
+| | in-play G1 / sim-B at ball 0 | 33.04 / 29.66 | 9.85 / 9.21 | 0.69 / 0.69 | -9.4 / +8.5 |
+| Leagues 2024-25 (749) | level / +venue / +teams | 26.24 / 26.21 / 26.51 | 8.41 / 8.42 / 8.49 | 0.78 / 0.78 / 0.78 | -1.6 / -1.4 / +1.5 |
+| | in-play G1 / sim-B at ball 0 | 26.51 / 26.87 | 8.48 / 8.61 | 0.82 / 0.75 | -2.5 / -2.0 |
+| Leagues 2026 FRESH (316) | level / +venue / +teams | 28.04 / 27.71 / 27.24 | 8.71 / 8.62 / 8.55 | 0.75 / 0.75 / 0.76 | +4.3 / +5.1 / +6.2 |
+
+Paired MAE difference vs the competition level, 5-95%: venue -0.31 [-0.74, +0.14] (IPL 22-25), -0.03 [-0.26, +0.22] (leagues dev); venue + teams -0.22 [-0.65, +0.22] and +0.27 [-0.17, +0.71]. All intervals contain 0. In-play models at ball 0 know the opening pair, so they are a reference, not a fair pre-match contest. In-play win at ball 0 of the chase already knows the target, so it is not comparable and not shown.
+
+**Pre-registered fresh run: FAIL.** Rule (1), log loss below the coin flip with the interval entirely below 0: primary model -0.0094 [-0.0244, +0.0047], the interval contains 0, so FAIL. Rule (2), ECE < 0.08: 0.069, PASS. Overall FAIL (n = 330 matches). Files: `data/external/ml/prematch_report_fresh.md`; plots `docs/img/ml_prematch_reliability_{dev,fresh}.png`, `ml_prematch_logloss_{dev,fresh}.png`.
+
+**Plain reading.**
+- Pre-match T20 is close to a coin flip, as the literature says. In leagues the rating models are about 0.01 log loss better than 50% in dev (806 matches) and fresh (330), the same direction both times, but not provable at this sample size (the interval touches or crosses 0). Accuracy is 56-59%.
+- **In the IPL the rating models are worse than a coin flip in 2022-25** (the whole interval is above 0, accuracy 41-47%) and about equal in 2026. A guess, not tested: the 2022 mega-auction and impact-player years reshuffled squads, so last year's rating says little, while the fit learned from earlier years that ratings persist. On the pre-2022 IPL folds (2017-21) Elo was 0.690 against 0.693, also near a coin flip. For the IPL the honest pre-match answer is about 50%, shifted slightly by toss and home.
+- Toss helps a little in leagues and 2026 (logit+toss is best everywhere except the 2022-25 IPL), but the effect is small.
+- Score: the competition level does almost all the work (MAE 26-28 runs, which is just the spread of T20 totals). Venue and team effects move the median by a few runs but do not provably help. The 10-90% range is slightly too narrow (cov80 0.75-0.78). On the fresh leagues the level is 4-6 runs low (2026 scoring rose and the level lags a rising season, the same issue as in-play).
+- The pre-match score range is as good as the in-play models at ball 0 (IPL MAE 26.6 for level + venue, same as sim-B, 27.1 for G1), so the in-play models add nothing before ball 1, as expected.
+- Recommendation for the dashboard: show the score range and the win % with a clear "close to a coin flip" caption; use the IPL win % only together with the toss, and never present it as a confident call.
+
+**Mistakes and notes (pre-match worker).**
+- My first version fitted one set of coefficients on all men's matches; the IPL came out worse than a coin flip. I changed to per-group / per-large-competition coefficients (the IPL still loses, so that was not the main cause). That change was made after seeing the dev folds (IPL 2022-25 included), so dev margins are slightly optimistic; the fresh set was not seen.
+- Tuning grids (pre-2022 data only): Elo K 10-30 and between-season pull-back 0.4-1.0 per group; venue shrinkage k 30-1000 and team k 2-15. The chosen venue k is 1000 (top of the grid, i.e. almost no venue effect beyond the regression coefficient) and the franchise pull-back is 1.0 (top of its range); I did not widen them. Logistic regularisation made no difference on pre-2022 IPL / BBL / Blast folds, so C = 1.
+- Women's matches are in the rolling state (own key) and a women's model is fitted, but it is not backtested.
