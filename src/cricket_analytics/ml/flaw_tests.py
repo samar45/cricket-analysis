@@ -167,7 +167,7 @@ def _agg(vals, o, m, n_m, n_o=len(OVERS)):
     return M
 
 
-def excess(mask, err, extra, match_idx, over_idx, B=2000, seed=0):
+def excess(mask, err, extra, match_idx, over_idx, B=2000, seed=0, third=None):
     """Event minus matched non-event, for state arrays: mask (event), err (signed error), extra (a second loss, e.g. |err| or log loss).
     Matched = the non-event mean per over, averaged with the event's over mix. Returns a dict: n states / matches, event mean, matched
     non-event mean, difference with 5-95% bootstrap over matches (and a z score), for err ('bias_*') and extra ('loss_*')."""
@@ -175,7 +175,7 @@ def excess(mask, err, extra, match_idx, over_idx, B=2000, seed=0):
     out = {"n_states": int(mask.sum()), "n_matches": int(len(np.unique(match_idx[mask])))}
     N1, N0 = _agg(mask.astype(float), over_idx, match_idx, n_m), _agg((~mask).astype(float), over_idx, match_idx, n_m)
     c = np.random.default_rng(seed).multinomial(n_m, np.ones(n_m) / n_m, size=B).astype(float)
-    for lab, v in (("bias", err), ("loss", extra)):
+    for lab, v in (("bias", err), ("loss", extra)) + ((("med", third),) if third is not None else ()):
         S1, S0 = _agg(np.where(mask, v, 0.0), over_idx, match_idx, n_m), _agg(np.where(~mask, v, 0.0), over_idx, match_idx, n_m)
 
         def stat(w):
@@ -206,9 +206,10 @@ def run_battery(model_frames, ev_tab, thr=None, min_matches=8, B=2000, groups=("
             if kind == "inn1":
                 err = (m.q50 - m.final_total).to_numpy()
                 extra = np.abs(err)
+                third = ((m.final_total < m.q50).astype(float) + 0.5 * (m.final_total == m.q50) - 0.5).to_numpy()  # median check: P(actual < q50) - 0.5
             else:
                 p, y = np.clip(m.p.to_numpy(), 1e-6, 1 - 1e-6), m.chase_won.to_numpy()
-                err, extra = p - y, -(y * np.log(p) + (1 - y) * np.log(1 - p))
+                err, extra, third = p - y, -(y * np.log(p) + (1 - y) * np.log(1 - p)), None
             for g in groups:
                 sel = (m.group == g).to_numpy()
                 if not sel.any():
@@ -222,7 +223,7 @@ def run_battery(model_frames, ev_tab, thr=None, min_matches=8, B=2000, groups=("
                     mask = fn(mm).fillna(False).to_numpy().astype(bool)
                     if len(np.unique(mi[mask])) < min_matches:
                         continue
-                    rows.append({"model": mname, "group": g, "kind": kind, "event": en, **excess(mask, err[sel], extra[sel], mi, oi, B)})
+                    rows.append({"model": mname, "group": g, "kind": kind, "event": en, **excess(mask, err[sel], extra[sel], mi, oi, B, third=None if third is None else third[sel])})
     return pd.DataFrame(rows)
 
 
@@ -236,8 +237,9 @@ def flaw_table(res, model="G1"):
 
 def fmt(r):
     sc, u = (1, "runs") if r.kind == "inn1" else (100, "pp")
+    med = f" | below-median share {r.med_diff * 100:+.0f}pp [{r.med_lo * 100:+.0f}, {r.med_hi * 100:+.0f}]" if r.kind == "inn1" else ""
     return (f"{r.event} | {r.group} | {r.kind} | n={r.n_matches}m/{r.n_states}s | event {r.bias_event * sc:+.1f} vs rest {r.bias_rest * sc:+.1f} | "
-            f"excess {r.bias_diff * sc:+.1f} [{r.bias_lo * sc:+.1f}, {r.bias_hi * sc:+.1f}] {u}")
+            f"excess {r.bias_diff * sc:+.1f} [{r.bias_lo * sc:+.1f}, {r.bias_hi * sc:+.1f}] {u}" + med)
 
 
 def plot(res, path, model="G1"):

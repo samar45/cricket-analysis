@@ -31,10 +31,24 @@ EXTRA = F.MOMENTUM + ["runs_l24", "wk_l24", "runs_l36", "wk_l36"] + F.PAIR + F.R
 VARIANTS = {
     "g1r": BASE_COLS,
     "f1a": BASE_COLS + ["runs_l6", "wk_l6", "runs_l12", "wk_l12", "runs_l18", "wk_l18"],
+    "f1b": [c for c in BASE_COLS if c not in ("runs_l30", "wk_l30")] + ["runs_l18", "wk_l18"],  # l30 replaced by l18 (best single score_val in the screen)
+    "f1c": [c for c in BASE_COLS if c not in ("runs_l30", "wk_l30")] + ["runs_l12", "wk_l12"],  # l30 replaced by l12 (best single win_val)
     "f2": BASE_COLS + ["res_left", "pair_balls", "pair_runs", "since_set_out"],
     "f3": BASE_COLS + F.VENUE_RECENT,
     "f4": BASE_COLS + ["pair_balls"],
+    "cap1": BASE_COLS,  # diagnostic: same columns, more capacity (see CFG)
+    "cap1f": BASE_COLS + ["runs_l6", "wk_l6", "runs_l12", "wk_l12", "runs_l18", "wk_l18", "res_left", "pair_balls", "pair_runs", "since_set_out"],
+    "gval": BASE_COLS,  # diagnostic: early stopping on ALL competitions of season Y-1 (not IPL only) -> more rounds if there is signal
+    "gvalf": BASE_COLS + ["runs_l6", "wk_l6", "runs_l12", "wk_l12", "runs_l18", "wk_l18", "res_left", "pair_balls", "pair_runs", "since_set_out"],
+    "g2": BASE_COLS,  # G2 = G1 recipe + early stopping on ALL competitions of season Y-1 (identical to gval; this one saves the models)
+    "gval3": BASE_COLS + F.VENUE_RECENT,
+    "gvalf3": BASE_COLS + ["runs_l6", "wk_l6", "runs_l12", "wk_l12", "runs_l18", "wk_l18", "res_left", "pair_balls", "pair_runs", "since_set_out"] + F.VENUE_RECENT,
+    "gval1218": [c for c in BASE_COLS if c not in ("runs_l30", "wk_l30")] + ["runs_l12", "wk_l12"],  # window replacement re-tested with the global early-stopping set
+    "gval2": BASE_COLS + ["res_left", "pair_balls", "pair_runs", "since_set_out"],
+    "gvalw": BASE_COLS + ["runs_l6", "wk_l6", "runs_l12", "wk_l12", "runs_l18", "wk_l18"],
 }
+GVAL = ("g2", "gval", "gvalf", "gval3", "gvalf3", "gval1218", "gval2", "gvalw")
+CFG = {"cap1": dict(num_leaves=63, min_child_samples=50, lambda_l2=1.0), "cap1f": dict(num_leaves=63, min_child_samples=50, lambda_l2=1.0)}
 
 
 def build():
@@ -109,7 +123,9 @@ def run_variant(feat, name, cols, years=YEARS, save=None):
         t = tuned[str(Y)]
         tr, w = D.pool_rows(feat, "global", Y)
         itr, iw, val = s4b._inner(feat, Y)
-        cfg, cw = D.CONFIGS[t["score_cfg"]], D.CONFIGS[t["win_cfg"]]
+        if name in GVAL:
+            val = feat[(feat.season_year == Y - 1) & (feat.balls_bowled % 2 == 0)]
+        cfg, cw = ({**D.CONFIGS[t[k]], **CFG.get(name, {})} for k in ("score_cfg", "win_cfg"))
         inner = D.fit_score(itr, iw, cols, cfg, val=val, scale="lvl_season")
         sm = D.fit_score(tr, w, cols, cfg, rounds={q: inner[q][1] for q in D.QS}, scale="lvl_season")
         wi, n = D.fit_win(itr, iw, cols, cw, val=val)
@@ -131,7 +147,7 @@ def run_variant(feat, name, cols, years=YEARS, save=None):
                 sm[q][0].save_model(str(save / f"{name}_{Y}_score_q{int(q * 100)}.txt"), num_iteration=sm[q][1])
             wm.save_model(str(save / f"{name}_{Y}_win.txt"))
             (save / f"{name}_{Y}_conformal.json").write_text(json.dumps({"delta": dl, "iters": {str(q): inner[q][1] for q in D.QS}, "win_iters": n, "cols": cols}))
-        print(f"  {name} fold {Y} done (train rows {len(tr)})", flush=True)
+        print(f"  {name} fold {Y} done (train rows {len(tr)}, rounds q10/q50/q90 {[inner[q][1] for q in D.QS]}, win {n})", flush=True)
     return pd.concat(S), pd.concat(W), pd.concat(V)
 
 
@@ -154,11 +170,120 @@ def run(names):
         print(f"[{time.time() - t0:5.0f}s] {name} done", flush=True)
 
 
+
+
+# ---------- comparison vs the control ----------
+HEAD = ["collapse 2wk/12b", "collapse 3wk/12b", "collapse 3wk/18b", "collapse 2wk/24b", "burst >=28r/12b", "burst >=39r/18b",
+        "death start, >=6 wkts in hand", "late, >=7 wkts in hand", "late, <=4 wkts in hand", "chase rrr >= 13", "new pair (both <6 faced)",
+        "slow middle (ov 7-12 < 7/over)"]
+
+
+def _cut(S, W, scope):
+    """scope: 'ipl' (IPL 2022-25), 'ipl26' (IPL 2026, seen fold) or 'non' (non-IPL men's 2024-25)."""
+    if scope == "ipl":
+        f = lambda d: d[(d.competition == "ipl") & d.fold.between(2022, 2025)]  # noqa: E731
+    elif scope == "ipl26":
+        f = lambda d: d[(d.competition == "ipl") & (d.fold == 2026)]  # noqa: E731
+    else:
+        f = lambda d: d[d.competition != "ipl"]  # noqa: E731
+    return f(S), f(W)
+
+
+def overall(name, ctl="g1r", scopes=("ipl", "ipl26", "non")):
+    """Per scope: the variant's metrics, and paired-bootstrap differences (variant minus control) over matches. Win metrics use all chase states."""
+    out = []
+    S, W, _ = (pd.read_parquet(OUT_DIR / f"g2_{n}_{k}.parquet") for n in (name,) for k in "SWV")
+    S0, W0, _ = (pd.read_parquet(OUT_DIR / f"g2_{n}_{k}.parquet") for n in (ctl,) for k in "SWV")
+    for sc in scopes:
+        s, w = _cut(S, W, sc)
+        s0, w0 = _cut(S0, W0, sc)
+        m = D.summarise(s, w).iloc[0].to_dict()
+        r = {"variant": name, "scope": sc, "n_inn1": s.groupby("match_id").ngroups, "MAE": m["MAE"], "pinball": m["pinball"], "cov80": m["cov80"],
+             "bias": m["bias"], "ll": m["ll"], "ece": m["ece"]}
+        for k, lab in (("mae", "dMAE"), ("pin", "dpin"), ("cov", "dcov")):
+            x = D.boot_diff(s, s0, k)
+            r.update({lab: x[0], lab + "_lo": x[1], lab + "_hi": x[2]})
+        x = D.boot_diff(w, w0, "ll")
+        r.update({"dll": x[0], "dll_lo": x[1], "dll_hi": x[2]})
+        out.append(r)
+    return pd.DataFrame(out)
+
+
+def events_for(name, B=1000):
+    from . import flaw_tests as T
+
+    e = T.load_events()
+    res = T.run_battery({name: T.g_frames(name)}, e, B=B)
+    return res
+
+
+def event_summary(res, name):
+    """Headline events as one row per (group, kind): excess bias; plus the number of significant biases and mean |z| over ALL events."""
+    r = res[res.model == name].assign(sig=lambda d: (d.bias_lo > 0) | (d.bias_hi < 0))
+    out = {}
+    for (g, k), d in r.groupby(["group", "kind"]):
+        sc = 1 if k == "inn1" else 100
+        for _, x in d[d.event.isin(HEAD)].iterrows():
+            out[(x.event, f"{g}/{k}")] = x.bias_diff * sc
+        out[("# significant / total", f"{g}/{k}")] = f"{int(d.sig.sum())}/{len(d)}"
+        out[("mean |excess| (all events)", f"{g}/{k}")] = (d.bias_diff.abs() * sc).mean()
+    return pd.Series(out)
+
+
+def compare(names, B=1000, ctl="g1r"):
+    """Print overall metrics (+ paired differences vs g1r) and headline event excess biases for each variant; save csv."""
+    pd.set_option("display.width", 250)
+    ov, ev_ = [], {}
+    for n in [ctl] + list(names):
+        ov.append(overall(n, ctl))
+        ev_[n] = event_summary(events_for(n, B), n)
+    ov = pd.concat(ov)
+    ov.to_csv(OUT_DIR / "flaw_overall.csv", index=False)
+    et = pd.DataFrame(ev_)
+    et.to_csv(OUT_DIR / "flaw_events_variants.csv")
+    for sc, d in ov.groupby("scope"):
+        print(f"\n### overall, scope {sc}\n" + d.drop(columns="scope").round(3).to_string(index=False))
+    print("\n### headline event excess bias (runs for inn1, pp for chase)\n" + et.to_string(float_format=lambda x: f"{x:+.1f}"))
+
+
+def blend_compare(name, ctl="g1r", B=1000):
+    """The 50/50 blend with sim-B at the checkpoints (36/60/90 balls): metrics of blend(name) vs blend(ctl), paired over matches, plus event excess."""
+    from . import flaw_tests as T
+
+    ss, sw = T.simb_frames()
+    fr = {}
+    for n in (ctl, name):
+        gs, gw = T.g_frames(n)
+        cp = lambda d: d[d.balls_bowled.isin(T.CHECKPOINTS)]  # noqa: E731
+        fr[n] = (T.blend(cp(gs), ss, "score"), T.blend(cp(gw), sw, "win"))
+    rows = []
+    for sc in ("ipl", "ipl26", "non"):
+        a, b = _cut(*fr[name], sc), _cut(*fr[ctl], sc)
+        m = D.summarise(a[0].assign(model="x"), a[1].assign(model="x")).iloc[0]
+        r = {"scope": sc, "n_inn1": a[0].match_id.nunique(), "MAE": m["MAE"], "pinball": m["pinball"], "cov80": m["cov80"], "ll": m["ll"], "ece": m["ece"]}
+        for k, lab in (("mae", "dMAE"), ("pin", "dpin"), ("cov", "dcov")):
+            x = D.boot_diff(a[0], b[0], k)
+            r.update({lab: x[0], lab + "_lo": x[1], lab + "_hi": x[2]})
+        x = D.boot_diff(a[1], b[1], "ll")
+        r.update({"dll": x[0], "dll_lo": x[1], "dll_hi": x[2]})
+        rows.append(r)
+    ov = pd.DataFrame(rows)
+    e = T.load_events()
+    res = T.run_battery({f"ens-{ctl}": fr[ctl], f"ens-{name}": fr[name]}, e, B=B)
+    return ov, pd.DataFrame({n: event_summary(res, f"ens-{n}") for n in (ctl, name)})
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a[:1] == ["build"]:
         build()
     elif a[:1] == ["run"]:
         run(a[1:])
+    elif a[:1] == ["compare"]:
+        compare([x for x in a[1:] if not x.startswith("ctl=")], ctl=next((x[4:] for x in a[1:] if x.startswith("ctl=")), "g1r"))
+    elif a[:1] == ["blend"]:
+        o, e_ = blend_compare(a[1], a[2] if len(a) > 2 else "g1r")
+        print(o.round(3).to_string(index=False))
+        print(e_.to_string(float_format=lambda x: f"{x:+.1f}"))
     elif a[:1] == ["screen"]:
         screen().to_csv(OUT_DIR / "flaw_screen_windows.csv", index=False)
