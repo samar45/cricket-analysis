@@ -814,3 +814,17 @@ Interpretation: this is "luck relative to this model's pre-chase view" - a stron
 
 ### 2026-11-13 (error-analysis worker): where v1 ens-G1 is good or bad
 Out-of-sample error report by team, venue, season, match type and biggest misses (IPL 2022-26 plus the non-IPL 2026 fresh set): see [ML_ERRORS.md](ML_ERRORS.md). Code: `ml/error_report.py`. Short version: no team is flagged; Chepauk is the one flagged IPL venue (guesses about 9 runs high, and the baseline beats the model there); very low (<160) and very high (220+) totals are pulled toward the middle; chase calibration is fine 2022-25 and off in IPL 2026 (chasers won 64%, model 57%).
+
+### 2026-11-13 (lead): event tests (G1 out-of-sample, IPL 2022–26, at over ends 3–17)
+- **Collapse** (3+ wickets in 12 balls), 35 matches:
+  - First-innings prediction is too high by **+10.8 runs** [4.2, 17.2], against −0.6 normally. The model **under-reacts to collapses**.
+  - Chase: predicted 22% against 16% actual, gap interval [−0.01, +0.12]. The same direction, but not proven.
+- **Big over** (20+ runs), 119 matches:
+  - First-innings bias is −3.4 [−6.8, +0.3].
+  - Chase: predicted 56% against 61% actual, gap interval [−0.10, +0.01].
+  - Mild under-reaction, borderline.
+- **Powerplay:**
+  - The pre-match prediction explains about 0% of final-score variance (−3%), and its correlation with powerplay runs is 0.08.
+  - Powerplay runs (mean 54.5, SD 14.6) correlate 0.64 with the final total, and 0.28 with the runs scored in the remaining 14 overs.
+  - So the early error is mostly irreducible luck. Once the powerplay is known, the model explains 46%.
+- **Fix idea (not done):** stronger short-window momentum features for G1 (last 12 balls, wickets in the last 12), or a bigger simulator weight after shock events. The simulator reacts harder, so this needs checking on the blend.
