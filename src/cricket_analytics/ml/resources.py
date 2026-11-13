@@ -234,6 +234,21 @@ def innings_resources(rows, bat_xi, bowl_xi, overs=20):
     return out
 
 
+def player_ratings(S, xi, meta, dates):
+    """1-100 ratings per (match, player): percentile of the prior-only strength among all rows of the same competition and season-year
+    (appearance-weighted), separately for batting (ratio) and bowling (1 / econ). Same strictly-before-the-match data as the features.
+    xi: xi_from_deliveries() + key; meta: DataFrame match_id, competition, season_year, gender (+ dates Series match_id -> date).
+    Returns DataFrame (match_id, player, bat_rating, bowl_rating); 50 = typical, 100 = best."""
+    m = xi.merge(meta[["match_id", "competition", "season_year"]], on="match_id")
+    day = _days(m.match_id.map(dates))
+    b = np.array([S.bat(k, x)[1] for k, x in zip(m.key, day)])
+    w = np.array([1.0 / S.bowl(k, x)[0] for k, x in zip(m.key, day)])
+    for name, v in (("bat_rating", b), ("bowl_rating", w)):
+        pct = pd.Series(v, index=m.index).groupby([m.competition, m.season_year]).rank(pct=True)
+        m[name] = np.ceil(pct * 100).clip(1, 100).astype("int16")
+    return m[["match_id", "player", "bat_rating", "bowl_rating"]]
+
+
 # ---------- batch (DB) ----------
 _COLS = ("match_id, innings, over_num, ball_seq, batter, non_striker, bowler, runs_batter, runs_total, wides, noballs, byes, legbyes, penalty, "
          "wicket_type, player_out, batting_team, bowling_team, fielder, fielder_2, fielder_3")
@@ -248,9 +263,10 @@ def load_deliveries():
     return d, dates
 
 
-def build_resources(states, d, dates, S=None):
+def build_resources(states, d, dates, S=None, rating=None):
     """states: states.parquet rows (match_id, innings, balls_bowled, striker, non_striker, bowler, batting_team, bowling_team, date).
-    Returns the states keys + FIELDS columns (float32). Matches not in `d` are skipped."""
+    Returns the states keys + FIELDS columns (float32). Matches not in `d` are skipped.
+    rating: optional player_ratings() table; then the strengths are replaced by the 1-100 ratings (ratio := rating / 50, econ := 2 - rating / 50)."""
     S = S or Strengths.build(d, dates)
     xi = xi_from_deliveries(d)
     g = d.groupby("match_id").gender.first()
@@ -266,6 +282,10 @@ def build_resources(states, d, dates, S=None):
         gx = str(g[mid])
         bat_xi = {r.player: S.bat(r.key, day) for r in side[(mid, bt)].itertuples()}
         bowl_xi = {r.player: S.bowl(r.key, day) for r in side.get((mid, bw), pd.DataFrame(columns=["player", "key"])).itertuples()}
+        if rating is not None:
+            rt = rating.get(mid, {})
+            bat_xi = {p: (v[0] / v[1] * rt[p][0] / 50.0, rt[p][0] / 50.0, v[2]) if p in rt else v for p, v in bat_xi.items()}
+            bowl_xi = {p: (2.0 - rt[p][1] / 50.0, *v[1:]) if p in rt else v for p, v in bowl_xi.items()}
         res = innings_resources(zip(s.balls_bowled, s.striker, s.non_striker, s.bowler), bat_xi, bowl_xi)
         out.append(pd.DataFrame(res, index=s.index).assign(match_id=s.match_id.to_numpy(), innings=s.innings.to_numpy(), balls_bowled=s.balls_bowled.to_numpy()))
     r = pd.concat(out)
@@ -285,8 +305,19 @@ if __name__ == "__main__":
         print(xi_coverage(xi).to_string())
     else:
         st, _ = load()
-        src = sys.argv[2] if len(sys.argv) > 2 else "s1"  # s1 default; s2 = prior-season WAR; s3 = recency-weighted (half-life 1.5 seasons)
+        src = sys.argv[2] if len(sys.argv) > 2 else "s1"  # s1r = s1 with the 1-100 ratings in place of the raw strengths  # s1 default; s2 = prior-season WAR; s3 = recency-weighted (half-life 1.5 seasons)
         S = Strengths.build(d, dates, hl_days=HL_S3 if src == "s3" else None, war=war_cum() if src == "s2" else None)
-        r = build_resources(st, d, dates, S)
+        rt = None
+        if src == "s1r":
+            from ..db import query
+
+            xi = xi_from_deliveries(d)
+            g = d.groupby("match_id").gender.first()
+            xi["key"] = xi.player + "|" + xi.match_id.map(g)
+            meta = query("SELECT match_id, competition, year(min(date) OVER (PARTITION BY competition, gender, season)) AS season_year FROM matches")
+            pr = player_ratings(S, xi, meta, dates)
+            pr.to_parquet(OUT_DIR / "player_ratings_s1.parquet")
+            rt = {m: {p: (a, b) for p, a, b in zip(x.player, x.bat_rating, x.bowl_rating)} for m, x in pr.groupby("match_id")}
+        r = build_resources(st, d, dates, S, rating=rt)
         r.to_parquet(OUT_DIR / ("resources.parquet" if src == "s1" else f"resources_{src}.parquet"))
         print(r.shape)

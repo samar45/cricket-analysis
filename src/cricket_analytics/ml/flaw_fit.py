@@ -47,6 +47,45 @@ VARIANTS = {
     "gval2": BASE_COLS + ["res_left", "pair_balls", "pair_runs", "since_set_out"],
     "gvalw": BASE_COLS + ["runs_l6", "wk_l6", "runs_l12", "wk_l12", "runs_l18", "wk_l18"],
 }
+# G3 (resources-left features, ml/resources.py). All use the G2 recipe (early stopping on all competitions of season Y-1).
+from . import resources as RS
+
+RB, RW = RS.BAT_COLS, RS.BOWL_COLS
+R_SETS = {"r1": BASE_COLS + RB, "r2": BASE_COLS + RW, "r3": BASE_COLS + RB + RW}
+W_ADD = {"w1": ["runs_l12", "wk_l12"], "w2": ["runs_l6", "wk_l6", "runs_l12", "wk_l12"], "w3": ["lost_l12"]}  # windows on top of a resources set
+SRC = ("", "_s2", "_s3", "_s1r")  # strength source suffix: S1 default, S2 prior-season WAR, S3 recency-weighted, s1r = S1 as 1-100 ratings
+for _s in SRC:
+    for _r, _cols in R_SETS.items():
+        VARIANTS[_r + _s] = _cols
+        for _w, _add in W_ADD.items():
+            VARIANTS[f"{_w}_{_r}{_s}"] = _cols + _add
+VARIANTS["g3"] = BASE_COLS  # placeholder, replaced by set_g3()
+
+
+def set_g3(rname):
+    """G3 = the chosen resources variant (saves models to models/g3 and caches g3_{S,W,V}.parquet)."""
+    VARIANTS["g3"] = VARIANTS[rname]
+
+
+def src_of(name):
+    return next((x for x in SRC[1:] if name.endswith(x)), "")
+
+
+def with_resources(feat, src=""):
+    """Merge ml/resources.py columns (resources[_s2|_s3|_s1r].parquet) + lost_l12 (strength of batters dismissed in the last 12 balls)."""
+    r = pd.read_parquet(OUT_DIR / f"resources{src}.parquet" if src != "_s1r" else OUT_DIR / "resources_s1r.parquet")
+    k = ["match_id", "innings", "balls_bowled"]
+    feat = feat.merge(r, on=k, how="left")
+    feat = feat.sort_values(k, kind="stable")
+    lag = feat.groupby(["match_id", "innings"]).bat_out_str.shift(12)
+    feat["lost_l12"] = (feat.bat_out_str - lag.fillna(0)).astype("float32")
+    return feat
+
+
+def _is_res(name):
+    return name in ("g3",) or name[:1] in ("r", "w") and name[1:2].isdigit()
+
+
 GVAL = ("g2", "gval", "gvalf", "gval3", "gvalf3", "gval1218", "gval2", "gvalw")
 CFG = {"cap1": dict(num_leaves=63, min_child_samples=50, lambda_l2=1.0), "cap1f": dict(num_leaves=63, min_child_samples=50, lambda_l2=1.0)}
 
@@ -123,7 +162,7 @@ def run_variant(feat, name, cols, years=YEARS, save=None):
         t = tuned[str(Y)]
         tr, w = D.pool_rows(feat, "global", Y)
         itr, iw, val = s4b._inner(feat, Y)
-        if name in GVAL:
+        if name in GVAL or _is_res(name):
             val = feat[(feat.season_year == Y - 1) & (feat.balls_bowled % 2 == 0)]
         cfg, cw = ({**D.CONFIGS[t[k]], **CFG.get(name, {})} for k in ("score_cfg", "win_cfg"))
         inner = D.fit_score(itr, iw, cols, cfg, val=val, scale="lvl_season")
@@ -154,19 +193,29 @@ def run_variant(feat, name, cols, years=YEARS, save=None):
 def run(names):
     t0 = time.time()
     feat = load_feat()
+    base, cache = feat, {}
     for name in names:
+        if _is_res(name):
+            sr = src_of(name)
+            if sr not in cache:
+                cache.clear()
+                cache[sr] = with_resources(base, sr)
+            feat = cache[sr]
         p = OUT_DIR / f"g2_{name}_S.parquet"
         if p.exists():
             continue
         cols = VARIANTS[name]
         save = None
-        if name == "g2":
-            save = D.MODEL_DIR / "g2"
+        if name in ("g2", "g3"):
+            save = D.MODEL_DIR / name
             save.mkdir(parents=True, exist_ok=True)
         S, W, V = run_variant(feat, name, cols, save=save)
         S.to_parquet(p)
         W.to_parquet(OUT_DIR / f"g2_{name}_W.parquet")
         V.to_parquet(OUT_DIR / f"g2_{name}_V.parquet")
+        if name == "g3":
+            for k, d in zip("SWV", (S, W, V)):
+                d.to_parquet(OUT_DIR / f"g3_{k}.parquet")
         print(f"[{time.time() - t0:5.0f}s] {name} done", flush=True)
 
 
@@ -278,7 +327,11 @@ if __name__ == "__main__":
     if a[:1] == ["build"]:
         build()
     elif a[:1] == ["run"]:
-        run(a[1:])
+        names = [x for x in a[1:] if not x.startswith("g3=")]
+        for x in a[1:]:
+            if x.startswith("g3="):
+                set_g3(x[3:])
+        run(names)
     elif a[:1] == ["compare"]:
         compare([x for x in a[1:] if not x.startswith("ctl=")], ctl=next((x[4:] for x in a[1:] if x.startswith("ctl=")), "g1r"))
     elif a[:1] == ["blend"]:

@@ -44,3 +44,12 @@ def test_bowl_features_caps():
     f = R.bowl_features([(0.0, 0.5, 2.0, 0.5), (1.0, 1.0, 1.0, 1.0)], 3)  # overs from cap-0 bowler are unavailable; 2 overs padded
     assert abs(f["bowl_left_econ"] - (1.0 + 2 * R.PAD_BOWL[0]) / 3) < 1e-9 and f["death_top_left"] == 1.0
     assert R.bat_features([], 0)["bat_left_n"] == 0
+
+
+def test_cum_is_strictly_before_and_recency_weighted():
+    keys, days, vals = np.array(["x", "x"]), np.array([100, 200]), np.array([[1.0], [10.0]])
+    c = R._Cum(keys, days, vals)
+    assert c.before("x", 100)[0] == 0 and c.before("x", 101)[0] == 1 and c.before("x", 201)[0] == 11  # same-day records are not seen
+    h = R._Cum(keys, days, vals, hl=100)
+    assert abs(h.before("x", 300)[0] - (1 * 0.25 + 10 * 0.5)) < 1e-9  # ages 200 and 100 days, half-life 100
+    assert c.before("nobody", 5)[0] == 0

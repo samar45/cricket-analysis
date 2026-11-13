@@ -31,3 +31,7 @@ MILESTONE: error report done (ml/error_report.py, docs/ML_ERRORS.md, 2 plots, 4 
 MILESTONE: flaw hunt started: features.py additions (momentum/pair/venue-recent), flaw_fit.py runner, feature table built; g1r control running (2026-11-13)
 MILESTONE: flaw hunt part A done: event battery (flaw_tests.py), G1 under-reacts to shocks in IPL and non-IPL; part B screen running (2026-11-13)
 MILESTONE: flaw hunt done: no feature fixes shock bias; G2 (early stopping on all competitions) candidate, models in models/g2; results in ML_PREDICTION.md section 9 (2026-11-13)
+MILESTONE: resources.py committed (pure funcs: xi_from_deliveries, Strengths, bat_features, bowl_features, innings_resources; build_resources batch) (2026-11-13)
+MILESTONE: sim-R (real XI simulator) code written (simulate.plan, simfix.PlanCtx/build_plan/simr); running IPL eval (2026-11-13)
+MILESTONE: resources.parquet built (2.64M state rows, 1.5 min); flaw_fit.py got R1-R3/W1-W3/g3 variants; running r1 r2 r3 (2026-11-13)
+MILESTONE: sim-R IPL eval done: overall WORSE than sim-B (MAE +0.2, logloss +0.024 2022-25), event biases not smaller; non-IPL running, bat-only/bowl-only diagnostic running (2026-11-13)
