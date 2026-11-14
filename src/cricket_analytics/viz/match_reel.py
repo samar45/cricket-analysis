@@ -77,21 +77,25 @@ def draw(kind, x, png, w, h, pal, team=None, marks=(), inn=1, upto=None, thru=""
         ax.plot([p[0] for p in shown], [p[1] for p in shown], color=a1, lw=9 * k, solid_capstyle="round", solid_joinstyle="round")
         ax.set_yticks([0, 0.5, 1], ["0%", "50%", "100%"])
         f = _curve_facts(x)
-        for m in marks:
-            e = f.get(m)
-            if m == "swing" and e and (upto is None or e["over"] <= upto):
-                px = e["over"]
-                py = e["to"] if not flip else 1 - e["to"]
-                ax.plot([px], [py], "o", ms=26 * k, mfc=bg, mec=a2, mew=6 * k, zorder=5)
-                left = px < n_over / 2
-                who = " v ".join(v.split()[-1] for v in (e.get("bowler"), e.get("batter")) if v)
-                ax.annotate(f"OVER {px}: {e['delta_pct']} PTS\n{who}", (px, py), xytext=(px + 1 if left else px - 1, 0.2),
-                            ha="left" if left else "right", va="center", color=a2, fontproperties=lab, fontsize=30 * k * PX)
-            if m == "low" and e and (upto is None or e["over"] <= upto):
-                py = e["win_pct"] if e["team"] == side else 1 - e["win_pct"]
-                ax.plot([e["over"]], [py], "o", ms=20 * k, mfc=bg, mec=ink, mew=5 * k, zorder=5)
-                ax.annotate(f"LOW {e['pct']}%", (e["over"], py), xytext=(28 * k, -10 * k), textcoords="offset points", ha="left", va="top",
-                            color=ink, fontproperties=lab, fontsize=28 * k * PX)
+        sw, lo = (f.get(m) if m in marks else None for m in ("swing", "low"))
+        sw = sw if sw and (upto is None or sw["over"] <= upto) else None
+        lo = lo if lo and (upto is None or lo["over"] <= upto) else None
+        chip = dict(boxstyle="round,pad=0.25", fc=bg, ec="none", alpha=0.9)  # hides the 50% guide behind a label
+        o = lambda v: v * k * PX  # noqa: E731  (pixels -> points)
+        same = bool(sw and lo and sw["over"] == lo["over"])
+        if sw:
+            px, py = sw["over"], (sw["to"] if not flip else 1 - sw["to"])
+            ax.plot([px], [py], "o", ms=26 * k, mfc=bg, mec=a2, mew=6 * k, zorder=5)
+            who = " v ".join(v.split()[-1] for v in (sw.get("bowler"), sw.get("batter")) if v)
+            dy = -(78 if same else 16)  # shared over: the swing label sits under the LOW label
+            ax.annotate(f"OVER {px}: {sw['delta_pct']} PTS\n{who}", (px, py), xytext=(o(34), o(dy)), textcoords="offset points", ha="left", va="top",
+                        color=a2, fontproperties=lab, fontsize=30 * k * PX, bbox=chip, zorder=6)
+        if lo:
+            px, py = lo["over"], (lo["win_pct"] if lo["team"] == side else 1 - lo["win_pct"])
+            if not same:
+                ax.plot([px], [py], "o", ms=20 * k, mfc=bg, mec=ink, mew=5 * k, zorder=5)
+            ax.annotate(f"LOW {lo['pct']}%", (px, py), xytext=(o(34), o(-16)), textcoords="offset points", ha="left", va="top",
+                        color=ink, fontproperties=lab, fontsize=30 * k * PX, bbox=chip, zorder=6)
         xl = "OVERS"
     else:  # score_curve
         if inn not in (1, 2):
