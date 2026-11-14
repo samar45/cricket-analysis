@@ -1439,3 +1439,38 @@ Run exactly as registered. Choices the registration left open: snapshot ball = o
 - **Replay:** walk forward in date order through BBL10-15, with model = out-of-sample ens-G1 (already in `market_rows.parquet`). Report final bankroll, number of bets, hit rate, ROI, maximum drawdown and a bootstrap range.
 - **Expectation written beforehand:** about break-even or a small loss, because the market beat this model.
 - **The replay is a test of the engine, not evidence of an edge.**
+
+#### Amendment 2 (before opening), 2026-11-14: SMAT 2026 becomes its own live test set (S26)
+Written while fresh set #3 is unopened and unscored, and before any SMAT 2026 match exists in the DB or has been viewed by the lead or a worker (latest SMAT row in the DB: 2024-12-15; Cricsheet has no SMAT after that, checked 2026-11-14). Samar approved this split on 2026-11-14.
+- **S26** = every men's Syed Mushtaq Ali Trophy match dated 2026-10-15 or later (the 2026 season, about 2026-11-14 to 2026-12-06), whatever its source.
+- **Training lock unchanged:** S26 rows stay covered by `fresh3_mask`, so no model may train, tune or calibrate on them. The only change: the one-time fresh-3 scoring run **excludes** S26 rows (they are scored once in their own run below). Everything else in fresh set #3 stays as registered.
+
+### 2026-11-14 (lead): PRE-REGISTRATION of the SMAT 2026 live test (S26), written before any SMAT 2026 data is collected
+- **Why:** a true forward test. Each prediction is written down with a timestamp while the match is being played, before the result is known.
+- **Models**, both frozen as of this entry:
+  - **P0:** production as recorded in `production_meta.json` (score G1, chase ens-G1, trained to 2026-10-14, no SMAT 2025).
+  - **F:** the fair baselines F-score / F-chase.
+- **Optional P1:** the same recipes refit with SMAT 2025 added (step 3). P1 counts only if its artifacts are frozen (SHA256 in the log) before the first prediction it is scored on. Only predictions logged after that freeze count for P1.
+- **What is logged** (append-only JSONL, one line per prediction, never edited):
+  - Pre-match: `prematch.predict` win % for team A, logged before the first ball.
+  - In-play: at the end of overs 6, 10 and 15 of each innings, the live state (runs, wickets, balls, target), the innings-1 score quantiles q10/q50/q90 and the win % of the batting side.
+  - Each line carries the UTC time, the source, and the model version hash.
+  - A checkpoint the logger missed (PC off, feed down) stays missing. **No back-filling from scorecards** for the primary result. A back-filled run may be reported separately, labelled as such.
+- **Exclusions:** no result; reduced overs (fewer than 20 overs per side at the first ball, or DLS/VJD used); super overs. Matches where the logged live state disagrees with the final scorecard by more than 2 runs or 1 wicket are excluded and counted.
+- **Metrics:**
+  - Innings 1: MAE of q50 against the final total, pinball loss, cov80 (share of finals inside q10-q90).
+  - Chase (innings 2): log loss and Brier of the batting-side win %, `calibration_test` intercept/slope.
+  - Pre-match: log loss against a 50/50 coin.
+  - P0 vs F: paired `match_bootstrap`, two-sided 95%.
+- **Pass marks** (P0):
+  1. cov80 is between 0.72 and 0.88.
+  2. Chase log loss is not worse than F-chase (interval includes or is below 0).
+  3. Innings-1 MAE is not worse than F-score.
+  4. Pre-match log loss is no worse than the coin.
+  - Each is reported separately; no single "it works" verdict.
+- **Sample size:** about 100-140 matches, so about 100 decided chases at most, well below the about 800 that `power_n` asks for. **The result counts as indicative only**, whichever way it goes.
+- **Discipline:**
+  - Until the run, nobody computes aggregate metrics on S26.
+  - Watching single live predictions on screen is fine.
+  - No model, feature or rule change may be made because of anything seen in S26.
+  - The run happens once, after the final (on or after 2026-12-07), and the result is logged in `docs/ML_LEARNINGS.md` §3 whatever it is.
