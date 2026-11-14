@@ -222,6 +222,9 @@ def verify_one(m: dict, innings: pd.DataFrame, batting: pd.DataFrame, con, comp:
     """One Cricbuzz match (dict from matches.parquet) -> status row. Status: equal / different / waiting / unmapped_team / no_result."""
     row = dict(cb_match_id=m["match_id"], comp=comp, date=m["date"], team1=m["team1"], team2=m["team2"], status="", cricsheet_match_id="", diffs="",
                batters_compared=0, batters_unmapped=0)
+    if any(_norm(m[k]) == "afghanistan" for k in ("team1", "team2")):  # Cricsheet withholds all Afghanistan matches on purpose
+        row["status"] = "cricsheet_withheld"
+        return row
     t1, t2 = (to_cs_team(m[k], comp, tmap, cs_names) for k in ("team1", "team2"))
     if not t1 or not t2:
         row["status"] = "unmapped_team"
@@ -340,7 +343,7 @@ def write_doc(res: pd.DataFrame, cs_only: list[tuple], doc: Path) -> None:
     L = ["# Cricbuzz vs Cricsheet verification", "",
          f"Written by `cricket cricbuzz sync` on {dt.datetime.now():%Y-%m-%d %H:%M}; overwritten each run. Data check only, no model output.", "",
          "| Status | Matches |", "|---|---|"]
-    for k, label in (("equal", "matched and equal"), ("different", "matched and different"), ("waiting", "waiting for Cricsheet"), ("unmapped_team", "team name not mapped")):
+    for k, label in (("equal", "matched and equal"), ("different", "matched and different"), ("waiting", "waiting for Cricsheet"), ("cricsheet_withheld", "withheld by Cricsheet"), ("unmapped_team", "team name not mapped")):
         L.append(f"| {label} | {c.get(k, 0)} |")
     L += [f"| Cricsheet only (no Cricbuzz copy) | {len(cs_only)} |", ""]
     diff = res[res.status == "different"]
@@ -408,7 +411,7 @@ def sync(dry_run: bool = False, do_verify: bool = True, max_matches: int | None 
     finally:
         release()
     line = (f"series kept {len(kept)} ({', '.join(sorted({s['comp'] for s in kept}))}); new matches {'would save' if dry_run else 'saved'} {saved}; "
-            f"verified equal {counts.get('equal', 0)}, mismatched {counts.get('different', 0)}, waiting {counts.get('waiting', 0)}; "
+            f"verified equal {counts.get('equal', 0)}, mismatched {counts.get('different', 0)}, waiting {counts.get("waiting", 0)}, withheld {counts.get("cricsheet_withheld", 0)}; "
             f"unmapped T20 series {len(unmapped)}{'; BLOCKED' if blocked else ''}")
     echo(line)
     log(line)

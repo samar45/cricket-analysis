@@ -1,20 +1,15 @@
 # Cricbuzz vs Cricsheet verification
 
-Written by `cricket cricbuzz sync` on 2026-11-15 00:54; overwritten each run. Data check only, no model output.
+Written by `cricket cricbuzz sync` on 2026-11-15 00:59; overwritten each run. Data check only, no model output.
 
 | Status | Matches |
 |---|---|
 | matched and equal | 8 |
 | matched and different | 0 |
 | waiting for Cricsheet | 19 |
-| team name not mapped | 3 |
+| withheld by Cricsheet | 3 |
+| team name not mapped | 0 |
 | Cricsheet only (no Cricbuzz copy) | 1 |
-
-## Team names not mapped (add to reference/cricbuzz_team_map.csv)
-
-- t20i: unmapped: Afghanistan
-- t20i: unmapped: Afghanistan
-- t20i: unmapped: Afghanistan
 
 ## All matches (newest first)
 
@@ -40,11 +35,11 @@ Written by `cricket cricbuzz sync` on 2026-11-15 00:54; overwritten each run. Da
 | 2026-11-14 | smat | Hyderabad v Mumbai | waiting |  | 0 |
 | 2026-11-14 | smat | Maharashtra v Puducherry | waiting |  | 0 |
 | 2026-11-01 | t20i | New Zealand v India | equal | 1539436 | 13 |
-| 2026-11-01 | t20i | Afghanistan v Zimbabwe | unmapped_team |  | 0 |
+| 2026-11-01 | t20i | Afghanistan v Zimbabwe | cricsheet_withheld |  | 0 |
 | 2026-10-30 | t20i | New Zealand v India | equal | 1539435 | 17 |
-| 2026-10-29 | t20i | Afghanistan v Zimbabwe | unmapped_team |  | 0 |
+| 2026-10-29 | t20i | Afghanistan v Zimbabwe | cricsheet_withheld |  | 0 |
 | 2026-10-27 | t20i | New Zealand v India | equal | 1539434 | 9 |
-| 2026-10-27 | t20i | Afghanistan v Zimbabwe | unmapped_team |  | 0 |
+| 2026-10-27 | t20i | Afghanistan v Zimbabwe | cricsheet_withheld |  | 0 |
 | 2026-10-24 | t20i | New Zealand v India | equal | 1539433 | 11 |
 | 2026-10-22 | t20i | New Zealand v India | equal | 1539432 | 11 |
 | 2026-10-13 | t20i | Pakistan v Sri Lanka | equal | 1550710 | 8 |
