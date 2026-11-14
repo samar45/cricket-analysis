@@ -22,6 +22,10 @@ Run from any folder with this app's venv:
 | `cricket info` | Matches and latest date per competition | ✅ |
 | `cricket facts --player "V Kohli" [--competition ipl] [--last_n_years N] --out reels/<slug>/data/facts.json` | One file with a player's headline facts plus `{token}` strings (see 3b). Exit 1 + closest names if the name is not exact. No `--competition` = all men's T20 (said in `meta.competition_note`) | ✅ |
 | `cricket chart <module> [module params] --aspect 9:16\|1:1 [--focus X] --png <file> [--html <file>]` | A reel-ready 1080-wide transparent PNG (and/or standalone HTML). Exit 1 with a message if the result has no rows | ✅ |
+| `cricket resolve --scouting smat2025 "<name>"` | Cricbuzz id, name, team for an exact SMAT 2025-26 name (or id). Not exact: exit 1 + candidates | ✅ |
+| `cricket facts --scouting smat2025 --player "Ankit Kumar" [--out f.json]` | Same shape as `facts` (3b) for a SMAT player; keys in section 3c. Not exact: exit 1 + candidates | ✅ |
+| `cricket scouting list smat2025 [--uncapped] [--no-ipl] --role bat\|bowl [--top 15] --json [--out f.json]` | Ranked rows `{meta, data}` for topic picking (`ipl_status`, `t20i`, `name_match`, `rank_uncapped`, `score`...) | ✅ |
+| `cricket chart scout_innings --scouting smat2025 --player X --png f.png` / `scout_rank --scouting smat2025 --role bat\|bowl [--focus X] --png f.png` | Transparent PNG, 960x980 default; `--size WxH` (or `--width/--height`), `--palette '{"bg","ink","a1","a2"}'` | ✅ |
 | `cricket update [--days 7\|30] [--dry-run] [--no-download] [--replace-changed] [--db PATH]` | Add recently-added Cricsheet matches to the DB (writes the DB: run by hand, not from a reel build) | ✅ wired to `ingest.update.run_update` |
 
 ## 3. JSON shape (`--json`)
@@ -67,6 +71,15 @@ The pipeline should keep `meta` next to the numbers it uses and print `data_thro
 - Tokens: `tokens` has display strings (`9,336`, `40.42`, `134.8`: whole numbers with commas, 2 decimals, 1 decimal from 100 up), `tokens_raw` the same keys with numbers. Token key = dotted path into `facts` without `source`. Text values (`dismissals.top_kind`, `profile.bat_hand`) are tokens too. A missing key means no data: fail the build, don't guess.
 - `profile.*` fields come from the reviewed list; "unknown" values are dropped. `vs_pace_spin.unknown_pct` is the share of balls with no bowling type: check it before quoting a split (IPL ~2%, other competitions much more).
 
+## 3c. SMAT 2025-26 scouting facts (`cricket facts --scouting smat2025`)
+Same `meta` / `facts` / `tokens` / `tokens_raw` shape. Keys (a missing key = no data, fail the build):
+- `scout.*` batter: `name, cricbuzz_id, team, inns, runs, balls, avg, sr, fifties, hundreds, boundary_pct, band, score, score_name, league_sr, ipl_sr_est, smat_hist, t20i, name_match, ipl_status, rank_uncapped, of_uncapped`.
+  Bowler: `team, wkts, overs, econ, avg, score, runs_saved, league_econ, ipl_econ_est, smat_hist, t20i, name_match, ...` (same optional keys; no `sr`).
+- `best.1..3.*`: batter `runs, balls, fours, sixes, opponent, date, venue, result, match_id` (most runs, ties by strike rate); bowler `wkts, runs, overs, opponent, date, venue, result, match_id`.
+- `rank_uncapped` / `of_uncapped` exist only when `t20i` = "uncapped". `ipl_status` ("no IPL record" or "N IPL matches, last YYYY") is absent when the name is unmatched (`name_match` = "none"). `t20i` is "uncapped" / "capped (T20I)" / "unknown".
+- `name_match` "name_only" = matched by name, not team history: never claim "no IPL contract" (also in `meta.caveats`). `meta.plate` marks Plate-group players. `score` = runs above the league-average strike rate over his own balls (bowlers: runs saved vs league economy).
+- Data: Cricbuzz scorecards (not ball-by-ball); source line `meta.source`; `meta.data_through` = last SMAT match (2025-12-18). Charts: fonts "Big Shoulders Stencil Display" / "IBM Plex Mono" are requested but only render if installed on the machine; otherwise Impact / Consolas show.
+
 ## 4. Charts for video
 - `cricket_analytics.viz.video.video_figure(module_id, result, aspect="9:16"|"1:1", focus=None)` returns a Plotly figure: 1080×1920 or 1080×1080, transparent background, the Edit Pipeline scoreboard palette, big numbers, one message per chart, and a source footnote. ✅
 - PNG: `cricket chart ...` (CLI, above) or `fig.write_image(path)` in Python (kaleido 1.5 drives the installed Chrome/Edge). ✅ Background is transparent: it looks white in an image viewer; the text is cream/amber for dark reels.
@@ -108,3 +121,4 @@ The pipeline should keep `meta` next to the numbers it uses and print `data_thro
 - v1 2026-10-24: first version.
 - v2 2026-10-25: `cricket facts` and `cricket chart` implemented (sections 2, 3b); `cricket update` added; module count 18. No breaking change to v1 commands.
 - v3 2026-10-25: `cricket facts` output is `facts_version` 2: new `stories` section (top 5 hooks of the `stories` module; keys `stories.<1-5>.{theme,kind,sentence,label_a,value_a,n_a,label_b,value_b,n_b,score}`, e.g. token `{stories.1.sentence}`; records have no `label_b`/`value_b`). New modules `stories` (hooks for one player) and `underrated` (ranking by strong numbers + low fame, a heuristic) with video charts. No existing key changed.
+- v4 2026-11-14: SMAT 2025-26 scouting commands (`resolve/facts --scouting smat2025`, `scouting list`, `chart scout_innings|scout_rank`, section 3c). No existing key changed.

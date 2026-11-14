@@ -228,9 +228,15 @@ def schema(as_json):
 @click.option("--competition", default=None, help="Limit to one competition key")
 @click.option("--team", "is_team", is_flag=True, help="Look up a team name instead of a player")
 @click.option("--limit", default=5, show_default=True)
-def resolve(name, competition, is_team, limit):
+@click.option("--scouting", default=None, help="Look in a scouting set instead (smat2025)")
+def resolve(name, competition, is_team, limit, scouting):
     """Find the exact data name for a loose spelling: cricket resolve kohli."""
     from . import api
+
+    if scouting:
+        from .scouting.cli import do_resolve
+
+        return do_resolve(scouting, name)
 
     try:
         rows = (api.resolve_team if is_team else api.resolve_player)(name, competition, limit)
@@ -257,9 +263,10 @@ def info_cmd():
 @cli.command()
 @click.option(
     "--player",
-    required=True,
+    required=False,
     help="Exact Cricsheet name, e.g. 'V Kohli' (find it with `cricket resolve`)",
 )
+@click.option("--match", "match_id", default=None, help="A Cricsheet match id: win-probability curve facts instead of a player's")
 @click.option("--competition", default=None, help="Competition key; omit for all men's T20")
 @click.option("--last_n_years", type=int, default=None, help="Only the N most recent seasons")
 @click.option(
@@ -275,9 +282,22 @@ def info_cmd():
     default=None,
     help="DB file (default: the main DB)",
 )
-def facts(player, competition, last_n_years, out, db_path):
+@click.option("--scouting", default=None, help="Facts from a scouting set (smat2025), not the DB")
+def facts(player, competition, last_n_years, out, db_path, scouting, match_id):
     """One JSON of headline facts for a reel: career, best season, phases, pace/spin, home/away, pressure, tokens."""
     from . import facts as F
+
+    if match_id:
+        from .matchreel import facts_cmd
+
+        return facts_cmd(match_id, out)
+    if not player:
+        raise click.UsageError("Give --player or --match")
+
+    if scouting:
+        from .scouting.cli import do_facts
+
+        return do_facts(scouting, player, out)
 
     try:
         data = F.build(player, competition, last_n_years, db_path=db_path)
@@ -318,10 +338,26 @@ def facts(player, competition, last_n_years, out, db_path):
     help="Write a standalone interactive HTML",
 )
 @click.option("--db", "db_path", type=click.Path(dir_okay=False, path_type=Path), default=None)
+@click.option("--scouting", default=None, help="Scouting chart set (smat2025): scout_innings / scout_rank")
+@click.option("--size", default=None, help="WxH for scouting charts (default 960x980)")
+@click.option("--width", type=int, default=None, help="Scouting chart width")
+@click.option("--height", type=int, default=None, help="Scouting chart height")
+@click.option("--palette", default=None, help='Scouting colours as JSON {"bg","ink","a1","a2"}')
 @click.pass_context
-def chart(ctx, module_id, aspect, focus, png, html, db_path):
+def chart(ctx, module_id, aspect, focus, png, html, db_path, scouting, size, width, height, palette):
     """Reel-ready chart: cricket chart batting --player "V Kohli" --competition ipl --aspect 9:16 --png card.png."""
     from . import export
+
+    if scouting:
+        from .scouting.cli import do_chart
+
+        size = size or (f"{width or 960}x{height or 980}" if width or height else None)
+        return do_chart(scouting, module_id, png, size, palette, {**_parse_extra(ctx.args), "focus": focus})
+
+    if module_id in ("match_curve", "score_curve"):
+        from .matchreel import chart_main
+
+        return chart_main(module_id, png, size, width, height, palette, ctx.args)
 
     logging.getLogger().setLevel(logging.WARNING)  # kaleido logs every browser step at INFO
     if not (png or html):
@@ -512,6 +548,13 @@ def ask_log(last, bad, to_eval):
             + (f"  ({a['error_id']})" if a.get("error_id") else "")
         )
 
+
+from .scouting.cli import scouting_group  # noqa: E402
+
+cli.add_command(scouting_group)
+from .matchreel import match as _match_group  # noqa: E402
+
+cli.add_command(_match_group)
 
 if __name__ == "__main__":
     cli()
