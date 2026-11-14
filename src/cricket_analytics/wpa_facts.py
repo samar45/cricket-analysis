@@ -10,6 +10,8 @@ import click
 from matplotlib.colors import to_rgba
 import pandas as pd
 
+from .reference import team_short
+
 
 MIN_MATCHES = 20  # a player is ranked only with this many matches in scope
 TOP = 3
@@ -115,7 +117,9 @@ def draw(mine, player, competition, png, w, h, pal, thru, fonts=None) -> str:
         ax.spines[sp].set_visible(False)
     cv.style_ticks(ax, 26)
     b = mine.iloc[best]
-    ax.annotate(f"BEST +{b.wpa:.2f}\nv {b.opponent[:18]}, {pd.Timestamp(b.date).year}", (best, b.wpa), xytext=(0, 14 * k * mr.PX), textcoords="offset points",
+    label = f"BEST +{b.wpa:.2f}\nv {team_short(b.opponent)}, {pd.Timestamp(b.date).year}"
+    mr.DRAWN.append(label)
+    ax.annotate(label, (best, b.wpa), xytext=(0, 14 * k * mr.PX), textcoords="offset points",
                 ha="right" if best > n * 0.35 else "left", va="bottom", color=a1, fontproperties=cv.lab, fontsize=28 * k * mr.PX)
     ax.set_ylim(min(mine.wpa.min() * 1.1, -0.05), mine.wpa.max() * 1.35)
     years = pd.to_datetime(mine.date).dt.year

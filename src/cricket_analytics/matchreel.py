@@ -16,6 +16,7 @@ import pandas as pd
 from . import api, competitions
 from .db import query
 from .facts import FACTS_VERSION, _flatten, _fmt
+from .reference import team_short
 
 LOCKED = "locked: fresh set #3 (men's matches from 2026-10-15 get no model output)"
 HERO_TOP = 2
@@ -113,15 +114,19 @@ def _curve_facts(x) -> dict:
         lo = min(live, key=side_win)
         out["low"] = {"over": lo["over"], "win_pct": round(side_win(lo), 4), "pct": round(100 * side_win(lo)), "team": winner}
     steps = [(b, a) for a, b in zip(ch, ch[1:])]
-    if steps:
-        b, a = max(steps, key=lambda s: abs(s[0]["win_pct"] - s[1]["win_pct"]))
+    for key, first_over in (("swing", 1), ("swing_mid", 3)):  # swing_mid skips overs 1-2 (the start-of-chase adjustment)
+        pool = [s for s in steps if s[0]["over"] >= first_over]
+        if not pool:
+            continue
+        b, a = max(pool, key=lambda s: abs(s[0]["win_pct"] - s[1]["win_pct"]))
         n = b["over"]  # the over that ended at b (1-indexed)
         w = x["bl"][(x["bl"].innings == 2) & (x["bl"].over_n == n - 1)]
         faced = Counter(w[w.wides == 0].batter)
         d = round(b["win_pct"] - a["win_pct"], 4)
-        out["swing"] = {"over": n, "delta": d, "delta_pct": round(100 * abs(d)), "from": a["win_pct"], "to": b["win_pct"],
-                        "team": x["chase"], **({"bowler": Counter(w.bowler).most_common(1)[0][0]} if len(w) else {}),
-                        **({"batter": faced.most_common(1)[0][0]} if faced else {})}
+        out[key] = {"over": n, "delta": d, "delta_pct": round(100 * abs(d)), "from": a["win_pct"], "to": b["win_pct"],
+                    "team": x["chase"], **({"inn": 2} if key == "swing_mid" else {}),
+                    **({"bowler": Counter(w.bowler).most_common(1)[0][0]} if len(w) else {}),
+                    **({"batter": faced.most_common(1)[0][0]} if faced else {})}
     return out
 
 
@@ -149,7 +154,8 @@ def build_facts(mid: str) -> dict:
     info = api.data_info()
     key = _comp_key(row)
     thru = _thru(info, key)
-    match = {"teams": [meta["team1"], meta["team2"]], "team1": meta["team1"], "team2": meta["team2"], "batting_first": meta["team1"],
+    match = {"teams": [meta["team1"], meta["team2"]], "team1": meta["team1"], "team2": meta["team2"],
+             "team1_short": team_short(meta["team1"]), "team2_short": team_short(meta["team2"]), "batting_first": meta["team1"],
              "chasing": meta["team2"], "date": meta["date"], "venue": meta["venue"], "competition": key or row["competition"],
              "score1": f"{meta['score1']}/{meta['wk1']}", "score2": f"{meta['score2']}/{meta['wk2']}"}
     if meta["target"] is not None:

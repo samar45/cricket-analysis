@@ -6,15 +6,19 @@ import os
 from pathlib import Path
 
 import matplotlib
+import matplotlib.colors as mc  # noqa: F401
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib import font_manager as fm  # noqa: E402
 
+from ..reference import team_short  # noqa: E402
+
 DEFAULT_PALETTE = {"bg": "#111111", "ink": "#f3efe4", "a1": "#ffb000", "a2": "#d7262e"}  # = viz/video: cream ink, amber, red
 FONT_DIR = Path(os.environ.get("CRICKET_FONT_DIR", r"D:\Claude projects\Edit Pipeline\assets\fonts"))
 NUM_TTF, LABEL_TTF = "BigShouldersStencilDisplay.ttf", "IBMPlexMono-Bold.ttf"
 PX = 72 / 100  # points per pixel at dpi=100
+DRAWN: list[str] = []  # every text string drawn (tests check labels: team names must be short codes)
 
 
 def _fonts(font_dir):
@@ -51,11 +55,12 @@ def draw(kind, x, png, w, h, pal, team=None, marks=(), inn=1, upto=None, thru=""
     ax_l = pad + 110 * k  # room for the y tick labels
 
     def text(px, py, s, size, font, color=ink, ha="left", va="top", **kw):
+        DRAWN.append(s)
         ov.text(px, py, s, fontproperties=font, fontsize=size * k * PX, color=color, ha=ha, va=va, **kw)
 
     n_over = max(20, max(r["over"] for r in rows))
     if kind == "match_curve":
-        side = team or x["chase"]
+        side = {team_short(t): t for t in (x["chase"], x["defend"])}.get(team, team) or x["chase"]  # --team takes a name or its code
         if side not in (x["chase"], x["defend"]):
             raise ValueError(f"--team must be {x['chase']!r} or {x['defend']!r}")
         flip = side == x["defend"]
@@ -63,8 +68,8 @@ def draw(kind, x, png, w, h, pal, team=None, marks=(), inn=1, upto=None, thru=""
         shown = [p for p in pts if upto is None or p[0] <= upto]
         if not shown:
             raise ValueError("--upto is before the first point")
-        text(pad, 60 * k, f"{side.upper()} WIN CHANCE", 40, lab)
-        text(pad, 112 * k, f"{x['defend']} v {x['chase']}, {meta['date']}", 28, lab, ink, alpha=0.6)
+        text(pad, 60 * k, f"{team_short(side)} WIN CHANCE", 40, lab)
+        text(pad, 112 * k, f"{team_short(x['defend'])} v {team_short(x['chase'])}, {meta['date']}", 28, lab, ink, alpha=0.6)
         big = f"{round(100 * shown[-1][1])}%"
         text(pad, 170 * k, big, 250, num, a1)
         text(pad + 20 * k, 480 * k, f"after over {shown[-1][0]}" if shown[-1][0] < pts[-1][0] else "at the end of the match", 30, lab, ink, alpha=0.7)
@@ -105,7 +110,7 @@ def draw(kind, x, png, w, h, pal, team=None, marks=(), inn=1, upto=None, thru=""
         shown = [r for r in pts if upto is None or r["over"] <= upto]
         if not shown:
             raise ValueError("--upto is before the first point")
-        text(pad, 60 * k, f"{bat.upper()} SCORE, INNINGS {inn}", 40, lab)
+        text(pad, 60 * k, f"{team_short(bat)} SCORE, INNINGS {inn}", 40, lab)
         text(pad, 112 * k, "projected final score vs actual", 28, lab, ink, alpha=0.6)
         last = shown[-1]
         text(pad, 170 * k, f"{last['score']}/{last['wkts']}", 250, num, a1)
@@ -156,6 +161,7 @@ class Canvas:
 
     def text(self, x, y, s, size, font="lab", color=None, ha="left", va="top", alpha=1.0, **kw):
         """size in px at 960 wide; font 'num' (Big Shoulders) or 'lab' (IBM Plex Mono)."""
+        DRAWN.append(s)
         self.ov.text(x, y, s, fontproperties=self.num if font == "num" else self.lab, fontsize=size * self.k * PX,
                      color=color or self.pal["ink"], ha=ha, va=va, alpha=alpha, **kw)
 
