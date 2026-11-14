@@ -72,9 +72,10 @@ def innings(cv, player: str):
     lg = reels.league()["sr"] if role == "bat" else None
     if lg:
         ymax = max(ymax, max(lg * d.balls / 100) * 1.25)
-        cv.text(40 * k, (300 if cv.video else 150) * k, "- - average batter, same balls", 40 if cv.video else 22, "lab", pal["a2"])
+        if not cv.video:  # in a reel the dashed ticks speak for themselves (no subtitle lines)
+            cv.text(40 * k, 150 * k, "- - average batter, same balls", 22, "lab", pal["a2"])
     ax = cv.axes(40 * k, top + (50 if cv.video else 20) * k, cv.w - 40 * k, cv.h - 110 * k)
-    ax.set_xlim(-0.6, len(d) - 0.4), ax.set_ylim(0, ymax), ax.axis("off")
+    ax.set_xlim(-0.6, len(d) - 0.4), ax.set_ylim(0, ymax), ax.axis("off"), ax.set_xticks([]), ax.set_yticks([])
     x = list(range(len(d)))
     ax.bar(x, y, width=0.7, color=[pal["a1"] if i == best else _rgba(pal["ink"]) for i in x])
     for i, v in enumerate(y):
@@ -92,6 +93,8 @@ def rank(cv, role: str, focus: str | None = None, n: int = 10):
     pal, k = cv.pal, cv.k
     t = reels.table(role)
     t = t[t.t20i == "uncapped"]
+    if cv.video:  # 40 px names need ~54 px per row: fewer rows on a short canvas
+        n = max(3, min(n, int((cv.h - 60 * k - 370 * k) / (54 * k))))
     rows = t.head(n)
     big, lab = "", "RUNS ABOVE AVERAGE" if role == "bat" else "RUNS SAVED vs AVERAGE"
     f = None
@@ -109,9 +112,10 @@ def rank(cv, role: str, focus: str | None = None, n: int = 10):
     hl = [f is not None and i == f["cricbuzz_id"] for i in rows.cricbuzz_id]
     left = 40 * k + (470 if cv.video else 370) * k
     ax = cv.axes(left, top + 20 * k, cv.w - 40 * k, cv.h - 60 * k)
-    ax.axis("off")
+    ax.axis("off"), ax.set_xticks([]), ax.set_yticks([])
     ys = list(range(len(rows)))
-    xmax = rows.score.max() * 1.3
+    lw = 0.45 * 56 * k * 4  # width of a value label such as "94.1"
+    xmax = rows.score.max() / (1 - (lw + 14 * k) / (cv.w - 40 * k - left))  # room for the label after the longest bar
     ax.set_xlim(0, xmax), ax.set_ylim(-0.6, len(rows) - 0.4)
     ax.barh(ys, rows.score, height=0.75, color=[pal["a1"] if x else _rgba(pal["ink"]) for x in hl])
     for i, (v, r_, nm) in enumerate(zip(rows.score, rows.rank_uncapped, rows["name"])):

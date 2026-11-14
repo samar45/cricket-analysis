@@ -23,6 +23,29 @@ SIZES: list[tuple] = []  # (text, size in px, is_tick_label, is_bold): tests che
 BOLD_FROM = 100  # number-font texts at least this big (px at 960 wide) get a stroke, because the stencil face is hairline thin
 
 
+LAST_FIG: list = []  # the last figure drawn (tests measure label boxes on it)
+_CMAPS: dict = {}
+
+
+def _keep(fig):
+    """Remember the figure (with a canvas that can measure text) for the layout tests."""
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+    FigureCanvasAgg(fig)
+    LAST_FIG.clear(), LAST_FIG.append(fig)
+
+
+def safe(s, font):
+    """Replace characters the font has no glyph for with '-' (a missing glyph prints as a box)."""
+    from fontTools.ttLib import TTFont
+
+    path = fm.findfont(font)
+    if path not in _CMAPS:
+        _CMAPS[path] = set(TTFont(path, fontNumber=0).getBestCmap())
+    c = _CMAPS[path]
+    return "".join(ch if ch == "\n" or ord(ch) in c else "-" for ch in s)
+
+
 def _bold(font, size, color, k):
     """Path effect that thickens the hairline number font."""
     import matplotlib.patheffects as pe
@@ -64,13 +87,14 @@ def draw(kind, x, png, w, h, pal, team=None, marks=(), inn=1, upto=None, thru=""
     fig = plt.figure(figsize=(w / 100, h / 100), dpi=100)
     fig.patch.set_alpha(0)
     ov = fig.add_axes([0, 0, 1, 1])  # whole-figure axes in pixels (y down) for the text
-    ov.set_xlim(0, w), ov.set_ylim(h, 0), ov.axis("off"), ov.patch.set_alpha(0)
+    ov.set_xlim(0, w), ov.set_ylim(h, 0), ov.axis("off"), ov.set_xticks([]), ov.set_yticks([]), ov.patch.set_alpha(0)
     V = video  # --video: about 2x type, only 3 y ticks, no subtitle or footnote (the reel credit carries the source)
     pad, k = int(w * 0.06), (w / 960 if V else min(w / 960, h / 980))
     ax_l = pad + (140 if V else 110) * k  # room for the y tick labels
     tick_px = 40 if V else 28
 
     def text(px, py, s, size, font, color=ink, ha="left", va="top", **kw):
+        s = safe(s, font)
         DRAWN.append(s)
         bold = font is num and size >= BOLD_FROM
         SIZES.append((s, size * k, False, bold))
@@ -90,6 +114,7 @@ def draw(kind, x, png, w, h, pal, team=None, marks=(), inn=1, upto=None, thru=""
             text(pad + 20 * k, 480 * k, cap, 30, lab, ink, alpha=0.7)
 
     def ann(s, size, xy, **kw):
+        s = safe(s, lab)
         DRAWN.append(s)
         SIZES.append((s, size * k, False, False))
         ax.annotate(s, xy, fontproperties=lab, fontsize=size * k * PX, **kw)
@@ -183,6 +208,7 @@ def draw(kind, x, png, w, h, pal, team=None, marks=(), inn=1, upto=None, thru=""
         text(pad, h - 12 * k, "model estimate" + (", trained on this match" if meta["in_sample"] else ""), 22, lab, ink, va="bottom", alpha=0.6)
     fig.savefig(png, dpi=100, transparent=True)
     plt.close(fig)
+    _keep(fig)
     return status
 
 
@@ -197,10 +223,11 @@ class Canvas:
         self.fig = plt.figure(figsize=(w / 100, h / 100), dpi=100)
         self.fig.patch.set_alpha(0)
         self.ov = self.fig.add_axes([0, 0, 1, 1])
-        self.ov.set_xlim(0, w), self.ov.set_ylim(h, 0), self.ov.axis("off"), self.ov.patch.set_alpha(0)
+        self.ov.set_xlim(0, w), self.ov.set_ylim(h, 0), self.ov.axis("off"), self.ov.set_xticks([]), self.ov.set_yticks([]), self.ov.patch.set_alpha(0)
 
     def text(self, x, y, s, size, font="lab", color=None, ha="left", va="top", alpha=1.0, **kw):
         """size in px at 960 wide; font 'num' (Big Shoulders) or 'lab' (IBM Plex Mono)."""
+        s = safe(s, self.num if font == "num" else self.lab)
         DRAWN.append(s)
         color = color or self.pal["ink"]
         bold = font == "num" and size >= BOLD_FROM
@@ -228,4 +255,5 @@ class Canvas:
         Path(png).parent.mkdir(parents=True, exist_ok=True)
         self.fig.savefig(png, dpi=100, transparent=True)
         plt.close(self.fig)
+        _keep(self.fig)
         return self.status

@@ -125,6 +125,7 @@ def draw(mine, player, competition, png, w, h, pal, thru, fonts=None, video=Fals
     cv.style_ticks(ax, 40 if V else 26)
     b = mine.iloc[best]
     label = f"BEST +{b.wpa:.2f}\nv {team_short(b.opponent)}, {pd.Timestamp(b.date).year}"
+    label = mr.safe(label, cv.lab)
     mr.DRAWN.append(label)
     ap = 40 if V else 28
     mr.SIZES.append((label, ap * k, False, False))
