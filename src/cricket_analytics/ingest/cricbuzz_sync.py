@@ -34,6 +34,7 @@ PATTERNS = [
     (r"the hundred", "hundred"), (r"international league t20", "ilt20"), (r"major league cricket", "mlc"),
     (r"bangladesh premier league", "bpl"), (r"lanka premier league", "lpl"), (r"syed mushtaq ali", "smat"),
 ]
+NOT_T20 = re.compile(r"test|ranji|shield|four.day|three.day|one.day|ford trophy|vijay hazare|plunket|first.class|a tour|lions|world cup|premier league 20|cup qualifier|u-?\d\d|trophy|challenge|league|smash|t10|t20 challenge", re.I)
 DROP = re.compile(r"\bwomen|\bwbbl\b|\bwpl\b|\bu-?(19|23)\b|under-?(19|23)|\bwomen'?s", re.I)
 
 
@@ -55,6 +56,9 @@ def parse_series_list(page: str) -> list[dict]:
             cur = out.setdefault(m[2], dict(id=int(m[2]), slug=m[3], name=html.unescape(m[4]), section=section, descs=[]))
         elif m[5] and cur:
             cur["descs"].append(html.unescape(m[5]))
+    for m in re.finditer(r'href="/cricket-series/(\d+)/([^"/]+)/matches"', page):  # the page's full series list (no section)
+        if m[1] not in out:
+            out[m[1]] = dict(id=int(m[1]), slug=m[2], name=m[2].replace("-", " "), section="", descs=[])
     return list(out.values())
 
 
@@ -75,7 +79,7 @@ def discover(page: str) -> tuple[list[dict], list[dict], list[str]]:
             kept.append(dict(s, comp=k))
         elif s["section"] == "WOMEN" or DROP.search(s["name"]):
             continue
-        elif s["section"] == "INTERNATIONAL":
+        elif s["section"] == "INTERNATIONAL" or (s["section"] == "" and not NOT_T20.search(s["name"])):
             cands.append(s)
         elif re.search(r"t20|t10|league|smash|cup|trophy|challenge", s["name"], re.I)                 and not re.search(r"test|ranji|shield|four.day|three.day|one.day|ford trophy|vijay hazare|plunket|first.class", s["name"], re.I):
             unmapped.append(s["name"])
@@ -165,7 +169,8 @@ def release(lock: Path = LOCK) -> None:
 
 # ------------------------------------------------------------------ verify
 def _norm(s: str) -> str:
-    return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
+    s = re.sub(r"\(.*?\)", "", (s or "").lower()).replace("&", " and ")
+    return re.sub(r"[^a-z0-9]+", " ", s).strip()
 
 
 def team_map() -> dict[tuple[str, str], str]:
