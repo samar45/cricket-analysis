@@ -139,3 +139,41 @@ def draw(kind, x, png, w, h, pal, team=None, marks=(), inn=1, upto=None, thru=""
     fig.savefig(png, dpi=100, transparent=True)
     plt.close(fig)
     return status
+
+
+class Canvas:
+    """A transparent figure of w x h pixels with the reel fonts: `text()` places text in pixels (y down), `axes()` makes a plot box.
+    Shared by the match, scouting and wpa charts so every reel chart looks the same."""
+
+    def __init__(self, w, h, pal=None, font_dir=None):
+        self.w, self.h, self.pal = w, h, {**DEFAULT_PALETTE, **(pal or {})}
+        self.k = min(w / 960, h / 980)
+        self.num, self.lab, self.status = _fonts(font_dir)
+        self.fig = plt.figure(figsize=(w / 100, h / 100), dpi=100)
+        self.fig.patch.set_alpha(0)
+        self.ov = self.fig.add_axes([0, 0, 1, 1])
+        self.ov.set_xlim(0, w), self.ov.set_ylim(h, 0), self.ov.axis("off"), self.ov.patch.set_alpha(0)
+
+    def text(self, x, y, s, size, font="lab", color=None, ha="left", va="top", alpha=1.0, **kw):
+        """size in px at 960 wide; font 'num' (Big Shoulders) or 'lab' (IBM Plex Mono)."""
+        self.ov.text(x, y, s, fontproperties=self.num if font == "num" else self.lab, fontsize=size * self.k * PX,
+                     color=color or self.pal["ink"], ha=ha, va=va, alpha=alpha, **kw)
+
+    def axes(self, l, t, r, b):
+        """Plot box with pixel edges (left, top, right, bottom); no frame, no ticks."""
+        ax = self.fig.add_axes([l / self.w, 1 - b / self.h, (r - l) / self.w, (b - t) / self.h])
+        ax.patch.set_alpha(0)
+        for s in ax.spines.values():
+            s.set_visible(False)
+        ax.tick_params(length=0, colors=self.pal["ink"])
+        return ax
+
+    def style_ticks(self, ax, size=28):
+        for t in ax.get_xticklabels() + ax.get_yticklabels():
+            t.set_fontproperties(self.lab), t.set_fontsize(size * self.k * PX), t.set_color(self.pal["ink"])
+
+    def save(self, png):
+        Path(png).parent.mkdir(parents=True, exist_ok=True)
+        self.fig.savefig(png, dpi=100, transparent=True)
+        plt.close(self.fig)
+        return self.status
