@@ -72,9 +72,9 @@ def all_matches() -> list[dict]:
     return sorted((m for m in ms if m["date"] < S26_FROM), key=lambda r: (r["date"], r["id"]))
 
 
-def fetch_match(mid: str, log=print) -> bool:
+def fetch_match(mid: str, log=print, root: Path | None = None) -> bool:
     """Save raw scorecard + commentary for one match; skip files already saved. Returns True if anything was fetched."""
-    d = ROOT / str(mid)
+    d = (root or ROOT) / str(mid)
     d.mkdir(parents=True, exist_ok=True)
     did = False
     if not (d / "scorecard.html.gz").exists():
@@ -108,8 +108,8 @@ def _grab(t: str, key: str):
     return _dec.raw_decode(t, i + len(key) + 3)[0] if i >= 0 else None
 
 
-def load_scorecard(mid) -> tuple[dict, list]:
-    t = gzip.decompress((ROOT / str(mid) / "scorecard.html.gz").read_bytes()).decode().replace('\\"', '"')
+def load_scorecard(mid, root: Path | None = None) -> tuple[dict, list]:
+    t = gzip.decompress(((root or ROOT) / str(mid) / "scorecard.html.gz").read_bytes()).decode().replace('\\"', '"')
     return _grab(t, "matchHeader"), _grab(t, "scoreCard") or []
 
 
@@ -141,8 +141,8 @@ def cs_name(name: str, team: str, tp: dict) -> str:
     return hits.pop() if len(hits) == 1 else ""
 
 
-def parse_match(mid, meta: dict, tp: dict) -> dict:
-    mh, sc = load_scorecard(mid)
+def parse_match(mid, meta: dict, tp: dict, root: Path | None = None) -> dict:
+    mh, sc = load_scorecard(mid, root)
     ts = dt.datetime.fromtimestamp(mh["matchStartTimestamp"] / 1000, dt.timezone.utc) + dt.timedelta(hours=5.5)
     res, toss, v = mh.get("result") or {}, mh.get("tossResults") or {}, mh.get("venue") or {}
     status = mh.get("status", "")
@@ -169,14 +169,14 @@ def parse_match(mid, meta: dict, tp: dict) -> dict:
             bowl.append(dict(match_id=str(mid), innings=s["inningsId"], team=bw["bowlTeamName"], cricbuzz_id=b["bowlerId"], name=b["bowlName"],
                              cricsheet_name=cs_name(b["bowlName"], bw["bowlTeamName"], tp), overs=b["overs"], balls=b["balls"], maidens=b["maidens"],
                              runs=b["runs"], wickets=b["wickets"], wides=b["wides"], noballs=b["no_balls"]))
-    return dict(match=mrow, batting=bat, bowling=bowl, innings=inn, deliveries=parse_deliveries(mid, sc, tp))
+    return dict(match=mrow, batting=bat, bowling=bowl, innings=inn, deliveries=parse_deliveries(mid, sc, tp, root))
 
 
-def parse_deliveries(mid, sc, tp) -> list[dict]:
+def parse_deliveries(mid, sc, tp, root: Path | None = None) -> list[dict]:
     """Ball rows from the commentary, only when the match has complete ball-by-ball (legal balls and runs agree with the scorecard)."""
     rows = []
     for s in sc:
-        f = ROOT / str(mid) / f"comm{s['inningsId']}.json"
+        f = (root or ROOT) / str(mid) / f"comm{s['inningsId']}.json"
         if not f.exists():
             return []
         d = json.loads(f.read_text(encoding="utf-8"))

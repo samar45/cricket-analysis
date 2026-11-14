@@ -561,5 +561,25 @@ from .matchreel import match as _match_group  # noqa: E402
 
 cli.add_command(_match_group)
 
+@cli.group("cricbuzz")
+def cricbuzz_group():
+    """Cricbuzz scrape of ongoing men's T20 series (data only), verified against Cricsheet."""
+
+
+@cricbuzz_group.command("sync")
+@click.option("--dry-run", is_flag=True, help="Discover and count new matches; save nothing")
+@click.option("--no-verify", is_flag=True, help="Skip the Cricsheet comparison")
+@click.option("--max-matches", type=int, default=None, help="Save at most N new matches this run")
+def cricbuzz_sync_cmd(dry_run, no_verify, max_matches):
+    """Discover -> scrape new finished matches -> verify. Exit 0 ok, 2 blocked (partial work kept), 1 error."""
+    from .ingest import cricbuzz_sync as sy
+
+    try:
+        code = sy.sync(dry_run=dry_run, do_verify=not no_verify, max_matches=max_matches, echo=click.echo)
+    except sy.Locked as e:
+        raise click.ClickException(str(e))
+    sys.exit(code)
+
+
 if __name__ == "__main__":
     cli()
