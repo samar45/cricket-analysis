@@ -354,6 +354,11 @@ def chart(ctx, module_id, aspect, focus, png, html, db_path, scouting, size, wid
         size = size or (f"{width or 960}x{height or 980}" if width or height else None)
         return do_chart(scouting, module_id, png, size, palette, {**_parse_extra(ctx.args), "focus": focus})
 
+    if module_id == "wpa" and any(a == "--player" for a in ctx.args):  # per-match WPA bars for one player
+        from .wpa_facts import _chart_cmd
+
+        _chart_cmd.main(list(ctx.args) + ["--png", str(png)] + [x for f, v in (("--size", size), ("--width", width), ("--height", height), ("--palette", palette)) if v for x in (f, str(v))], prog_name="cricket chart wpa", standalone_mode=False)
+        return
     if module_id in ("match_curve", "score_curve"):
         from .matchreel import chart_main
 

@@ -13,7 +13,7 @@ import re
 
 import pandas as pd
 
-from . import api
+from . import api, wpa_facts
 from .db import use_db
 
 FACTS_VERSION = 2
@@ -30,6 +30,7 @@ ORDER = (
     "dismissals",
     "profile",
     "stories",
+    "wpa",
 )
 STORIES_TOP = 5
 
@@ -375,6 +376,7 @@ def build(
         section("dismissals", dismissals)
     section("profile", profile)
     section("stories", stories)
+    section("wpa", lambda: wpa_facts.section(player, competition, last_n_years))
     facts = {k: facts[k] for k in ORDER if k in facts}
 
     raw: dict = {}
@@ -396,6 +398,8 @@ def build(
         if competition
         else "No competition given: all men's T20 competitions combined.",
         "caveats": list(dict.fromkeys(c for r in results for c in r.meta["caveats"])),
+        "wpa_min_matches": wpa_facts.MIN_MATCHES,
+        "wpa_definition": wpa_facts.DEFINITION,
         "calls": calls,
         "skipped": skipped,
     }
