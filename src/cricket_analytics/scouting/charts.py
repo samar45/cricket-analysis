@@ -6,7 +6,7 @@ from pathlib import Path
 import matplotlib.colors as mc
 import pandas as pd
 
-from ..viz.match_reel import PX, Canvas
+from ..viz.match_reel import PX, SIZES, Canvas, fit
 from ..viz.video import AMBER, INK, RED, num, short_name
 from . import reels
 from .smat2025 import ROOT
@@ -37,6 +37,12 @@ def _rgba(c, a=0.55):
 def _header(cv, title, sub, big, big_label, note):
     """Title, subtitle, one big number (top right) and the footnote; returns the top of the plot area in pixels."""
     k, w = cv.k, cv.w
+    if cv.video:  # reel: no subtitle, no source line; the number sits under the title
+        cv.text(40 * k, 24 * k, title.upper(), fit(title, 72, (w - 80 * k) / k), "lab")
+        if big:
+            cv.text(40 * k, 100 * k, big, 200, "num", cv.pal["a1"])
+            cv.text(w - 40 * k, 220 * k, big_label.split(" | ")[0], 44, "lab", alpha=0.8, ha="right")
+        return 350 * k
     cv.text(40 * k, 24 * k, title.upper(), 54, "lab")
     cv.text(40 * k, 92 * k, sub, 26, "lab", cv.pal["a1"])
     if big:
@@ -66,15 +72,17 @@ def innings(cv, player: str):
     lg = reels.league()["sr"] if role == "bat" else None
     if lg:
         ymax = max(ymax, max(lg * d.balls / 100) * 1.25)
-        cv.text(40 * k, 150 * k, "- - average batter, same balls", 22, "lab", pal["a2"])
-    ax = cv.axes(40 * k, top + 20 * k, cv.w - 40 * k, cv.h - 110 * k)
+        cv.text(40 * k, (300 if cv.video else 150) * k, "- - average batter, same balls", 40 if cv.video else 22, "lab", pal["a2"])
+    ax = cv.axes(40 * k, top + (50 if cv.video else 20) * k, cv.w - 40 * k, cv.h - 110 * k)
     ax.set_xlim(-0.6, len(d) - 0.4), ax.set_ylim(0, ymax), ax.axis("off")
     x = list(range(len(d)))
     ax.bar(x, y, width=0.7, color=[pal["a1"] if i == best else _rgba(pal["ink"]) for i in x])
     for i, v in enumerate(y):
         ax.text(i, v + ymax * 0.01, f"{int(v)}", ha="center", va="bottom", fontproperties=cv.num, fontsize=56 * k * PX, color=pal["ink"])
+    op = 32 if cv.video else 22  # opponent codes act as tick labels
+    SIZES.append(("ticks", op * k, True, False))
     for i, o in enumerate(opp):
-        ax.text(i, -ymax * 0.03, short_name(o)[:3].upper(), ha="center", va="top", fontproperties=cv.lab, fontsize=22 * k * PX, color=_rgba(pal["ink"]))
+        ax.text(i, -ymax * 0.03, short_name(o)[:3].upper(), ha="center", va="top", fontproperties=cv.lab, fontsize=op * k * PX, color=_rgba(pal["ink"]))
     if lg:  # a league-average batter's runs off the same balls: dashed tick over each bar
         for i, b in enumerate(d.balls):
             ax.plot([i - 0.45, i + 0.45], [lg * b / 100] * 2, color=pal["a2"], lw=4 * k, ls=(0, (3, 2)))
@@ -99,7 +107,7 @@ def rank(cv, role: str, focus: str | None = None, n: int = 10):
                   f"OF {len(t)} UNCAPPED" if big else "", f"Source: Cricbuzz SMAT 2025-26 | {lab.lower()}")
     rows = rows.iloc[::-1]
     hl = [f is not None and i == f["cricbuzz_id"] for i in rows.cricbuzz_id]
-    left = 40 * k + 370 * k
+    left = 40 * k + (470 if cv.video else 370) * k
     ax = cv.axes(left, top + 20 * k, cv.w - 40 * k, cv.h - 60 * k)
     ax.axis("off")
     ys = list(range(len(rows)))
@@ -108,12 +116,14 @@ def rank(cv, role: str, focus: str | None = None, n: int = 10):
     ax.barh(ys, rows.score, height=0.75, color=[pal["a1"] if x else _rgba(pal["ink"]) for x in hl])
     for i, (v, r_, nm) in enumerate(zip(rows.score, rows.rank_uncapped, rows["name"])):
         ax.text(v + xmax * 0.01, i, num(v, 1), ha="left", va="center", fontproperties=cv.num, fontsize=56 * k * PX, color=pal["ink"])
-        ax.text(-xmax * 0.02, i, f"{int(r_)}. {short_name(nm)[:16]}", ha="right", va="center", fontproperties=cv.lab, fontsize=26 * k * PX, color=pal["ink"])
+        lab = f"{int(r_)}. {short_name(nm)[:16]}"
+        SIZES.append((lab, (40 if cv.video else 26) * k, False, False))
+        ax.text(-xmax * 0.02, i, lab, ha="right", va="center", fontproperties=cv.lab, fontsize=(40 if cv.video else 26) * k * PX, color=pal["ink"])
 
 
 def render(chart: str, png: Path, size: str | None = None, palette: str | None = None, **kw):
     w, h = parse_size(size)
-    cv = Canvas(w, h, parse_palette(palette), kw.get("fonts"))
+    cv = Canvas(w, h, parse_palette(palette), kw.get("fonts"), bool(kw.get("video")))
     if chart == "scout_innings":
         if not kw.get("player"):
             raise ValueError("scout_innings needs --player")

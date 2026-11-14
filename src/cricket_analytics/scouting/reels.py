@@ -4,7 +4,7 @@ import json
 
 import pandas as pd
 
-from ..facts import _flatten, _fmt
+from ..facts import _flatten, tokens
 from .smat2025 import ROOT
 
 SOURCE = "Cricbuzz scorecards, Syed Mushtaq Ali Trophy 2025-26"
@@ -127,7 +127,7 @@ def build_facts(name: str, role: str | None = None) -> dict:
     meta = dict(facts_version=2, kind="scouting_smat2025", player=r["name"], role="batting" if role == "bat" else "bowling",
                 params=dict(scouting="smat2025", player=name), generated=dt.datetime.now().isoformat(timespec="seconds"),
                 data_through=str(_games().date.max())[:10], source=SOURCE, caveats=caveats, plate=bool(r.plate))
-    return dict(meta=meta, facts=facts, tokens={k: _fmt(v) for k, v in raw.items()}, tokens_raw=raw)
+    return dict(meta=meta, facts=facts, tokens=tokens(raw), tokens_raw=raw)
 
 
 def listing(role: str, uncapped=False, no_ipl=False, top: int = 15) -> dict:

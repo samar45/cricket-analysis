@@ -15,7 +15,7 @@ import pandas as pd
 
 from . import api, competitions
 from .db import query
-from .facts import FACTS_VERSION, _flatten, _fmt
+from .facts import FACTS_VERSION, _flatten, tokens
 from .reference import team_short
 
 LOCKED = "locked: fresh set #3 (men's matches from 2026-10-15 get no model output)"
@@ -197,7 +197,7 @@ def build_facts(mid: str) -> dict:
             "calls": [{"function": "ml.predict.predict_match_curve", "params": {"match_id": str(mid)}}, {"module": "wpa", "params": {"view": "players"}}],
         },
         "facts": facts,
-        "tokens": {k: _fmt(v) for k, v in raw.items()},
+        "tokens": tokens(raw),
         "tokens_raw": raw,
     }
 
@@ -270,7 +270,8 @@ def facts_cmd(mid, out):
 @click.option("--height", type=int, default=980)
 @click.option("--palette", default=None, help='JSON {"bg","ink","a1","a2"}')
 @click.option("--fonts", default=None, help="folder with the font TTFs")
-def _chart_cmd(match_id, png, team, mark, inn, upto, size, width, height, palette, fonts):
+@click.option("--video", is_flag=True, help="reel mode: about 2x type, 3 y ticks, no subtitle or source line")
+def _chart_cmd(match_id, png, team, mark, inn, upto, size, width, height, palette, fonts, video):
     from .viz import match_reel
 
     if size:
@@ -287,16 +288,16 @@ def _chart_cmd(match_id, png, team, mark, inn, upto, size, width, height, palett
         info = api.data_info()
         thru = _thru(info, _comp_key(x["row"]))
         fonts_ok = match_reel.draw(_KIND[0], x, png, width, height, pal, team=team, marks=[m for m in mark.split(",") if m], inn=int(inn), upto=upto,
-                                   thru=thru, font_dir=fonts)
+                                   thru=thru, font_dir=fonts, video=video)
     except ValueError as e:
         raise click.ClickException(str(e))
     click.echo(f"Wrote {png} ({width}x{height}, transparent). Fonts: {fonts_ok}")
 
 
-def chart_main(kind, png, size, width, height, palette, args):
+def chart_main(kind, png, size, width, height, palette, args, video=False):
     """Called by `cricket chart match_curve|score_curve <id> ...` (args = the leftover command line)."""
     _KIND[0] = kind
-    extra = list(args) + (["--png", str(png)] if png else [])
+    extra = list(args) + (["--video"] if video else []) + (["--png", str(png)] if png else [])
     for flag, v in (("--size", size), ("--width", width), ("--height", height), ("--palette", palette)):
         if v:
             extra += [flag, str(v)]

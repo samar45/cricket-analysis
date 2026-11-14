@@ -343,8 +343,9 @@ def facts(player, competition, last_n_years, out, db_path, scouting, match_id):
 @click.option("--width", type=int, default=None, help="Scouting chart width")
 @click.option("--height", type=int, default=None, help="Scouting chart height")
 @click.option("--palette", default=None, help='Scouting colours as JSON {"bg","ink","a1","a2"}')
+@click.option("--video", is_flag=True, help="Reel mode for match/wpa/scouting charts: about 2x type, no subtitle or source line")
 @click.pass_context
-def chart(ctx, module_id, aspect, focus, png, html, db_path, scouting, size, width, height, palette):
+def chart(ctx, module_id, aspect, focus, png, html, db_path, scouting, size, width, height, palette, video):
     """Reel-ready chart: cricket chart batting --player "V Kohli" --competition ipl --aspect 9:16 --png card.png."""
     from . import export
 
@@ -352,17 +353,17 @@ def chart(ctx, module_id, aspect, focus, png, html, db_path, scouting, size, wid
         from .scouting.cli import do_chart
 
         size = size or (f"{width or 960}x{height or 980}" if width or height else None)
-        return do_chart(scouting, module_id, png, size, palette, {**_parse_extra(ctx.args), "focus": focus})
+        return do_chart(scouting, module_id, png, size, palette, {**_parse_extra(ctx.args), "focus": focus, "video": video})
 
     if module_id == "wpa" and any(a == "--player" for a in ctx.args):  # per-match WPA bars for one player
         from .wpa_facts import _chart_cmd
 
-        _chart_cmd.main(list(ctx.args) + ["--png", str(png)] + [x for f, v in (("--size", size), ("--width", width), ("--height", height), ("--palette", palette)) if v for x in (f, str(v))], prog_name="cricket chart wpa", standalone_mode=False)
+        _chart_cmd.main(list(ctx.args) + ["--png", str(png)] + [x for f, v in (("--size", size), ("--width", width), ("--height", height), ("--palette", palette)) if v for x in (f, str(v))] + (["--video"] if video else []), prog_name="cricket chart wpa", standalone_mode=False)
         return
     if module_id in ("match_curve", "score_curve"):
         from .matchreel import chart_main
 
-        return chart_main(module_id, png, size, width, height, palette, ctx.args)
+        return chart_main(module_id, png, size, width, height, palette, ctx.args, video)
 
     logging.getLogger().setLevel(logging.WARNING)  # kaleido logs every browser step at INFO
     if not (png or html):

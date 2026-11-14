@@ -76,7 +76,8 @@ def section(player, competition=None, last_n_years=None) -> dict | None:
 @click.option("--height", type=int, default=980)
 @click.option("--palette", default=None)
 @click.option("--fonts", default=None)
-def _chart_cmd(player, competition, last_n_years, png, size, width, height, palette, fonts):
+@click.option("--video", is_flag=True)
+def _chart_cmd(player, competition, last_n_years, png, size, width, height, palette, fonts, video):
     from .api import data_info
     from .viz import match_reel as mr
 
@@ -94,20 +95,26 @@ def _chart_cmd(player, competition, last_n_years, png, size, width, height, pale
         raise click.UsageError("--palette must be JSON")
     info = data_info()
     thru = max(c["latest"] for c in info["competitions"] if not competition or c["competition"] == competition)
-    click.echo(f"Wrote {png} ({width}x{height}, transparent). Fonts: " + draw(mine, player, competition, png, width, height, pal, thru, fonts))
+    click.echo(f"Wrote {png} ({width}x{height}, transparent). Fonts: " + draw(mine, player, competition, png, width, height, pal, thru, fonts, video))
 
 
-def draw(mine, player, competition, png, w, h, pal, thru, fonts=None) -> str:
+def draw(mine, player, competition, png, w, h, pal, thru, fonts=None, video=False) -> str:
     from .viz import match_reel as mr
 
-    cv = mr.Canvas(w, h, pal, fonts)
+    cv = mr.Canvas(w, h, pal, fonts, video)
+    V = video
     k, ink, a1 = cv.k, pal["ink"], pal["a1"]
-    cv.text(40 * k, 24 * k, f"{player.upper()} MATCH WPA", 54)
-    cv.text(40 * k, 92 * k, f"{competition.upper() if competition else 'MEN\'S T20'} | EVERY MATCH, OLDEST TO NEWEST", 26, "lab", a1)
-    tot = float(mine.wpa.sum())
-    cv.text(w - 40 * k, 0, f"{tot:+.1f}", 170, "num", a1, "right")
-    cv.text(w - 40 * k, 176 * k, "WINS ADDED (1.0 = ONE WIN)", 24, alpha=0.55, ha="right")
-    ax = cv.axes(40 * k + 90 * k, 250 * k, w - 40 * k, h - 120 * k)
+    title, tot = f"{player.upper()} MATCH WPA", float(mine.wpa.sum())
+    if V:  # reel: no subtitle, big number under the title
+        cv.text(40 * k, 24 * k, title, mr.fit(title, 72, (w - 80 * k) / k))
+        cv.text(40 * k, 100 * k, f"{tot:+.1f}", 200, "num", a1)
+        cv.text(w - 40 * k, 100 * k + 120 * k, "WINS ADDED", 44, alpha=0.8, ha="right")
+    else:
+        cv.text(40 * k, 24 * k, title, 54)
+        cv.text(40 * k, 92 * k, f"{competition.upper() if competition else 'MEN\'S T20'} | EVERY MATCH, OLDEST TO NEWEST", 26, "lab", a1)
+        cv.text(w - 40 * k, 0, f"{tot:+.1f}", 170, "num", a1, "right")
+        cv.text(w - 40 * k, 176 * k, "WINS ADDED (1.0 = ONE WIN)", 24, alpha=0.55, ha="right")
+    ax = cv.axes(40 * k + (130 if V else 90) * k, (330 if V else 250) * k, w - 40 * k, h - (130 if V else 120) * k)
     n, best = len(mine), int(mine.wpa.values.argmax())
     ax.bar(range(n), mine.wpa, width=1.0, color=[a1 if i == best else to_rgba(ink, 0.5) for i in range(n)])
     ax.axhline(0, color=ink, lw=2 * k, alpha=0.6)
@@ -115,15 +122,18 @@ def draw(mine, player, competition, png, w, h, pal, thru, fonts=None) -> str:
     ax.set_yticks([-0.5, 0, 0.5]) if mine.wpa.abs().max() > 0.5 else None
     for sp in ("left",):
         ax.spines[sp].set_visible(False)
-    cv.style_ticks(ax, 26)
+    cv.style_ticks(ax, 40 if V else 26)
     b = mine.iloc[best]
     label = f"BEST +{b.wpa:.2f}\nv {team_short(b.opponent)}, {pd.Timestamp(b.date).year}"
     mr.DRAWN.append(label)
+    ap = 40 if V else 28
+    mr.SIZES.append((label, ap * k, False, False))
     ax.annotate(label, (best, b.wpa), xytext=(0, 14 * k * mr.PX), textcoords="offset points",
-                ha="right" if best > n * 0.35 else "left", va="bottom", color=a1, fontproperties=cv.lab, fontsize=28 * k * mr.PX)
+                ha="right" if best > n * 0.35 else "left", va="bottom", color=a1, fontproperties=cv.lab, fontsize=ap * k * mr.PX)
     ax.set_ylim(min(mine.wpa.min() * 1.1, -0.05), mine.wpa.max() * 1.35)
     years = pd.to_datetime(mine.date).dt.year
-    cv.text(40 * k + 90 * k, h - 100 * k, f"{years.min()}", 26, ha="left")
-    cv.text(w - 40 * k, h - 100 * k, f"{years.max()}", 26, ha="right")
-    cv.text(40 * k, h - 14 * k, f"Source: Cricsheet | data to {thru} | win probability from our model", 20, alpha=0.55, va="bottom")
+    cv.text(40 * k + (130 if V else 90) * k, h - 100 * k, f"{years.min()}", 40 if V else 26, ha="left")
+    cv.text(w - 40 * k, h - 100 * k, f"{years.max()}", 40 if V else 26, ha="right")
+    if not V:
+        cv.text(40 * k, h - 14 * k, f"Source: Cricsheet | data to {thru} | win probability from our model", 20, alpha=0.55, va="bottom")
     return cv.save(png)

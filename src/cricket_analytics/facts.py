@@ -69,6 +69,17 @@ def _fmt(v) -> str:
     return f"{v:,.1f}" if abs(v) >= 100 else f"{v:,.2f}"
 
 
+def tokens(raw: dict) -> dict:
+    """Display strings for a flat {dotted key: value} dict. A percent token (key ends in `pct`) of 1 or more gets 1 decimal
+    ("34.1"); other numbers follow `_fmt`. A fraction such as curve.low.win_pct (0.72) stays on the 2-decimal rule."""
+    def one(k, v):
+        if k.rsplit(".", 1)[-1].endswith("pct") and not isinstance(v, str) and abs(v) >= 1 and float(v) != int(v):
+            return f"{v:,.1f}"
+        return _fmt(v)
+
+    return {k: one(k, v) for k, v in raw.items()}
+
+
 def _flatten(d: dict, prefix: str, raw: dict) -> None:
     for k, v in d.items():
         if k == "source":
@@ -406,6 +417,6 @@ def build(
     return {
         "meta": meta,
         "facts": facts,
-        "tokens": {k: _fmt(v) for k, v in raw.items()},
+        "tokens": tokens(raw),
         "tokens_raw": raw,
     }
