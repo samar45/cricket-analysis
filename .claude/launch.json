@@ -71,6 +71,16 @@
         "dev"
       ],
       "port": 5173
+    },
+    {
+      "name": "smat-logger",
+      "runtimeExecutable": ".venv\\Scripts\\python.exe",
+      "runtimeArgs": [
+        "-m",
+        "cricket_analytics.live.smat_logger",
+        "run"
+      ],
+      "port": 0
     }
   ]
 }
