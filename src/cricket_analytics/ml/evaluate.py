@@ -217,6 +217,19 @@ def fresh3_mask(df):
     return ((df["gender"] == "male") & (pd.to_datetime(df["date"]) >= pd.Timestamp(FRESH3_FROM)) & ok).to_numpy()
 
 
+S26_FROM = "2026-10-15"  # SMAT 2026 live test set (Amendment 2); still inside fresh3_mask, so the training lock holds
+
+
+def s26_mask(df):
+    """True for men's Syed Mushtaq Ali Trophy rows dated >= S26_FROM. Needs gender, competition, date."""
+    return ((df["gender"] == "male") & (df["competition"] == "smat") & (pd.to_datetime(df["date"]) >= pd.Timestamp(S26_FROM))).to_numpy()
+
+
+def fresh3_scoring_mask(df):
+    """Rows the one-time fresh-3 scoring run uses: fresh3_mask without S26 (scored in its own run)."""
+    return fresh3_mask(df) & ~s26_mask(df)
+
+
 def assert_no_fresh3(df, what, allow_fresh3=False):
     """Raise if any fresh-set-#3 row is in `df` (a development split), unless allow_fresh3=True (the one pre-registered run)."""
     n = int(fresh3_mask(df).sum())
