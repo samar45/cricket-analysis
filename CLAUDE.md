@@ -109,6 +109,7 @@ If a task is bigger or riskier than the mode suggests, say so in one line and su
 - 10,418 matches, 2.38M balls, latest 2026-10-14. IPL through 2026-05-31 (IPL 2026 = 74 matches). Blast 1,570. Women's T20I 2,183 (own competition).
 - Golden checks: Kohli IPL 8,661 runs to 2025 (= ESPNcricinfo), 9,336 incl. 2026; Buttler IPL 2022 863; Bumrah best 5/10; top IPL stand 229.
 - Super-over innings (innings > 2) are excluded by default; 76 tie-break winners stored in `matches.winner` with `outcome_method`.
+- Cricsheet withholds every match involving Afghanistan (and the Afghanistan Premier League) on purpose: the DB has zero Afghanistan T20Is. Cricbuzz sync is the only source for them (checked 2026-11-15).
 - Caught-and-bowled has no fielder_1 (catcher = bowler). No line/length/shot/drop data from any free legal source (see `docs/EXPERIMENTS.md`).
 - Season labels are Cricsheet's ("2007/08" = IPL 2008); filters accept a 4-digit year and map it.
 - Bowling type / hand / keeper come only from the reviewed list (IPL bowl-type coverage 98%); derived guesses are internal hints only (Samar's rule).
