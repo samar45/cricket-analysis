@@ -53,35 +53,36 @@ Board = 874 players with 100+ balls faced or bowled in the state leagues.
 | Tushar Raheja | IDream Tiruppur Tamizhans | 33 | 1429 | 869 | 47.6 | 164.4 | 217.9 | 151 | 92 |  |
 | Abhishek Pathak | Bundelkhand Bulls | 14 | 509 | 216 | 36.4 | 235.6 | 208.0 | 13 | 9 |  |
 | Mohammed Taha | Hubli Tigers | 44 | 1288 | 793 | 31.4 | 162.4 | 182.8 | 0 | 0 | doubtful |
-| Prabhsimran Singh | Jalandhar Warriors | 9 | 575 | 286 | 82.1 | 201.0 | 176.4 | 233 | 147 |  |
-| Shahrukh Khan | Vida Kovai Kings | 34 | 788 | 448 | 31.5 | 175.9 | 163.7 | 18 | 24 |  |
 | Parth Chaudhary | Gwalior Cheetahs | 14 | 675 | 370 | 48.2 | 182.4 | 159.4 | 0 | 0 |  |
 | Siddharth Joon | Central Delhi Kings | 20 | 477 | 242 | 25.1 | 197.1 | 139.7 | 0 | 0 |  |
-| Sharath BR | Gulbarga Mystics | 34 | 850 | 513 | 26.6 | 165.7 | 135.1 | 103 | 50 |  |
 | Ritik Tada | Jabalpur Royal Lions | 15 | 436 | 224 | 43.6 | 194.6 | 123.8 | 0 | 0 |  |
 | Ankush Singh | Chambal Ghariyals | 17 | 514 | 286 | 34.3 | 179.7 | 115.4 | 101 | 68 | doubtful |
+| Vansh Bedi | Central Delhi Kings | 22 | 393 | 200 | 23.1 | 196.5 | 114.3 | 0 | 0 |  |
+| R Rajkumar | Trichy Grand Cholas | 31 | 571 | 332 | 26.0 | 172.0 | 108.3 | 167 | 104 |  |
+| Sarthak Ranjan | North Delhi Strikers | 18 | 942 | 600 | 55.4 | 157.0 | 105.8 | 0 | 0 | doubtful |
 
 | name | team | state_bowl_balls | state_wkts | state_econ | bowl_score | smat_wkts | smat_bowl_balls | ipl_link |
 |---|---|---|---|---|---|---|---|---|
 | Jhathavedh Subramanyan | Vida Kovai Kings | 714 | 37 | 6.87 | 218.7 | 0 | 0 |  |
-| Varun Chakaravarthy | Dindigul Dragons | 690 | 36 | 6.91 | 205.9 | 2 | 96 |  |
 | M Silambarasan | Chepauk Super Gillies | 569 | 30 | 6.72 | 188.4 | 0 | 0 |  |
-| Ravisrinivasan Sai Kishore | IDream Tiruppur Tamizhans | 564 | 30 | 6.84 | 175.2 | 1 | 102 |  |
 | Shreesha Achar | Shivamogga Yodhas | 666 | 37 | 7.27 | 159.1 | 0 | 0 |  |
-| Tejas Baroka | Central Delhi Kings | 450 | 23 | 7.07 | 122.8 | 0 | 0 | doubtful |
 | Prithviraj Shekhawat | Coastal Kings Mangaluru | 480 | 20 | 7.3 | 112.3 | 0 | 0 |  |
 | Satvik Deswal | Ossudu Accord Warriors | 240 | 14 | 5.9 | 112.2 | 0 | 0 |  |
 | Manan Bhardwaj | West Delhi Lions | 399 | 25 | 7.05 | 109.8 | 0 | 0 |  |
 | S Ajith Ram | SKM Salem Spartans | 455 | 21 | 7.42 | 97.0 | 0 | 0 |  |
+| Ritesh Bhatkal | Mysore Warriors | 450 | 24 | 7.43 | 95.8 | 0 | 0 | doubtful |
+| Shikhar Shetty | Hubli Tigers | 324 | 15 | 6.96 | 94.0 | 0 | 0 |  |
+| Macneil Noronha | Gulbarga Mystics | 517 | 26 | 7.61 | 94.0 | 1 | 24 |  |
 
 ## Link quality
 | Link | Meaning | All 2261 Cricbuzz players | On the board (874) |
 |---|---|---|---|
 | strong | same cricbuzz_id in state leagues and SMAT 2025 | 250 players appear in both | 199 |
+| reviewed | hand-checked override in `reference/cricbuzz_player_links.csv` (spelling differs); never flagged doubtful | 6 | 6 |
 | team_checked | Cricsheet name taken from the SMAT 2025 team-scoped link | 244 | 82 |
 | name_only | Cricsheet name from the scraper or a unique-name guess, passed the checks | 232 | 126 |
-| doubtful | name-only link that failed a check; Cricsheet rows withheld, ipl_capped = unknown | 307 | 130 |
-| none | no Cricsheet candidate | 1478 | 536 |
+| doubtful | name-only link that failed a check; Cricsheet rows withheld, ipl_capped = unknown | 306 | 129 |
+| none | no Cricsheet candidate | 1473 | 531 |
 
 Checks on name-only links: (1) another Cricbuzz player claims the same Cricsheet name; (2) initials disagree; (3) Cricbuzz profile is new (id of 1,000,000 or more) but the Cricsheet player debuted before 2022; (4) the Cricsheet player's last match is 3+ years before the Cricbuzz player's first. Example: state-league "Sahaj Dhawan" was tied to "S Dhawan" (Shikhar Dhawan); check 3 flags it.
 The checks are heuristics, so a flagged link can still be right and an unflagged name-only link can still be wrong; `(n)`-style caution applies to every name_only row.

@@ -1,6 +1,7 @@
 """Cross-league player profile for auction scouting: Indian state T20 leagues + SMAT 2025 (Cricbuzz scorecards) + IPL / earlier
 SMAT / T20I (Cricsheet, read-only DB), one row per (competition, season).
 
+Hand-checked spelling fixes in reference/cricbuzz_player_links.csv win over everything (link "reviewed").
 Same person across Cricbuzz files = same cricbuzz_id (link "strong"). Cricbuzz -> Cricsheet goes through the scraper's `cricsheet_name`:
 SMAT 2025's is team-scoped ("team_checked"); a state-league one is name-only ("name_only") and gets sanity checks, failing = "doubtful".
 Doubtful Cricsheet rows are withheld from profile() unless include_doubtful=True. SMAT 2026 and anything dated >= 2026-10-15 is never read.
@@ -8,6 +9,7 @@ Doubtful Cricsheet rows are withheld from profile() unless include_doubtful=True
 import functools
 import glob
 import re
+from pathlib import Path
 
 import pandas as pd
 
@@ -154,6 +156,11 @@ def links() -> pd.DataFrame:
             why.append("not found in Cricsheet DB")
         if why:
             ids.loc[i, ["link", "link_note"]] = ["doubtful", "; ".join(why)]
+    # reviewed overrides (hand-checked spelling differences) beat every guess above and are never doubtful
+    ov = pd.read_csv(Path(__file__).parent.parent / "reference" / "cricbuzz_player_links.csv").set_index("cricbuzz_id")
+    ov = ov[ov.index.isin(ids.index)]
+    ids.loc[ov.index, "cricsheet_name"] = ov.cricsheet_name
+    ids.loc[ov.index, "link"], ids.loc[ov.index, "link_note"] = "reviewed", ""
     return ids
 
 
@@ -230,11 +237,11 @@ def board(min_balls: int = 100) -> pd.DataFrame:
     lk = links().reindex(t.index)
     t["ipl_link"] = lk.link.fillna("")
     from ..db import query
-    names = sorted(set(lk.cricsheet_name[lk.link.isin(["team_checked", "name_only"])]))
+    names = sorted(set(lk.cricsheet_name[lk.link.isin(["reviewed", "team_checked", "name_only"])]))
     seen = set(query("SELECT DISTINCT n FROM (SELECT match_id, batter n FROM deliveries UNION SELECT match_id, bowler FROM deliveries "
                      "UNION SELECT match_id, non_striker FROM deliveries) p JOIN matches m USING (match_id) WHERE m.competition='ipl' "
                      f"AND m.date < DATE '{CUTOFF}' AND n IN (SELECT unnest(?))", [names]).n)
-    t["ipl_capped"] = ["unknown" if l not in ("team_checked", "name_only") else ("yes" if n in seen else "no")
+    t["ipl_capped"] = ["unknown" if l not in ("reviewed", "team_checked", "name_only") else ("yes" if n in seen else "no")
                        for l, n in zip(lk.link.fillna(""), lk.cricsheet_name.fillna(""))]
     t["smat_in_2025"] = t.index.isin(set(_cb("batting").query("competition == 'SMAT'").cricbuzz_id))
     n = _names().sort_values("dt").groupby("cricbuzz_id").agg(name=("name", "last"), team=("team", "last"))
@@ -282,6 +289,7 @@ Board = {len(b)} players with {min_balls}+ balls faced or bowled in the state le
 | Link | Meaning | All {len(lk)} Cricbuzz players | On the board ({len(b)}) |
 |---|---|---|---|
 | strong | same cricbuzz_id in state leagues and SMAT 2025 | {len(st & sm)} players appear in both | {int(b.smat_in_2025.sum())} |
+| reviewed | hand-checked override in `reference/cricbuzz_player_links.csv` (spelling differs); never flagged doubtful | {(lk.link == "reviewed").sum()} | {(b.ipl_link == "reviewed").sum()} |
 | team_checked | Cricsheet name taken from the SMAT 2025 team-scoped link | {(lk.link == "team_checked").sum()} | {(b.ipl_link == "team_checked").sum()} |
 | name_only | Cricsheet name from the scraper or a unique-name guess, passed the checks | {(lk.link == "name_only").sum()} | {(b.ipl_link == "name_only").sum()} |
 | doubtful | name-only link that failed a check; Cricsheet rows withheld, ipl_capped = unknown | {(lk.link == "doubtful").sum()} | {(b.ipl_link == "doubtful").sum()} |
@@ -299,7 +307,6 @@ The checks are heuristics, so a flagged link can still be right and an unflagged
 - Bengal Pro T20 and UP T20 2026 are not on Cricbuzz, so they are absent.
 - **SMAT 2026 (the live test) is excluded**: its folder and `fresh3` data were never read.
 """
-    from pathlib import Path
     Path(path).write_text(out, encoding="utf-8")
 
 
