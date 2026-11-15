@@ -8,9 +8,10 @@ import streamlit as st
 from cricket_analytics.scouting import profile as P
 from cricket_analytics.scouting.reels import NotExact
 
+LEVELS = ["IPL", "T20I", "SMAT", "state league only", "unclear (doubtful link)"]
 BOARD_COLS = {
-    "bat": ["name", "team", "state_inns", "state_runs", "state_balls", "state_avg", "state_sr", "bat_score", "smat_runs", "smat_balls", "ipl_capped", "ipl_link"],
-    "bowl": ["name", "team", "state_bowl_balls", "state_wkts", "state_econ", "bowl_score", "smat_wkts", "smat_bowl_balls", "ipl_capped", "ipl_link"],
+    "bat": ["name", "team", "state_inns", "state_runs", "state_balls", "state_avg", "state_sr", "bat_score", "smat_runs", "smat_balls", "ipl_capped", "level", "ipl_link"],
+    "bowl": ["name", "team", "state_bowl_balls", "state_wkts", "state_econ", "bowl_score", "smat_wkts", "smat_bowl_balls", "ipl_capped", "level", "ipl_link"],
 }
 
 
@@ -30,15 +31,17 @@ def _board_tab():
     role = a.radio("Rank", ["Batters", "Bowlers"], horizontal=True, key="sl_role")
     capped = b.selectbox("IPL capped", ["no", "yes", "unknown", "any"], key="sl_capped")
     min_balls = c.slider("Min balls (faced / bowled)", 100, 600, 100, step=50, key="sl_min_balls")
+    lv = st.multiselect("Level", LEVELS, default=LEVELS, key="sl_level")
     kind, balls, score = ("bat", "state_balls", "bat_score") if role == "Batters" else ("bowl", "state_bowl_balls", "bowl_score")
     t = _board()
     t = t[t[balls] >= min_balls]
+    t = t[t.level.isin(lv)]
     if capped != "any":
         t = t[t.ipl_capped == capped]
     st.dataframe(t.sort_values(score, ascending=False)[BOARD_COLS[kind]], hide_index=True, width="stretch")
     st.caption(
         f"{len(t)} players. ipl_link: strong = same Cricbuzz id across files; team_checked = Cricsheet name from the SMAT 2025 team-scoped link; "
-        "name_only = matched by name, passed checks; doubtful = failed a check (ipl_capped = unknown)."
+        "name_only = matched by name, passed checks; doubtful = failed a check. ipl_capped: unknown = a possible IPL match was found but its identity is doubtful; no = no IPL match or no Cricsheet record at all. level = highest level reached in our data."
     )
 
 

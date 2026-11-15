@@ -241,8 +241,18 @@ def board(min_balls: int = 100) -> pd.DataFrame:
     seen = set(query("SELECT DISTINCT n FROM (SELECT match_id, batter n FROM deliveries UNION SELECT match_id, bowler FROM deliveries "
                      "UNION SELECT match_id, non_striker FROM deliveries) p JOIN matches m USING (match_id) WHERE m.competition='ipl' "
                      f"AND m.date < DATE '{CUTOFF}' AND n IN (SELECT unnest(?))", [names]).n)
-    t["ipl_capped"] = ["unknown" if l not in ("reviewed", "team_checked", "name_only") else ("yes" if n in seen else "no")
-                       for l, n in zip(lk.link.fillna(""), lk.cricsheet_name.fillna(""))]
+    linked = lk.link.fillna("").isin(["reviewed", "team_checked", "name_only"])
+    cs = lk.cricsheet_name.fillna("")
+    # no Cricsheet candidate at all = never in our (complete) IPL data = "no"; only doubtful links stay "unknown"
+    t["ipl_capped"] = ["unknown" if l == "doubtful" else ("yes" if l_ and n in seen else "no") for l, l_, n in zip(lk.link.fillna(""), linked, cs)]
+    other = {c: set(query("SELECT DISTINCT n FROM (SELECT batter n, match_id FROM deliveries UNION SELECT bowler, match_id FROM deliveries) p "
+                          "JOIN matches m USING (match_id) WHERE m.gender='male' AND m.competition=? AND m.date < DATE '" + CUTOFF + "' "
+                          "AND n IN (SELECT unnest(?))", [c, names]).n) for c in ("t20i", "smat")}
+    cb_smat = set(_cb("batting").query("competition == 'SMAT'").cricbuzz_id) | set(_cb("bowling").query("competition == 'SMAT'").cricbuzz_id)
+    # ladder: IPL, then T20I (checked before SMAT because it is the higher level), then SMAT, else state league only
+    t["level"] = ["unclear (doubtful link)" if l == "doubtful" else "IPL" if c == "yes" else "T20I" if l_ and n in other["t20i"]
+                  else "SMAT" if (l_ and n in other["smat"]) or i in cb_smat else "state league only"
+                  for i, l, l_, n, c in zip(t.index, lk.link.fillna(""), linked, cs, t.ipl_capped)]
     t["smat_in_2025"] = t.index.isin(set(_cb("batting").query("competition == 'SMAT'").cricbuzz_id))
     n = _names().sort_values("dt").groupby("cricbuzz_id").agg(name=("name", "last"), team=("team", "last"))
     t = n.join(t, how="inner").fillna({c: 0 for c in t.columns if t[c].dtype != object and not c.startswith(("state_sr", "state_avg", "state_econ"))})
@@ -271,8 +281,14 @@ Board = {len(b)} players with {min_balls}+ balls faced or bowled in the state le
 
 ## How to read this
 - **bat_score** = state-league runs minus what an average state-league batter scores off the same balls. **bowl_score** = runs saved against the average economy over the bowler's own overs. Both are in runs; state leagues are pooled (no per-league adjustment).
-- **ipl_capped**: `yes` = linked Cricsheet player has an IPL match; `no` = linked and no IPL match; `unknown` = no usable link (never guessed). "Capped" means played an IPL match in our DB (squad-only or impact-sub-unused players are not seen).
+- **ipl_capped**: `yes` = linked Cricsheet player has an IPL match; `no` = linked with no IPL match, or no Cricsheet record at all (our DB holds every IPL match, so no record = never played IPL); `unknown` = a possible IPL match was found but its identity is doubtful (withheld, never guessed). "Capped" means played an IPL match in our DB (squad-only or impact-sub-unused players are not seen).
+- **level**: highest level reached in our data: `IPL` > `T20I` > `SMAT` (Cricsheet SMAT 2016-24 or Cricbuzz SMAT 2025) > `state league only`; `unclear (doubtful link)` for doubtful links. A player with both T20I and SMAT is shown as T20I; one with IPL as IPL.
 - **ipl_link**: how the Cricbuzz player was tied to a Cricsheet player (see below).
+
+## Players on the board by level
+{md(b.level.value_counts().rename_axis("level").reset_index(name="players"))}
+
+{md(pd.crosstab(b.level, b.ipl_capped).reset_index())}
 
 ## Top 15 uncapped batters (ipl_capped = no, by bat_score)
 {top("no", "bat_score", bat)}

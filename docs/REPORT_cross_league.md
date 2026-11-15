@@ -6,73 +6,91 @@ Board = 874 players with 100+ balls faced or bowled in the state leagues.
 
 ## How to read this
 - **bat_score** = state-league runs minus what an average state-league batter scores off the same balls. **bowl_score** = runs saved against the average economy over the bowler's own overs. Both are in runs; state leagues are pooled (no per-league adjustment).
-- **ipl_capped**: `yes` = linked Cricsheet player has an IPL match; `no` = linked and no IPL match; `unknown` = no usable link (never guessed). "Capped" means played an IPL match in our DB (squad-only or impact-sub-unused players are not seen).
+- **ipl_capped**: `yes` = linked Cricsheet player has an IPL match; `no` = linked with no IPL match, or no Cricsheet record at all (our DB holds every IPL match, so no record = never played IPL); `unknown` = a possible IPL match was found but its identity is doubtful (withheld, never guessed). "Capped" means played an IPL match in our DB (squad-only or impact-sub-unused players are not seen).
+- **level**: highest level reached in our data: `IPL` > `T20I` > `SMAT` (Cricsheet SMAT 2016-24 or Cricbuzz SMAT 2025) > `state league only`; `unclear (doubtful link)` for doubtful links. A player with both T20I and SMAT is shown as T20I; one with IPL as IPL.
 - **ipl_link**: how the Cricbuzz player was tied to a Cricsheet player (see below).
+
+## Players on the board by level
+| level | players |
+|---|---|
+| state league only | 476 |
+| SMAT | 149 |
+| unclear (doubtful link) | 129 |
+| IPL | 112 |
+| T20I | 8 |
+
+| level | no | unknown | yes |
+|---|---|---|---|
+| IPL | 0 | 0 | 112 |
+| SMAT | 149 | 0 | 0 |
+| T20I | 8 | 0 | 0 |
+| state league only | 476 | 0 | 0 |
+| unclear (doubtful link) | 0 | 129 | 0 |
 
 ## Top 15 uncapped batters (ipl_capped = no, by bat_score)
 | name | team | state_inns | state_runs | state_balls | state_avg | state_sr | bat_score | smat_runs | smat_balls | ipl_link |
 |---|---|---|---|---|---|---|---|---|---|---|
+| Tushar Raheja | IDream Tiruppur Tamizhans | 33 | 1429 | 869 | 47.6 | 164.4 | 217.9 | 151 | 92 |  |
+| Abhishek Pathak | Bundelkhand Bulls | 14 | 509 | 216 | 36.4 | 235.6 | 208.0 | 13 | 9 |  |
 | Ajay Rohera | Jabalpur Royal Lions | 23 | 1122 | 667 | 53.4 | 168.2 | 192.4 | 66 | 45 | name_only |
 | Luvnith Sisodia | Shivamogga Yodhas | 45 | 1327 | 831 | 30.9 | 159.7 | 168.9 | 0 | 0 | name_only |
+| Parth Chaudhary | Gwalior Cheetahs | 14 | 675 | 370 | 48.2 | 182.4 | 159.4 | 0 | 0 |  |
 | LR Chethan | Mysore Warriors | 44 | 1362 | 866 | 33.2 | 157.3 | 155.1 | 0 | 0 | name_only |
 | Suraj Ahuja | Coastal Kings Mangaluru | 44 | 1045 | 643 | 34.8 | 162.5 | 148.9 | 106 | 78 | team_checked |
+| Siddharth Joon | Central Delhi Kings | 20 | 477 | 242 | 25.1 | 197.1 | 139.7 | 0 | 0 |  |
+| Ritik Tada | Jabalpur Royal Lions | 15 | 436 | 224 | 43.6 | 194.6 | 123.8 | 0 | 0 |  |
+| Vansh Bedi | Central Delhi Kings | 22 | 393 | 200 | 23.1 | 196.5 | 114.3 | 0 | 0 |  |
+| R Rajkumar | Trichy Grand Cholas | 31 | 571 | 332 | 26.0 | 172.0 | 108.3 | 167 | 104 |  |
+| Uday Saharan | Bathinda Royals | 6 | 351 | 182 | 70.2 | 192.9 | 97.4 | 0 | 0 |  |
 | Ankit Rajesh Kumar | West Delhi Lions | 18 | 381 | 206 | 21.2 | 185.0 | 93.9 | 448 | 260 | team_checked |
-| Salman Nizar | Kerala | 6 | 296 | 153 | 98.7 | 193.5 | 82.8 | 52 | 64 | team_checked |
-| Dev Lakra | Purani Dilli 6 | 20 | 512 | 310 | 26.9 | 165.2 | 80.0 | 0 | 0 | name_only |
-| Tripuresh Singh | Chambal Ghariyals | 17 | 330 | 180 | 30.0 | 183.3 | 79.1 | 39 | 16 | team_checked |
-| Kunnummal | Kerala | 11 | 337 | 186 | 30.6 | 181.2 | 77.8 | 247 | 169 | team_checked |
-| Aman Bhadoriya | Chambal Ghariyals | 17 | 256 | 128 | 36.6 | 200.0 | 77.6 | 0 | 0 | name_only |
-| Rohan Patil | Kalyani Bengaluru Blasters | 43 | 1092 | 730 | 28.7 | 149.6 | 74.6 | 0 | 0 | name_only |
-| Ashwin Hebbar | Andhra | 7 | 315 | 179 | 45.0 | 176.0 | 65.5 | 251 | 179 | team_checked |
-| Ajay Jadav Mandal | Chhattisgarh | 6 | 295 | 169 | 73.8 | 174.6 | 59.5 | 40 | 37 | team_checked |
-| Aditya Garhwal | Puducherry | 19 | 472 | 298 | 24.8 | 158.4 | 56.7 | 50 | 31 | name_only |
-| Krishna Pandey | Puducherry | 10 | 319 | 191 | 39.9 | 167.0 | 52.8 | 22 | 25 | name_only |
+| Samson | Kerala | 6 | 368 | 197 | 73.6 | 186.8 | 93.5 | 233 | 169 |  |
+| Salil Arora | Ludhiana Lions | 10 | 366 | 197 | 52.3 | 185.8 | 91.5 | 358 | 180 |  |
 
 ## Top 15 uncapped bowlers (ipl_capped = no, by bowl_score)
 | name | team | state_bowl_balls | state_wkts | state_econ | bowl_score | smat_wkts | smat_bowl_balls | ipl_link |
 |---|---|---|---|---|---|---|---|---|
 | Shubhang Hegde | Kalyani Bengaluru Blasters | 994 | 56 | 7.04 | 275.9 | 6 | 96 | team_checked |
-| Vasuki Koushik | Coastal Kings Mangaluru | 787 | 37 | 7.69 | 132.6 | 10 | 144 | name_only |
-| Sagar Udeshi | Puducherry | 300 | 12 | 7.18 | 76.2 | 0 | 12 | team_checked |
-| Aparajith | Chepauk Super Gillies | 234 | 9 | 6.77 | 75.4 | 0 | 0 | name_only |
-| Rahil Shah | SKM Salem Spartans | 527 | 29 | 7.89 | 71.5 | 0 | 0 | name_only |
-| Sonu Yadav | Nellai Royal Kings | 658 | 42 | 8.19 | 56.5 | 7 | 126 | team_checked |
-| Shiva Singh | Kashi Rudras | 240 | 6 | 7.33 | 55.2 | 0 | 0 | name_only |
-| Ajay Jadav Mandal | Chhattisgarh | 102 | 11 | 5.47 | 55.0 | 8 | 132 | team_checked |
-| Yuvraj Chudasama | Saurashtra | 114 | 5 | 6.0 | 51.4 | 0 | 17 | team_checked |
-| Aman Bhadoriya | Chambal Ghariyals | 330 | 20 | 7.85 | 46.7 | 0 | 0 | name_only |
-| Suboth Bhati | Dindigul Dragons | 337 | 23 | 7.92 | 43.9 | 0 | 0 | name_only |
-| Lalith Mohan | Vijayawada Sunshiners | 132 | 4 | 6.82 | 41.5 | 0 | 0 | name_only |
-| Dharmendrasinh Jadeja | Saurashtra | 114 | 6 | 6.53 | 41.4 | 4 | 75 | team_checked |
-| Atharva Ankolekar | Eagle Thane Strikers | 222 | 10 | 7.59 | 41.0 | 9 | 193 | team_checked |
-| Shivam Shukla | Indore Pink Panthers | 337 | 26 | 7.99 | 39.9 | 17 | 205 | team_checked |
-
-## Strong numbers but IPL status unknown (could be capped; check by hand), top 10 each
-| name | team | state_inns | state_runs | state_balls | state_avg | state_sr | bat_score | smat_runs | smat_balls | ipl_link |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Tushar Raheja | IDream Tiruppur Tamizhans | 33 | 1429 | 869 | 47.6 | 164.4 | 217.9 | 151 | 92 |  |
-| Abhishek Pathak | Bundelkhand Bulls | 14 | 509 | 216 | 36.4 | 235.6 | 208.0 | 13 | 9 |  |
-| Mohammed Taha | Hubli Tigers | 44 | 1288 | 793 | 31.4 | 162.4 | 182.8 | 0 | 0 | doubtful |
-| Parth Chaudhary | Gwalior Cheetahs | 14 | 675 | 370 | 48.2 | 182.4 | 159.4 | 0 | 0 |  |
-| Siddharth Joon | Central Delhi Kings | 20 | 477 | 242 | 25.1 | 197.1 | 139.7 | 0 | 0 |  |
-| Ritik Tada | Jabalpur Royal Lions | 15 | 436 | 224 | 43.6 | 194.6 | 123.8 | 0 | 0 |  |
-| Ankush Singh | Chambal Ghariyals | 17 | 514 | 286 | 34.3 | 179.7 | 115.4 | 101 | 68 | doubtful |
-| Vansh Bedi | Central Delhi Kings | 22 | 393 | 200 | 23.1 | 196.5 | 114.3 | 0 | 0 |  |
-| R Rajkumar | Trichy Grand Cholas | 31 | 571 | 332 | 26.0 | 172.0 | 108.3 | 167 | 104 |  |
-| Sarthak Ranjan | North Delhi Strikers | 18 | 942 | 600 | 55.4 | 157.0 | 105.8 | 0 | 0 | doubtful |
-
-| name | team | state_bowl_balls | state_wkts | state_econ | bowl_score | smat_wkts | smat_bowl_balls | ipl_link |
-|---|---|---|---|---|---|---|---|---|
 | Jhathavedh Subramanyan | Vida Kovai Kings | 714 | 37 | 6.87 | 218.7 | 0 | 0 |  |
 | M Silambarasan | Chepauk Super Gillies | 569 | 30 | 6.72 | 188.4 | 0 | 0 |  |
 | Shreesha Achar | Shivamogga Yodhas | 666 | 37 | 7.27 | 159.1 | 0 | 0 |  |
+| Vasuki Koushik | Coastal Kings Mangaluru | 787 | 37 | 7.69 | 132.6 | 10 | 144 | name_only |
 | Prithviraj Shekhawat | Coastal Kings Mangaluru | 480 | 20 | 7.3 | 112.3 | 0 | 0 |  |
 | Satvik Deswal | Ossudu Accord Warriors | 240 | 14 | 5.9 | 112.2 | 0 | 0 |  |
 | Manan Bhardwaj | West Delhi Lions | 399 | 25 | 7.05 | 109.8 | 0 | 0 |  |
 | S Ajith Ram | SKM Salem Spartans | 455 | 21 | 7.42 | 97.0 | 0 | 0 |  |
-| Ritesh Bhatkal | Mysore Warriors | 450 | 24 | 7.43 | 95.8 | 0 | 0 | doubtful |
 | Shikhar Shetty | Hubli Tigers | 324 | 15 | 6.96 | 94.0 | 0 | 0 |  |
 | Macneil Noronha | Gulbarga Mystics | 517 | 26 | 7.61 | 94.0 | 1 | 24 |  |
+| Paras Gurbax Arya | Gulbarga Mystics | 591 | 22 | 7.77 | 92.3 | 0 | 0 |  |
+| Himanshu Sahani | Villianur Mohit Kings | 241 | 17 | 6.45 | 90.6 | 0 | 0 |  |
+| Shashank Attarde | Aakash Tigers MWS | 264 | 21 | 6.7 | 88.0 | 0 | 0 |  |
+| Kartik Chadha | Ludhiana Lions | 234 | 14 | 6.46 | 87.4 | 0 | 0 |  |
+
+## Strong numbers but IPL status unknown (could be capped; check by hand), top 10 each
+| name | team | state_inns | state_runs | state_balls | state_avg | state_sr | bat_score | smat_runs | smat_balls | ipl_link |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Mohammed Taha | Hubli Tigers | 44 | 1288 | 793 | 31.4 | 162.4 | 182.8 | 0 | 0 | doubtful |
+| Ankush Singh | Chambal Ghariyals | 17 | 514 | 286 | 34.3 | 179.7 | 115.4 | 101 | 68 | doubtful |
+| Sarthak Ranjan | North Delhi Strikers | 18 | 942 | 600 | 55.4 | 157.0 | 105.8 | 0 | 0 | doubtful |
+| Jonty Sidhu | Central Delhi Kings | 22 | 611 | 370 | 35.9 | 165.1 | 95.4 | 0 | 0 | doubtful |
+| Yajas Sharma | Outer Delhi Warriors | 16 | 412 | 230 | 27.5 | 179.1 | 91.5 | 0 | 0 | doubtful |
+| V Manoharan | Kochi Blue Tigers | 12 | 414 | 240 | 34.5 | 172.5 | 79.5 | 0 | 0 | doubtful |
+| Sagar Solanki | Rewa Jaguars | 15 | 369 | 218 | 36.9 | 169.3 | 65.2 | 0 | 0 | doubtful |
+| Anmol Sharma | South Delhi Superstarz | 21 | 765 | 506 | 42.5 | 151.2 | 59.8 | 0 | 0 | doubtful |
+| Kuldeep Gehi | Gwalior Cheetahs | 8 | 265 | 158 | 33.1 | 167.7 | 44.8 | 0 | 0 | doubtful |
+| Adarsh Singh | Kanpur Superstars | 10 | 352 | 225 | 50.3 | 156.4 | 38.4 | 0 | 0 | doubtful |
+
+| name | team | state_bowl_balls | state_wkts | state_econ | bowl_score | smat_wkts | smat_bowl_balls | ipl_link |
+|---|---|---|---|---|---|---|---|---|
+| Ritesh Bhatkal | Mysore Warriors | 450 | 24 | 7.43 | 95.8 | 0 | 0 | doubtful |
+| Ajay B Mishra | ARCS Andheri | 246 | 13 | 6.46 | 91.9 | 0 | 0 | doubtful |
+| Kartik Yadav | South Delhi Superstarz | 204 | 14 | 6.29 | 81.9 | 0 | 0 | doubtful |
+| Sachin Shinde | Mangalore Dragons | 186 | 13 | 6.35 | 72.8 | 0 | 0 | doubtful |
+| Naman Sharma | Ruby White Town Legends | 226 | 12 | 6.93 | 66.8 | 0 | 0 | doubtful |
+| Saurabh Kumar | Tungabhadra Warriors | 186 | 9 | 6.61 | 64.8 | 0 | 0 | doubtful |
+| Shubham Sharma | Jodhpur Sunrisers | 185 | 9 | 6.65 | 63.4 | 0 | 0 | doubtful |
+| Ramesh Kumar | Villianur Mohit Kings | 204 | 10 | 6.88 | 61.9 | 0 | 0 | doubtful |
+| Satyajeet Bachhav | Ratnagiri Jets | 142 | 9 | 6.34 | 56.0 | 0 | 0 | doubtful |
+| Shubham Mishra | Kanpur Superstars | 198 | 12 | 7.21 | 49.2 | 0 | 0 | doubtful |
 
 ## Link quality
 | Link | Meaning | All 2261 Cricbuzz players | On the board (874) |
