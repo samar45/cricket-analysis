@@ -571,12 +571,16 @@ def cricbuzz_group():
 @click.option("--dry-run", is_flag=True, help="Discover and count new matches; save nothing")
 @click.option("--no-verify", is_flag=True, help="Skip the Cricsheet comparison")
 @click.option("--max-matches", type=int, default=None, help="Save at most N new matches this run")
-def cricbuzz_sync_cmd(dry_run, no_verify, max_matches):
+@click.option("--backfill", type=click.Choice(["state"]), default=None, help="Past seasons of the Indian state T20 leagues from the archive pages")
+@click.option("--seasons", default="2023-2026", help="With --backfill: first-last year, e.g. 2023-2026")
+def cricbuzz_sync_cmd(dry_run, no_verify, max_matches, backfill, seasons):
     """Discover -> scrape new finished matches -> verify. Exit 0 ok, 2 blocked (partial work kept), 1 error."""
     from .ingest import cricbuzz_sync as sy
 
     try:
-        code = sy.sync(dry_run=dry_run, do_verify=not no_verify, max_matches=max_matches, echo=click.echo)
+        a, _, b = seasons.partition("-")
+        code = sy.sync(dry_run=dry_run, do_verify=not no_verify, max_matches=max_matches, echo=click.echo,
+                       backfill=range(int(a), int(b or a) + 1) if backfill else None)
     except sy.Locked as e:
         raise click.ClickException(str(e))
     sys.exit(code)

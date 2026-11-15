@@ -33,8 +33,16 @@ PATTERNS = [
     (r"caribbean premier league", "cpl"), (r"\bsa20\b", "sa20"), (r"vitality blast|t20 blast", "blast"),
     (r"the hundred", "hundred"), (r"international league t20", "ilt20"), (r"major league cricket", "mlc"),
     (r"bangladesh premier league", "bpl"), (r"lanka premier league", "lpl"), (r"syed mushtaq ali", "smat"),
+    # Indian state T20 leagues: no Cricsheet counterpart (verify says no_cricsheet_source)
+    (r"sher.{0,5}punjab", "state_spl"), (r"uttar pradesh premier league|\bup t20 league|\bupt20", "state_upt20"),
+    (r"tamil nadu premier league|\btnpl\b", "state_tnpl"), (r"delhi premier league", "state_dpl"), (r"maharaja trophy", "state_maharaja"),
+    (r"t20 mumbai|mumbai t20", "state_mumbai"), (r"bengal pro t20|bengal t20", "state_bengal"), (r"saurashtra (pro|premier)", "state_saurashtra"),
+    (r"rajasthan premier league", "state_rpl"), (r"andhra premier league", "state_apl"), (r"kerala cricket league", "state_kcl"),
+    (r"madhya pradesh premier league|\bmp t20 league", "state_mppl"), (r"maharashtra premier league", "state_mpl"),
+    (r"chhattisgarh .*premier league", "state_cgpl"), (r"pondicherry premier league|puducherry .*t20", "state_ppl"),
 ]
-NOT_T20 = re.compile(r"test|ranji|shield|four.day|three.day|one.day|ford trophy|vijay hazare|plunket|first.class|a tour|lions|world cup|premier league 20|cup qualifier|u-?\d\d|trophy|challenge|league|smash|t10|t20 challenge", re.I)
+ARCHIVE = "/cricket-scorecard-archives/{year}"
+NOT_T20 = re.compile(r"test|ranji|shield|four.day|three.day|one.day|ford trophy|vijay hazare|plunket|first.class|a tour|lions|world cup|premier league 20|cup qualifier|u-?\d\d|trophy|challenge|league|smash|t10|t20 challenge", re.I)
 DROP = re.compile(r"\bwomen|\bwbbl\b|\bwpl\b|\bu-?(19|23)\b|under-?(19|23)|\bwomen'?s", re.I)
 
 
@@ -86,6 +94,10 @@ def discover(page: str) -> tuple[list[dict], list[dict], list[str]]:
     return kept, cands, unmapped
 
 
+def state_series(series: list[dict]) -> list[dict]:
+    return [s for s in series if s.get("comp", "").startswith("state_")]
+
+
 def is_t20i(m: dict) -> bool:
     return m.get("matchFormat") == "T20" and bool(re.search(r"T20I", m.get("matchDesc", "")))
 
@@ -106,7 +118,7 @@ def series_matches(page: str, sid: int) -> list[dict]:
 
 def wanted(matches: list[dict], comp: str) -> list[dict]:
     """Finished T20 matches only (T20I series also hold Tests/ODIs; T20I rows must say T20I)."""
-    return [m for m in matches if m.get("state") == "Complete" and m.get("matchFormat") == "T20"
+    return [m for m in matches if str(m.get("state")).lower() == "complete" and m.get("matchFormat") == "T20"
             and (comp != "t20i" or re.search(r"\bT20I\b", m.get("matchDesc", "")))]
 
 
@@ -126,23 +138,53 @@ def scrape_match(m: dict, comp: str, base: Path = BASE, fetch=cb.fetch_match) ->
     (d / "meta.json").write_text(json.dumps(m), encoding="utf-8")
 
 
-def parse_series(comp: str, sid, base: Path = BASE) -> int:
-    """Raw -> parquet for one series (all saved matches, rebuilt each time; no DB needed, names mapped later in verify)."""
+class _Pool(dict):
+    """Same player set for every team: state-league teams are not in Cricsheet, so names link by name only."""
+    def __init__(self, names):
+        super().__init__()
+        self.names = set(names)
+
+    def get(self, key, default=None):
+        return self.names
+
+
+def state_pool(db: str = DB) -> set[str]:
+    """Cricsheet player names seen in IPL and SMAT (the scouting targets); empty if the DB is not built."""
+    import duckdb
+
+    if not Path(db).exists():
+        return set()
+    con = duckdb.connect(db, read_only=True)
+    try:
+        return {r[0] for r in con.execute(
+            "select d.batter from deliveries d join matches m using(match_id) where m.competition in ('ipl','smat') "
+            "union select d.bowler from deliveries d join matches m using(match_id) where m.competition in ('ipl','smat')").fetchall()}
+    finally:
+        con.close()
+
+
+def parse_series(comp: str, sid, base: Path = BASE, pool: set[str] | None = None) -> int:
+    """Raw -> parquet for one series (all saved matches, rebuilt each time; names mapped later in verify).
+    State leagues: `cricsheet_name` by exact derived-name hit in `pool` (default IPL+SMAT players), column `link` = name_only."""
     root = base / comp / str(sid)
+    tp = _Pool(state_pool() if pool is None else pool) if comp.startswith("state_") else {}
     out = {k: [] for k in ("match", "batting", "bowling", "innings", "deliveries")}
     for d in sorted(root.iterdir()):
         if not (d / "scorecard.html.gz").exists():
             continue
         meta = json.loads((d / "meta.json").read_text(encoding="utf-8")) if (d / "meta.json").exists() else {}
         try:
-            r = cb.parse_match(d.name, dict(desc=meta.get("matchDesc", "")), {}, root)
+            r = cb.parse_match(d.name, dict(desc=meta.get("matchDesc", "")), tp, root)
         except Exception as e:  # report, don't chase
             log(f"parse failed {comp}/{sid}/{d.name}: {e!r}")
             continue
         for k in out:
             out[k] += [r[k]] if k == "match" else r[k]
     for k, name in dict(match="matches", batting="batting", bowling="bowling", innings="innings", deliveries="deliveries").items():
-        pd.DataFrame(out[k]).to_parquet(root / f"{name}.parquet", index=False)
+        df = pd.DataFrame(out[k])
+        if comp.startswith("state_") and k in ("batting", "bowling"):
+            df["link"] = df.cricsheet_name.map(lambda n: "name_only" if n else "")
+        df.to_parquet(root / f"{name}.parquet", index=False)
     return len(out["match"])
 
 
@@ -222,6 +264,9 @@ def verify_one(m: dict, innings: pd.DataFrame, batting: pd.DataFrame, con, comp:
     """One Cricbuzz match (dict from matches.parquet) -> status row. Status: equal / different / waiting / unmapped_team / no_result."""
     row = dict(cb_match_id=m["match_id"], comp=comp, date=m["date"], team1=m["team1"], team2=m["team2"], status="", cricsheet_match_id="", diffs="",
                batters_compared=0, batters_unmapped=0)
+    if comp.startswith("state_"):  # Indian state leagues: Cricsheet does not publish them
+        row["status"] = "no_cricsheet_source"
+        return row
     if any(_norm(m[k]) == "afghanistan" for k in ("team1", "team2")):  # Cricsheet withholds all Afghanistan matches on purpose
         row["status"] = "cricsheet_withheld"
         return row
@@ -293,6 +338,9 @@ def verify(base: Path = BASE, db: str = DB, doc: Path | None = DOC) -> pd.DataFr
         tmap = team_map()
         rows, tps = [], {}
         for comp, mm in saved["matches"].groupby("comp"):
+            if comp.startswith("state_"):
+                rows += [verify_one(m, None, None, con, comp, tmap, {}, set()) for m in mm.to_dict("records") if m.get("complete") or m.get("result_type") is not None]
+                continue
             cs_names = {r[0] for r in con.execute("select team1 from matches where competition=? union select team2 from matches where competition=?", [comp, comp]).fetchall()}
             if comp not in tps:
                 tps[comp] = _team_players(con, comp)
@@ -343,7 +391,7 @@ def write_doc(res: pd.DataFrame, cs_only: list[tuple], doc: Path) -> None:
     L = ["# Cricbuzz vs Cricsheet verification", "",
          f"Written by `cricket cricbuzz sync` on {dt.datetime.now():%Y-%m-%d %H:%M}; overwritten each run. Data check only, no model output.", "",
          "| Status | Matches |", "|---|---|"]
-    for k, label in (("equal", "matched and equal"), ("different", "matched and different"), ("waiting", "waiting for Cricsheet"), ("cricsheet_withheld", "withheld by Cricsheet"), ("unmapped_team", "team name not mapped")):
+    for k, label in (("equal", "matched and equal"), ("different", "matched and different"), ("waiting", "waiting for Cricsheet"), ("cricsheet_withheld", "withheld by Cricsheet"), ("unmapped_team", "team name not mapped"), ("no_cricsheet_source", "no Cricsheet source (state leagues)")):
         L.append(f"| {label} | {c.get(k, 0)} |")
     L += [f"| Cricsheet only (no Cricbuzz copy) | {len(cs_only)} |", ""]
     diff = res[res.status == "different"]
@@ -366,13 +414,21 @@ def write_doc(res: pd.DataFrame, cs_only: list[tuple], doc: Path) -> None:
 
 
 # ------------------------------------------------------------------ the command
-def sync(dry_run: bool = False, do_verify: bool = True, max_matches: int | None = None, echo=print) -> int:
-    """discover -> scrape -> verify. Returns exit code: 0 ok, 2 blocked (partial work kept)."""
+def backfill_pages(years: range) -> str:
+    """Cricbuzz archive pages for those years, joined (series listed there are found by `discover` like on the schedule page)."""
+    return "".join(cb.get(ARCHIVE.format(year=y)) for y in years)
+
+
+def sync(dry_run: bool = False, do_verify: bool = True, max_matches: int | None = None, echo=print, backfill: range | None = None) -> int:
+    """discover -> scrape -> verify. Returns exit code: 0 ok, 2 blocked (partial work kept).
+    backfill=range(2023, 2027): read the archive pages and keep only the state leagues (past seasons)."""
     acquire()
     blocked, saved, kept, unmapped = False, 0, [], []
     try:
         try:
-            kept, cands, unmapped = discover(cb.get("/cricket-schedule/series/all"))
+            kept, cands, unmapped = discover(backfill_pages(backfill) if backfill else cb.get("/cricket-schedule/series/all"))
+            if backfill:
+                kept, cands, unmapped = state_series(kept), [], []
             todo = []
             for s in kept + cands:
                 ms = series_matches(cb.get(f"/cricket-series/{s['id']}/{s['slug']}/matches"), s["id"])
