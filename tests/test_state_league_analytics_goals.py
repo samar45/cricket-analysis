@@ -74,5 +74,6 @@ def test_page_choose_up_t20_shows_batting_rows():
     up = [o for o in at.selectbox(key="sl_league").options if "UP T20" in o][0]
     at = at.selectbox(key="sl_league").set_value(up).run()
     assert not at.exception and not at.error
-    tables = [e for e in at.main if e.type in ("arrow_data_frame", "data_editor")] or at.get("arrow_data_frame")
-    assert tables
+    tables = at.get("table")
+    assert len(tables) >= 2 and all(len(t.value) > 0 for t in tables)
+    assert "Karan Sharma" in tables[1].value["name"].tolist()
