@@ -80,3 +80,42 @@ def list_cmd(name, role, uncapped, no_ipl, top, as_json, out):
     else:
         for r in d["data"]:
             click.echo(f"{r['rank_uncapped'] or '-':>3}  {r['name']:<22}{r['team']:<16}{r['score']:>7}  {r['ipl_status']}")
+
+
+def _show(df, as_json):
+    if as_json:
+        click.echo(df.to_json(orient="records", indent=2, date_format="iso"))
+    else:
+        click.echo(df.to_string(index=False))
+
+
+@scouting_group.command("profile")
+@click.argument("player")
+@click.option("--doubtful", is_flag=True, help="Also show Cricsheet rows whose link failed the sanity checks")
+@click.option("--json", "as_json", is_flag=True)
+def profile_cmd(player, doubtful, as_json):
+    """cricket scouting profile "Naman Dhir"  (name or cricbuzz_id): per competition and season, all sources"""
+    from . import profile as P
+    try:
+        df = P.profile(player, include_doubtful=doubtful)
+    except reels.NotExact as e:
+        _fail(e)
+    except ValueError as e:
+        raise click.ClickException(str(e))
+    _show(df.drop(columns=["cricbuzz_id", "name"]), as_json)
+    for w in df.attrs.get("withheld", []):
+        click.echo(f"withheld doubtful Cricsheet link: {w}", err=True)
+
+
+@scouting_group.command("board")
+@click.option("--min-balls", default=100, show_default=True, help="Faced or bowled in state leagues")
+@click.option("--uncapped", is_flag=True, help="ipl_capped == no")
+@click.option("--top", default=30, show_default=True)
+@click.option("--json", "as_json", is_flag=True)
+def board_cmd(min_balls, uncapped, top, as_json):
+    """Auction shortlist across state leagues, SMAT 2025 and IPL, best score first."""
+    from . import profile as P
+    b = P.board(min_balls)
+    if uncapped:
+        b = b[b.ipl_capped == "no"]
+    _show(b.head(top), as_json)
